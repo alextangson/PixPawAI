@@ -10,7 +10,7 @@ import { uploadGeneratedImage } from '@/lib/supabase/storage'
 import { getStyleById } from '@/lib/styles'
 
 /**
- * Generate image using OpenRouter API
+ * Generate image using OpenRouter API with FLUX.2-flex model
  * OpenRouter uses the /chat/completions endpoint with modalities for image generation
  */
 async function generateWithOpenRouter(
@@ -23,7 +23,7 @@ async function generateWithOpenRouter(
     throw new Error('OPENROUTER_API_KEY is not configured')
   }
 
-  console.log('Calling OpenRouter API...')
+  console.log('Calling OpenRouter API with FLUX.2-flex...')
   console.log('Prompt:', finalPrompt)
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -35,15 +35,14 @@ async function generateWithOpenRouter(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'black-forest-labs/flux-1-schnell',
+      model: 'black-forest-labs/flux.2-flex',
       messages: [
         {
           role: 'user',
-          content: finalPrompt
+          content: `Generate an image of: ${finalPrompt}`
         }
       ],
-      modalities: ['text', 'image'],
-      max_tokens: 1024,
+      modalities: ['image', 'text'],
     }),
   })
 
@@ -56,21 +55,50 @@ async function generateWithOpenRouter(
   const data = await response.json()
   console.log('OpenRouter response:', JSON.stringify(data, null, 2))
 
-  // OpenRouter returns images in the response's images array
-  if (!data.images || !data.images[0]) {
-    throw new Error('No images in OpenRouter response')
+  // FLUX.2-flex returns images in choices[0].message.images array
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    console.error('Invalid response structure:', data)
+    throw new Error('Invalid response structure from OpenRouter')
   }
 
-  // Images are returned as base64 data URLs or direct URLs
-  const imageData = data.images[0]
+  const message = data.choices[0].message
   
-  // If it's a data URL (base64), we need to handle it differently
-  if (imageData.startsWith('data:')) {
-    return imageData // Return data URL directly for now
+  // Primary: Check for images array in message
+  if (message.images && Array.isArray(message.images) && message.images.length > 0) {
+    const firstImage = message.images[0]
+    
+    // Image might be an object with .url property or a direct string URL
+    const imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url
+    
+    if (!imageUrl) {
+      throw new Error('Image URL not found in message.images')
+    }
+    
+    console.log('Image extracted from message.images:', imageUrl)
+    return imageUrl
   }
   
-  // Otherwise it should be a direct URL
-  return imageData
+  // Fallback: Check message.content for Markdown image or URL
+  if (message.content) {
+    const content = message.content
+    
+    // Try to extract Markdown image: ![alt](url)
+    const markdownMatch = content.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
+    if (markdownMatch && markdownMatch[1]) {
+      console.log('Image extracted from markdown:', markdownMatch[1])
+      return markdownMatch[1]
+    }
+    
+    // Try to extract plain URL
+    const urlMatch = content.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i)
+    if (urlMatch && urlMatch[1]) {
+      console.log('Image extracted from plain URL:', urlMatch[1])
+      return urlMatch[1]
+    }
+  }
+  
+  // No image found
+  throw new Error('No image found in OpenRouter response. Check message.images or message.content.')
 }
 
 export async function POST(request: NextRequest) {
@@ -153,7 +181,7 @@ export async function POST(request: NextRequest) {
           stylePromptSuffix: styleConfig.promptSuffix,
           requestedAt: new Date().toISOString(),
           provider: 'openrouter',
-          model: 'black-forest-labs/flux-1-schnell',
+          model: 'black-forest-labs/flux.2-flex',
         },
       })
       .select()
