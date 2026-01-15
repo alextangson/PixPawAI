@@ -31,11 +31,12 @@ interface HeroSectionProps {
       }
     }
   }
+  onOpenUpload: () => void
 }
 
-export function HeroSection({ dict }: HeroSectionProps) {
+export function HeroSection({ dict, onOpenUpload }: HeroSectionProps) {
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden">
+    <section className="relative min-h-screen flex flex-col overflow-hidden pt-16">
       {/* Background Pattern - Subtle paw prints */}
       <div 
         className="absolute inset-0 opacity-[0.03]"
@@ -73,24 +74,25 @@ export function HeroSection({ dict }: HeroSectionProps) {
                 <span>{dict.hero.socialProof}</span>
               </div>
 
-              {/* Main Headline (H1) - Improved Typography */}
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl mx-auto lg:mx-0">
-                {dict.hero.title.part1}
-                <br />
-                <span className="text-coral relative inline-block">
+              {/* Main Headline (H1) - Final Polished Typography */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight max-w-5xl mx-auto lg:mx-0">
+                <span className="md:whitespace-nowrap">{dict.hero.title.part1}</span>{' '}
+                <br className="hidden md:block" />
+                <span className="text-coral relative inline-block whitespace-nowrap">
                   {dict.hero.title.part2}
                   <svg
-                    className="absolute -bottom-2 left-0 w-full"
-                    height="12"
-                    viewBox="0 0 200 12"
+                    className="absolute -bottom-2 left-0 w-full h-3"
+                    viewBox="0 0 100 12"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
+                    preserveAspectRatio="none"
                   >
                     <path
-                      d="M2 10C50 3 150 3 198 10"
+                      d="M2 10C25 3 75 3 98 10"
                       stroke="#FF8C42"
                       strokeWidth="3"
                       strokeLinecap="round"
+                      vectorEffect="non-scaling-stroke"
                     />
                   </svg>
                 </span>
@@ -103,7 +105,7 @@ export function HeroSection({ dict }: HeroSectionProps) {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                <Button size="xl" className="group">
+                <Button size="xl" className="group" onClick={onOpenUpload}>
                   {dict.hero.cta.primary}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>

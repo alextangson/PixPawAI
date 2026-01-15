@@ -1,9 +1,22 @@
 {
+  "nav": {
+    "logo": "PixPawAI",
+    "links": {
+      "shop": "Shop",
+      "gallery": "Gallery",
+      "howToGuide": "How-to Guide",
+      "pricing": "Pricing"
+    },
+    "cta": "Create Now",
+    "charity": {
+      "tooltip": "We donate 10% to animal shelters"
+    }
+  },
   "hero": {
     "badge": "Powered by AI Magic",
     "title": {
-      "part1": "Turn Your Pet Into an",
-      "part2": "Animated Movie Star"
+      "part1": "Turn Your Pet Into a",
+      "part2": "3D Movie Star"
     },
     "subtitle": "The easiest AI pet portrait generator. Create funny, royal, or 3D cartoon art in seconds. No design skills needed.",
     "cta": {
@@ -20,6 +33,308 @@
       "after": "After",
       "beforeAlt": "Original pet photo",
       "afterAlt": "3D Pixar style pet portrait"
+    }
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "steps": {
+      "upload": {
+        "title": "Pick Your Best Shot",
+        "description": "No pro photos needed. Just make sure the face is visible."
+      },
+      "aiMagic": {
+        "title": "Watch the Magic",
+        "description": "Our AI captures your pet's personality in ~30 seconds."
+      },
+      "shop": {
+        "title": "Preview & Customize",
+        "description": "Love the result? Download in 4K or print it on a pillow."
+      }
+    }
+  },
+  "upload": {
+    "title": "Upload Your Pet Photo",
+    "subtitle": "Let's turn your furry friend into a masterpiece!",
+    "primaryLabel": "Upload 1 Clear Photo of Your Pet's Face",
+    "optionalTitle": "Have more photos?",
+    "optionalSubtitle": "Add 1-2 extra angles for better accuracy (Optional)",
+    "goodVsBad": {
+      "title": "Photo Quality Tips",
+      "good": [
+        "Well-lit, natural light",
+        "Face clearly visible",
+        "Sharp focus, no blur"
+      ],
+      "bad": [
+        "Too dark or blurry",
+        "Pet too far away",
+        "Face obstructed"
+      ]
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "generate": "Generate Portrait"
+    }
+  },
+  "styles": {
+    "title": "Choose Your Perfect Style",
+    "subtitle": "From Pixar magic to royal elegance, we've got the style that matches your pet's personality.",
+    "categories": {
+      "pixar": {
+        "name": "The 3D Movie Star",
+        "description": "Bring your pet to life with vibrant Pixar-style 3D art that's bursting with personality."
+      },
+      "royal": {
+        "name": "The Royal Highness",
+        "description": "Transform your pet into royalty with elegant oil painting portraits fit for a palace."
+      },
+      "watercolor": {
+        "name": "The Watercolor Art",
+        "description": "Soft, artistic watercolor paintings that capture your pet's gentle spirit."
+      },
+      "modern": {
+        "name": "The Pop Art",
+        "description": "Bold, colorful pop art style that makes your pet the star of the show."
+      }
+    }
+  },
+  "merch": {
+    "title": "More Than Just a JPEG",
+    "subtitle": "Get them printed onto Mugs, Pillows, & Phone Cases.",
+    "products": {
+      "pillow": "Custom Pillows",
+      "phoneCase": "Phone Cases",
+      "canvas": "Canvas Prints"
+    }
+  },
+  "testimonials": {
+    "title": "Pawsitive Vibes from 10,000+ Parents",
+    "reviews": [
+      {
+        "name": "Sarah M.",
+        "pet": "Golden Retriever Mom",
+        "text": "I was blown away by how fast and amazing the results were! My golden retriever looks like he jumped straight out of a Disney movie. Worth every penny!",
+        "rating": 5
+      },
+      {
+        "name": "James L.",
+        "pet": "Cat Dad",
+        "text": "The AI captured my cat's grumpy personality perfectly. I ordered the pillow and it's now my favorite thing in the house. Highly recommend!",
+        "rating": 5
+      },
+      {
+        "name": "Emily R.",
+        "pet": "Corgi Owner",
+        "text": "Such a fun experience! I tried multiple styles and they all turned out gorgeous. The watercolor one is my favorite. Gift-giving made easy!",
+        "rating": 5
+      },
+      {
+        "name": "Michael T.",
+        "pet": "Husky Dad",
+        "text": "I was skeptical at first, but the quality is incredible. The royal portrait of my husky is hanging in my living room now. Everyone asks where I got it!",
+        "rating": 5
+      },
+      {
+        "name": "Lisa K.",
+        "pet": "Poodle Mom",
+        "text": "Customer service was amazing and the turnaround was so fast. My poodle looks absolutely stunning in the 3D style. 10/10 would order again!",
+        "rating": 5
+      },
+      {
+        "name": "David P.",
+        "pet": "Beagle Owner",
+        "text": "This made the perfect gift for my wife. She cried happy tears when she saw our beagle as a Pixar character. Thank you PixPaw AI!",
+        "rating": 5
+      }
+    ]
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "questions": [
+      {
+        "question": "What types of pets can I use?",
+        "answer": "Dogs, cats, bunnies, birds, and even hamsters! Our AI works with virtually any pet. The key is having a clear photo of your pet's face."
+      },
+      {
+        "question": "What photo quality do I need?",
+        "answer": "No pro photos needed! Just good lighting and a clear face. Phone photos work perfectly. Avoid blurry images or photos where your pet is too far away."
+      },
+      {
+        "question": "How long does it take?",
+        "answer": "About 30-60 seconds! Our AI is incredibly fast. You'll have your stunning portrait ready to download almost instantly."
+      },
+      {
+        "question": "Can I get a refund if I don't like it?",
+        "answer": "Yes! We offer a 'Love it or Free Redo' guarantee. Not satisfied? We'll regenerate it for free. Still not happy? We'll refund you 100%. No questions asked."
+      },
+      {
+        "question": "What do I get?",
+        "answer": "High-resolution 4K images suitable for printing! Perfect for framing, canvas prints, or any merchandise. Your pet will look amazing at any size."
+      },
+      {
+        "question": "Is my data safe?",
+        "answer": "Absolutely. We take privacy seriously. We delete user photos after 30 days and never share your data with third parties. Your pet's photos are safe with us."
+      },
+      {
+        "question": "Can I print this on a t-shirt or mug?",
+        "answer": "Absolutely! The 4K resolution is perfect for printing on anything—t-shirts, mugs, pillows, phone cases, canvas prints, you name it."
+      },
+      {
+        "question": "Do you support multiple pets in one photo?",
+        "answer": "Currently, we're focusing on solo portraits for best quality. This ensures each pet gets the detailed, personalized treatment they deserve. Want multiple pets? Just upload them separately!"
+      },
+      {
+        "question": "What styles are available?",
+        "answer": "Choose from 3D Pixar-style, Royal Oil Painting, Watercolor Art, Pop Art, and more! Each style is carefully crafted to bring out your pet's unique personality."
+      },
+      {
+        "question": "How do I download my portrait?",
+        "answer": "After your portrait is generated, you'll see a 'Download' button. Click it to save your high-res 4K image to your device. You'll also receive an email with the download link."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Ready to Turn Your Pet into a Star?",
+    "subtitle": "Join 10,000+ happy pet parents. Try it risk-free today.",
+    "cta": "Create My Portrait Now"
+  },
+  "footer": {
+    "brand": {
+      "name": "PixPawAI",
+      "mission": "Turning pet photos into art, while helping every stray find a home.",
+      "charityStatement": "10% of profits are donated to animal shelters."
+    },
+    "discover": {
+      "title": "Discover",
+      "links": {
+        "pixarDogs": "Pixar Style Dogs",
+        "royalCats": "Royal Cat Portraits",
+        "searchGallery": "Search Gallery"
+      }
+    },
+    "support": {
+      "title": "Support",
+      "links": {
+        "faq": "FAQ",
+        "trackOrder": "Track Order",
+        "contactUs": "Contact Us"
+      }
+    },
+    "legal": {
+      "title": "Legal",
+      "links": {
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "refund": "Refund Policy"
+      }
+    },
+    "copyright": "© 2026 PixPaw AI. All rights reserved."
+  },
+  "howToGuide": {
+    "hero": {
+      "title": "Master the Art of AI Pet Portraits",
+      "subtitle": "Learn how to choose the perfect photo, select the right style, and print your masterpiece."
+    },
+    "featured": {
+      "tag": "Essential Guide",
+      "title": "The Golden Rule: Garbage In, Garbage Out",
+      "description": "The quality of your result depends 100% on the photo you upload. Learn the 3 secrets to a perfect input photo: Lighting, Angle, and Clarity.",
+      "button": "Read Full Guide",
+      "dos": [
+        "Well-lit, natural lighting",
+        "Pet facing camera directly",
+        "Sharp focus, no motion blur"
+      ],
+      "donts": [
+        "Dark or backlit photos",
+        "Pet turned away or far away",
+        "Blurry or out-of-focus shots"
+      ]
+    },
+    "topics": [
+      {
+        "title": "Which Style Suits Your Pet?",
+        "excerpt": "Does your dog look like a Pixar hero or a Renaissance King? Here's how to pick.",
+        "icon": "palette"
+      },
+      {
+        "title": "From Screen to Canvas",
+        "excerpt": "Understanding resolution, aspect ratios, and how to get the best print quality for your merch.",
+        "icon": "printer"
+      },
+      {
+        "title": "My Pet Looks Different?",
+        "excerpt": "Why AI sometimes hallucinates and how to use the 'Regenerate' feature effectively.",
+        "icon": "wrench"
+      }
+    ],
+    "helpCta": {
+      "title": "Still stuck? We're here to help.",
+      "button": "Contact Support"
+    }
+  },
+  "pricing": {
+    "title": "Simple Pricing, No Monthly Fees",
+    "subtitle": "Start for free. Upgrade for high-resolution, watermark-free results.",
+    "trustBadge": "🔒 Secure Payment via Stripe",
+    "cards": {
+      "free": {
+        "title": "Free Trial",
+        "price": "$0",
+        "features": [
+          "2 Free Generations",
+          "Standard Resolution",
+          "Watermarked Results",
+          "Standard Queue Speed"
+        ],
+        "button": "Try for Free"
+      },
+      "starter": {
+        "title": "Starter Pack",
+        "price": "$4.90",
+        "badge": "One-time payment",
+        "features": [
+          "15 High-Res Generations",
+          "🚫 No Watermarks",
+          "Commercial Usage Rights",
+          "Priority Processing"
+        ],
+        "button": "Get Starter"
+      },
+      "pro": {
+        "title": "Pro Bundle",
+        "price": "$9.90",
+        "badge": "Best Value",
+        "features": [
+          "50 4K Ultra-Res Generations",
+          "🎁 Bonus: $5 Merch Credit",
+          "Everything in Starter",
+          "Top Priority Queue"
+        ],
+        "button": "Get Pro Bundle"
+      }
+    },
+    "referral": {
+      "headline": "Want more credits for free?",
+      "text": "Invite a friend to join PixPaw! They get 5 credits, and you get 5 High-Res Credits for every friend who verifies their account.",
+      "button": "Get Referral Link 🔗"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "question": "Can I print these on t-shirts?",
+          "answer": "Yes! Starter and Pro plans give you full commercial rights and print-ready resolution."
+        },
+        {
+          "question": "Is this a subscription?",
+          "answer": "No! These are one-time credit packs. No hidden monthly fees."
+        },
+        {
+          "question": "What if I'm not happy?",
+          "answer": "We offer free regenerations if the AI glitches."
+        }
+      ]
     }
   },
   "metadata": {

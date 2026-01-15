@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { i18n } from './lib/i18n-config'
+import { updateSession } from './lib/supabase/middleware'
 
 import { match as matchLocale } from '@formatjs/intl-localematcher'
 import Negotiator from 'negotiator'
@@ -23,8 +24,16 @@ function getLocale(request: NextRequest): string | undefined {
   return locale
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  // First, handle Supabase session refresh
+  const supabaseResponse = await updateSession(request)
+  
   const pathname = request.nextUrl.pathname
+
+  // Skip i18n redirect for /auth routes (API routes)
+  if (pathname.startsWith('/auth/')) {
+    return supabaseResponse
+  }
 
   // Check if there is any supported locale in the pathname
   const pathnameIsMissingLocale = i18n.locales.every(
@@ -44,6 +53,9 @@ export function middleware(request: NextRequest) {
       )
     )
   }
+  
+  // Return the Supabase response to maintain session cookies
+  return supabaseResponse
 }
 
 export const config = {

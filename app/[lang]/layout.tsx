@@ -3,6 +3,9 @@ import { Inter } from "next/font/google"
 import "../globals.css"
 import { i18n, type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
+import { Navbar } from '@/components/navbar'
+import { Footer } from '@/components/footer'
+import { getUser } from '@/lib/auth/actions'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -42,15 +45,24 @@ export async function generateMetadata({
 export default async function RootLayout({
   children,
   params,
-}: Readonly<{
+}: {
   children: React.ReactNode
-  params: Promise<{ lang: Locale }>
-}>) {
+  params: Promise<{ lang: string }>
+}) {
   const { lang } = await params
+  const dict = await getDictionary(lang as Locale)
+  const user = await getUser()
   
   return (
-    <html lang={lang}>
-      <body className={inter.className}>{children}</body>
+    <html lang={lang} suppressHydrationWarning>
+      <body 
+        className={inter.className} 
+        suppressHydrationWarning
+      >
+        <Navbar dict={dict} lang={lang} user={user} />
+        {children}
+        <Footer dict={dict} lang={lang} />
+      </body>
     </html>
   )
 }
