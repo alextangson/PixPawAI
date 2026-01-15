@@ -1,0 +1,30 @@
+{
+  "hero": {
+    "badge": "Powered by AI Magic",
+    "title": {
+      "part1": "Turn Your Pet Into an",
+      "part2": "Animated Movie Star"
+    },
+    "subtitle": "The easiest AI pet portrait generator. Create funny, royal, or 3D cartoon art in seconds. No design skills needed.",
+    "cta": {
+      "primary": "Try Now",
+      "secondary": "See Examples"
+    },
+    "socialProof": "10,000+ happy pet parents",
+    "badges": {
+      "aiPowered": "AI Powered",
+      "readyIn": "Ready in 30 seconds"
+    },
+    "slider": {
+      "before": "Before",
+      "after": "After",
+      "beforeAlt": "Original pet photo",
+      "afterAlt": "3D Pixar style pet portrait"
+    }
+  },
+  "metadata": {
+    "title": "AI Pet Portrait Generator: Make Your Pet Into a Portrait - PixPawAI",
+    "description": "Create funny, royal, and custom pet portraits online! PixPawAI is the easiest AI generator to make your pet into a masterpiece. Transform your photos in seconds. Try it now!",
+    "keywords": "AI pet portrait generator, pet portrait maker, custom pet portraits, funny pet portraits, royal pet portraits, AI pet art, pet photo generator, dog portrait, cat portrait, pet masterpiece"
+  }
+}
