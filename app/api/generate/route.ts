@@ -6,7 +6,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { uploadGeneratedImage } from '@/lib/supabase/storage'
 import { getStyleById } from '@/lib/styles'
 
 /**
@@ -22,11 +21,124 @@ function createSafeLog(data: any): string {
 }
 
 /**
+ * Extract Base64 image data from various response formats
+ */
+function extractBase64FromResponse(data: any): string | null {
+  // Strategy 1: data.data[0].b64_json (DALL-E format)
+  if (data.data && Array.isArray(data.data) && data.data[0]?.b64_json) {
+    console.log('✅ Base64 found in data.data[0].b64_json')
+    return data.data[0].b64_json
+  }
+
+  // Strategy 2: choices[0].message.images (FLUX.2 format with Base64)
+  if (data.choices?.[0]?.message?.images && Array.isArray(data.choices[0].message.images)) {
+    const firstImage = data.choices[0].message.images[0]
+    const imageData = typeof firstImage === 'string' ? firstImage : firstImage?.url || firstImage?.b64_json
+    
+    if (imageData) {
+      // Check if it's Base64 (starts with data:image or is raw base64)
+      if (imageData.startsWith('data:image')) {
+        console.log('✅ Base64 data URL found in message.images')
+        return imageData.split(',')[1] // Extract base64 part after comma
+      }
+      // If it's a URL, return null (not base64)
+      if (imageData.startsWith('http')) {
+        return null
+      }
+      // Otherwise assume it's raw base64
+      console.log('✅ Raw Base64 found in message.images')
+      return imageData
+    }
+  }
+
+  // Strategy 3: choices[0].message.content (chat format)
+  if (data.choices?.[0]?.message?.content) {
+    const content = data.choices[0].message.content
+    
+    // Check if it's a data URL
+    if (content.startsWith('data:image')) {
+      console.log('✅ Base64 data URL found in message.content')
+      return content.split(',')[1]
+    }
+    
+    // Check if it's raw base64 (very long string, no http)
+    if (content.length > 1000 && !content.startsWith('http')) {
+      console.log('✅ Raw Base64 found in message.content')
+      return content
+    }
+  }
+
+  // Strategy 4: data.output (Replicate format)
+  if (data.output && typeof data.output === 'string') {
+    if (data.output.startsWith('data:image')) {
+      console.log('✅ Base64 data URL found in data.output')
+      return data.output.split(',')[1]
+    }
+    if (data.output.length > 1000 && !data.output.startsWith('http')) {
+      console.log('✅ Raw Base64 found in data.output')
+      return data.output
+    }
+  }
+
+  // Strategy 5: Top-level b64_json
+  if (data.b64_json && typeof data.b64_json === 'string') {
+    console.log('✅ Base64 found in data.b64_json')
+    return data.b64_json
+  }
+
+  return null
+}
+
+/**
+ * Upload Base64 image directly to Supabase Storage
+ * Returns public URL
+ */
+async function uploadBase64ToStorage(
+  base64Data: string,
+  userId: string,
+  generationId: string
+): Promise<string> {
+  const supabase = await createClient()
+  
+  // Convert Base64 to Buffer
+  const buffer = Buffer.from(base64Data, 'base64')
+  console.log('📦 Converted Base64 to Buffer:', buffer.length, 'bytes')
+
+  // Generate file path
+  const timestamp = Date.now()
+  const filePath = `public/${userId}/${timestamp}-${generationId}.png`
+
+  // Upload to Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('generated-results')
+    .upload(filePath, buffer, {
+      contentType: 'image/png',
+      cacheControl: '31536000', // 1 year
+      upsert: false,
+    })
+
+  if (error) {
+    console.error('❌ Storage upload error:', error)
+    throw new Error(`Failed to upload to storage: ${error.message}`)
+  }
+
+  // Get public URL
+  const { data: publicUrlData } = supabase.storage
+    .from('generated-results')
+    .getPublicUrl(data.path)
+
+  console.log('✅ Uploaded to storage:', publicUrlData.publicUrl)
+  return publicUrlData.publicUrl
+}
+
+/**
  * Generate image using OpenRouter API with FLUX.2-flex model
- * OpenRouter uses the /chat/completions endpoint with modalities for image generation
+ * Returns the public Supabase Storage URL (not Base64)
  */
 async function generateWithOpenRouter(
-  finalPrompt: string
+  finalPrompt: string,
+  userId: string,
+  generationId: string
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -36,7 +148,7 @@ async function generateWithOpenRouter(
   }
 
   console.log('🚀 Calling OpenRouter API with FLUX.2-flex...')
-  console.log('📝 Prompt:', finalPrompt)
+  console.log('📝 Prompt:', finalPrompt.substring(0, 100))
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -58,89 +170,54 @@ async function generateWithOpenRouter(
     }),
   })
 
-  console.log('📡 Raw Response Status:', response.status)
+  console.log('📡 Response Status:', response.status)
 
   if (!response.ok) {
     const errorBody = await response.text()
     console.error('❌ OpenRouter API error:', response.status, errorBody.substring(0, 500))
-    throw new Error(`OpenRouter API failed with status ${response.status}: ${response.statusText}`)
+    throw new Error(`OpenRouter API failed: ${response.status} ${response.statusText}`)
   }
 
   const data = await response.json()
   
-  // Safe logging to prevent terminal crashes
-  console.log('✅ Safe Parsed Response:', createSafeLog(data))
+  // Safe logging (NEVER log full Base64)
+  console.log('✅ Response received. Structure:', createSafeLog(data))
 
-  // Check if response contains an error (OpenRouter can return errors with 200 status)
+  // Check for errors in response
   if (data.error) {
-    console.error('❌ OpenRouter returned error:', data.error)
+    console.error('❌ OpenRouter error:', data.error)
     throw new Error(data.error.message || JSON.stringify(data.error))
   }
 
-  // Strategy 1: Check choices[0].message.images (FLUX.2 format)
-  if (data.choices?.[0]?.message?.images && Array.isArray(data.choices[0].message.images)) {
-    const firstImage = data.choices[0].message.images[0]
-    const imageUrl = typeof firstImage === 'string' ? firstImage : firstImage?.url
+  // Try to extract Base64 data
+  const base64Data = extractBase64FromResponse(data)
+
+  if (base64Data) {
+    console.log('📊 Received Base64 length:', base64Data.length, 'chars')
     
-    if (imageUrl) {
-      console.log('✅ Image found in choices[0].message.images')
-      return imageUrl
-    }
+    // Upload Base64 to Supabase Storage and return public URL
+    const publicUrl = await uploadBase64ToStorage(base64Data, userId, generationId)
+    return publicUrl
   }
 
-  // Strategy 2: Check data.output (some models use this)
-  if (data.output && typeof data.output === 'string') {
-    console.log('✅ Image found in data.output')
-    return data.output
-  }
-
-  // Strategy 3: Check data.data[0].url (DALL-E format)
-  if (data.data && Array.isArray(data.data) && data.data[0]?.url) {
-    console.log('✅ Image found in data.data[0].url')
+  // If no Base64, check for direct URLs (fallback)
+  if (data.data?.[0]?.url) {
+    console.log('✅ Direct URL found in data.data[0].url')
     return data.data[0].url
   }
 
-  // Strategy 4: Check choices[0].message.content for URLs or Base64
-  if (data.choices?.[0]?.message?.content) {
-    const content = data.choices[0].message.content
-    
-    // Check if content is a Base64 data URL
-    if (content.startsWith('data:image')) {
-      console.log('✅ Base64 image found in message.content')
-      return content
-    }
-    
-    // Try to extract Markdown image: ![alt](url)
-    const markdownMatch = content.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
-    if (markdownMatch?.[1]) {
-      console.log('✅ Image extracted from markdown')
-      return markdownMatch[1]
-    }
-    
-    // Try to extract plain URL
-    const urlMatch = content.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i)
-    if (urlMatch?.[1]) {
-      console.log('✅ Image extracted from plain URL')
-      return urlMatch[1]
+  if (data.choices?.[0]?.message?.images?.[0]) {
+    const img = data.choices[0].message.images[0]
+    const url = typeof img === 'string' ? img : img?.url
+    if (url?.startsWith('http')) {
+      console.log('✅ Direct URL found in message.images')
+      return url
     }
   }
 
-  // Strategy 5: Check top-level data.url
-  if (data.url && typeof data.url === 'string') {
-    console.log('✅ Image found in data.url')
-    return data.url
-  }
-
-  // No image found - log structure for debugging
-  console.error('❌ No image found. Response structure:', createSafeLog({
-    hasChoices: !!data.choices,
-    hasOutput: !!data.output,
-    hasData: !!data.data,
-    hasUrl: !!data.url,
-    topLevelKeys: Object.keys(data)
-  }))
-  
-  throw new Error('No image found in OpenRouter response. Check logs for response structure.')
+  // No image found
+  console.error('❌ No image found. Response keys:', Object.keys(data))
+  throw new Error('No image data found in OpenRouter response')
 }
 
 export async function POST(request: NextRequest) {
@@ -258,36 +335,21 @@ export async function POST(request: NextRequest) {
     console.log('Credits decremented, remaining:', remainingCredits)
 
     try {
-      // 8. Call OpenRouter API
+      // 8. Call OpenRouter API and upload to storage
       console.log('Starting AI generation via OpenRouter...')
-      const generatedImageUrl = await generateWithOpenRouter(finalPrompt)
-      console.log('AI generation completed:', generatedImageUrl)
+      const publicImageUrl = await generateWithOpenRouter(finalPrompt, user.id, generation.id)
+      console.log('✅ Generation and upload completed')
 
-      // 9. Upload result to Supabase Storage
-      console.log('Uploading to storage...')
-      const uploadResult = await uploadGeneratedImage(
-        generatedImageUrl,
-        user.id,
-        generation.id
-      )
-
-      if ('error' in uploadResult) {
-        throw new Error(uploadResult.error)
-      }
-
-      console.log('Upload completed:', uploadResult.url)
-
-      // 10. Update generation record (status: succeeded)
+      // 9. Update generation record (status: succeeded)
       const { error: updateError } = await supabase
         .from('generations')
         .update({
           status: 'succeeded',
-          output_image: uploadResult.url,
+          output_image: publicImageUrl,
           metadata: {
             ...generation.metadata,
             completedAt: new Date().toISOString(),
-            openrouterUrl: generatedImageUrl,
-            storageUrl: uploadResult.url,
+            storageUrl: publicImageUrl,
           },
         })
         .eq('id', generation.id)
@@ -296,11 +358,11 @@ export async function POST(request: NextRequest) {
         console.error('Failed to update generation status:', updateError)
       }
 
-      // 11. Return success result
+      // 10. Return success result
       return NextResponse.json({
         success: true,
         generationId: generation.id,
-        outputUrl: uploadResult.url,
+        outputUrl: publicImageUrl,
         remainingCredits,
         message: 'Generation completed successfully!',
       })
