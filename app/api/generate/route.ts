@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
 
 /**
@@ -105,13 +105,15 @@ function extractBase64FromResponse(data: any): string | null {
 /**
  * Upload Base64 image directly to Supabase Storage
  * Returns public URL
+ * Uses admin client to bypass RLS policies
  */
 async function uploadBase64ToStorage(
   base64Data: string,
   userId: string,
   generationId: string
 ): Promise<string> {
-  const supabase = await createClient()
+  // Use admin client to bypass RLS policies
+  const supabase = createAdminClient()
   
   // Convert Base64 to Buffer
   const buffer = Buffer.from(base64Data, 'base64')
@@ -119,9 +121,9 @@ async function uploadBase64ToStorage(
 
   // Generate file path
   const timestamp = Date.now()
-  const filePath = `public/${userId}/${timestamp}-${generationId}.png`
+  const filePath = `${userId}/${timestamp}-${generationId}.png`
 
-  // Upload to Supabase Storage
+  // Upload to Supabase Storage (public bucket)
   const { data, error } = await supabase.storage
     .from('generated-results')
     .upload(filePath, buffer, {
