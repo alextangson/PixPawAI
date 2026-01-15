@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Upload, ChevronDown, ChevronUp, CheckCircle, XCircle, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Upload, ChevronDown, ChevronUp, CheckCircle, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { uploadUserImage } from '@/lib/supabase/storage';
+import { createClient } from '@/lib/supabase/client';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -28,16 +30,42 @@ interface UploadModalProps {
   selectedStyle?: string | null;
 }
 
-export function UploadModal({ isOpen, onClose, dict, selectedStyle }: UploadModalProps) {
+// 可用的风格列表
+const AVAILABLE_STYLES = [
+  { id: 'watercolor', name: 'Watercolor', emoji: '🎨' },
+  { id: 'oil-painting', name: 'Oil Painting', emoji: '🖼️' },
+  { id: 'anime', name: 'Anime', emoji: '🌸' },
+  { id: 'cartoon', name: 'Cartoon', emoji: '🎪' },
+  { id: '3d-render', name: '3D Render', emoji: '🎬' },
+  { id: 'surreal', name: 'Surreal', emoji: '🌀' },
+  { id: 'pop-art', name: 'Pop Art', emoji: '🎨' },
+  { id: 'sketch', name: 'Sketch', emoji: '✏️' },
+];
+
+export function UploadModal({ isOpen, onClose, dict, selectedStyle: initialStyle }: UploadModalProps) {
   const [mainPhoto, setMainPhoto] = useState<File | null>(null);
   const [extraPhotos, setExtraPhotos] = useState<File[]>([]);
   const [showOptional, setShowOptional] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
+  const [remainingCredits, setRemainingCredits] = useState<number | null>(null);
+  const [selectedStyle, setSelectedStyle] = useState<string | null>(initialStyle || null);
+
+  // 当 initialStyle 改变时更新 selectedStyle
+  useEffect(() => {
+    if (initialStyle) {
+      setSelectedStyle(initialStyle);
+    }
+  }, [initialStyle]);
 
   if (!isOpen) return null;
 
   const handleMainUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setMainPhoto(e.target.files[0]);
+      setError('');
     }
   };
 
@@ -48,9 +76,96 @@ export function UploadModal({ isOpen, onClose, dict, selectedStyle }: UploadModa
     }
   };
 
-  const handleGenerate = () => {
-    // TODO: Implement API call with mainPhoto and optional extraPhotos
-    console.log('Generating with:', { mainPhoto, extraPhotos });
+  const handleGenerate = async () => {
+    if (!mainPhoto) {
+      setError('Please upload a photo');
+      return;
+    }
+
+    if (!selectedStyle) {
+      setError('Please select a style');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError('');
+    setProgress('Uploading your photo...');
+
+    try {
+      // 1. 获取用户信息
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError('Please log in to generate images');
+        setIsGenerating(false);
+        return;
+      }
+
+      // 2. 上传图片到 Supabase Storage
+      const uploadResult = await uploadUserImage(mainPhoto, user.id);
+
+      if ('error' in uploadResult) {
+        throw new Error(uploadResult.error);
+      }
+
+      setProgress('Creating your AI portrait...');
+
+      // 3. 调用生成 API
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageUrl: uploadResult.url,
+          style: selectedStyle,
+          petType: 'pet', // 可以根据需要自定义
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 402) {
+          throw new Error('Insufficient credits. Please purchase more credits.');
+        }
+        throw new Error(result.error || 'Generation failed');
+      }
+
+      // 4. 显示结果
+      setProgress('Done! 🎉');
+      setGeneratedImageUrl(result.outputUrl);
+      setRemainingCredits(result.remainingCredits);
+
+      // 延迟后关闭或显示结果
+      setTimeout(() => {
+        // 可以导航到结果页面或刷新页面
+        window.location.reload();
+      }, 2000);
+
+    } catch (err: any) {
+      console.error('Generation error:', err);
+      setError(err.message || 'Failed to generate image');
+      setProgress('');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isGenerating) {
+      setMainPhoto(null);
+      setExtraPhotos([]);
+      setError('');
+      setProgress('');
+      setGeneratedImageUrl('');
+      // 只有在没有预选风格时才重置（如果有预选风格，保持预选）
+      if (!initialStyle) {
+        setSelectedStyle(null);
+      }
+      onClose();
+    }
   };
 
   return (
@@ -75,19 +190,96 @@ export function UploadModal({ isOpen, onClose, dict, selectedStyle }: UploadModa
             </p>
           </div>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            onClick={handleClose}
+            disabled={isGenerating}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-6 h-6 text-gray-600" />
           </button>
         </div>
 
+        {/* Progress / Error / Success Display */}
+        {(isGenerating || error || generatedImageUrl) && (
+          <div className="px-6 pt-6">
+            {/* Progress */}
+            {isGenerating && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6">
+                <div className="flex items-center gap-4">
+                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                  <div>
+                    <p className="font-semibold text-blue-900">{progress}</p>
+                    <p className="text-sm text-blue-700">This may take 10-30 seconds...</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && !isGenerating && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6">
+                <div className="flex items-start gap-4">
+                  <XCircle className="w-6 h-6 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-red-900">Generation Failed</p>
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Success */}
+            {generatedImageUrl && !isGenerating && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-6">
+                <div className="flex items-start gap-4">
+                  <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-green-900">Success! 🎉</p>
+                    <p className="text-sm text-green-700 mb-4">
+                      Your portrait is ready! Remaining credits: {remainingCredits}
+                    </p>
+                    <img 
+                      src={generatedImageUrl} 
+                      alt="Generated portrait" 
+                      className="rounded-xl w-full max-w-md"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Style Selection - Only show if no style pre-selected */}
+          {!initialStyle && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                1. Choose Your Style
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {AVAILABLE_STYLES.map((style) => (
+                  <button
+                    key={style.id}
+                    onClick={() => setSelectedStyle(style.id)}
+                    className={`p-3 rounded-xl border-2 transition-all text-center ${
+                      selectedStyle === style.id
+                        ? 'border-coral bg-coral/10 shadow-md'
+                        : 'border-gray-200 hover:border-coral/50 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{style.emoji}</div>
+                    <div className="text-xs font-medium text-gray-900">{style.name}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Main Upload Area */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
-              {dict.upload.primaryLabel}
+              {initialStyle ? '1. ' : '2. '}{dict.upload.primaryLabel}
             </label>
             <div
               className={`relative border-2 border-dashed ${
@@ -216,17 +408,25 @@ export function UploadModal({ isOpen, onClose, dict, selectedStyle }: UploadModa
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3 rounded-b-3xl">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={isGenerating}
             className="flex-1 border-gray-300"
           >
             {dict.upload.buttons.cancel}
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={!mainPhoto}
+            disabled={!mainPhoto || isGenerating || !selectedStyle}
             className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {dict.upload.buttons.generate}
+            {isGenerating ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </span>
+            ) : (
+              dict.upload.buttons.generate
+            )}
           </Button>
         </div>
       </div>

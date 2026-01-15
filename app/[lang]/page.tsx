@@ -8,7 +8,7 @@ import { MerchShowcase } from '@/components/merch-showcase'
 import { WallOfLove } from '@/components/wall-of-love'
 import { FAQSection } from '@/components/faq-section'
 import { FinalCta } from '@/components/final-cta'
-import { UploadModal } from '@/components/upload-modal'
+import { UploadModalWizard } from '@/components/upload-modal-wizard'
 import { type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
 
@@ -28,6 +28,24 @@ export default function Home({
       getDictionary(resolvedLang).then(setDict)
     })
   }, [params])
+
+  // 监听 hash 变化，如果是 #upload 则打开 Modal
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#upload') {
+        setIsUploadModalOpen(true)
+        // 清除 hash，避免刷新页面时自动打开
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+    }
+
+    // 初始检查
+    handleHashChange()
+
+    // 监听 hash 变化
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
 
   const handleOpenUpload = (styleName?: string) => {
     setSelectedStyle(styleName || null)
@@ -68,14 +86,13 @@ export default function Home({
       {/* Final Call to Action */}
       <FinalCta dict={dict} lang={lang} onOpenUpload={() => handleOpenUpload()} />
       
-      {/* Upload Modal */}
-      <UploadModal
+      {/* Upload Modal Wizard */}
+      <UploadModalWizard
         isOpen={isUploadModalOpen}
         onClose={() => {
           setIsUploadModalOpen(false)
           setSelectedStyle(null)
         }}
-        dict={dict}
         selectedStyle={selectedStyle}
       />
     </main>

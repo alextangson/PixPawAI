@@ -1,6 +1,7 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -18,32 +19,16 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
+          getAll() {
+            return cookieStore.getAll()
           },
-          set(name: string, value: string, options: CookieOptions) {
+          setAll(cookiesToSet) {
             try {
-              // Set cookie on the response object
-              response.cookies.set({
-                name,
-                value,
-                ...options,
-              })
+              cookiesToSet.forEach(({ name, value, options }) =>
+                response.cookies.set(name, value, options)
+              )
             } catch (error) {
-              console.error('Error setting cookie:', error)
-            }
-          },
-          remove(name: string, options: CookieOptions) {
-            try {
-              // Remove cookie from the response object
-              response.cookies.set({
-                name,
-                value: '',
-                ...options,
-                maxAge: 0,
-              })
-            } catch (error) {
-              console.error('Error removing cookie:', error)
+              console.error('Error setting cookies:', error)
             }
           },
         },
@@ -60,6 +45,8 @@ export async function GET(request: Request) {
     
     if (data.session) {
       console.log('Session created successfully for user:', data.user?.email)
+      // Revalidate the layout to update the navbar with the new user state
+      revalidatePath('/', 'layout')
       // Return the response with cookies set
       return response
     }
