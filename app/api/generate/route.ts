@@ -33,7 +33,20 @@ function extractBase64FromResponse(data: any): string | null {
   // Strategy 2: choices[0].message.images (FLUX.2 format with Base64)
   if (data.choices?.[0]?.message?.images && Array.isArray(data.choices[0].message.images)) {
     const firstImage = data.choices[0].message.images[0]
-    const imageData = typeof firstImage === 'string' ? firstImage : firstImage?.url || firstImage?.b64_json
+    
+    // Handle nested structure: { image_url: { url: "data:image..." } }
+    let imageData: string | undefined
+    
+    if (typeof firstImage === 'string') {
+      imageData = firstImage
+    } else if (firstImage?.image_url?.url) {
+      // OpenRouter FLUX.2 nested format
+      imageData = firstImage.image_url.url
+    } else if (firstImage?.url) {
+      imageData = firstImage.url
+    } else if (firstImage?.b64_json) {
+      imageData = firstImage.b64_json
+    }
     
     if (imageData) {
       // Check if it's Base64 (starts with data:image or is raw base64)
