@@ -10,6 +10,18 @@ import { uploadGeneratedImage } from '@/lib/supabase/storage'
 import { getStyleById } from '@/lib/styles'
 
 /**
+ * Safe logging helper to prevent terminal crashes from large Base64 strings
+ */
+function createSafeLog(data: any): string {
+  return JSON.stringify(data, (key, value) => {
+    if (typeof value === 'string' && value.length > 100) {
+      return value.substring(0, 100) + '...[TRUNCATED ' + value.length + ' chars]'
+    }
+    return value
+  }, 2)
+}
+
+/**
  * Generate image using OpenRouter API with FLUX.2-flex model
  * OpenRouter uses the /chat/completions endpoint with modalities for image generation
  */
@@ -23,8 +35,8 @@ async function generateWithOpenRouter(
     throw new Error('OPENROUTER_API_KEY is not configured')
   }
 
-  console.log('Calling OpenRouter API with FLUX.2-flex...')
-  console.log('Prompt:', finalPrompt)
+  console.log('🚀 Calling OpenRouter API with FLUX.2-flex...')
+  console.log('📝 Prompt:', finalPrompt)
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -46,59 +58,89 @@ async function generateWithOpenRouter(
     }),
   })
 
+  console.log('📡 Raw Response Status:', response.status)
+
   if (!response.ok) {
     const errorBody = await response.text()
-    console.error('OpenRouter API error:', response.status, errorBody)
+    console.error('❌ OpenRouter API error:', response.status, errorBody.substring(0, 500))
     throw new Error(`OpenRouter API failed with status ${response.status}: ${response.statusText}`)
   }
 
   const data = await response.json()
-  console.log('OpenRouter response:', JSON.stringify(data, null, 2))
+  
+  // Safe logging to prevent terminal crashes
+  console.log('✅ Safe Parsed Response:', createSafeLog(data))
 
-  // FLUX.2-flex returns images in choices[0].message.images array
-  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-    console.error('Invalid response structure:', data)
-    throw new Error('Invalid response structure from OpenRouter')
+  // Check if response contains an error (OpenRouter can return errors with 200 status)
+  if (data.error) {
+    console.error('❌ OpenRouter returned error:', data.error)
+    throw new Error(data.error.message || JSON.stringify(data.error))
   }
 
-  const message = data.choices[0].message
-  
-  // Primary: Check for images array in message
-  if (message.images && Array.isArray(message.images) && message.images.length > 0) {
-    const firstImage = message.images[0]
+  // Strategy 1: Check choices[0].message.images (FLUX.2 format)
+  if (data.choices?.[0]?.message?.images && Array.isArray(data.choices[0].message.images)) {
+    const firstImage = data.choices[0].message.images[0]
+    const imageUrl = typeof firstImage === 'string' ? firstImage : firstImage?.url
     
-    // Image might be an object with .url property or a direct string URL
-    const imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url
-    
-    if (!imageUrl) {
-      throw new Error('Image URL not found in message.images')
+    if (imageUrl) {
+      console.log('✅ Image found in choices[0].message.images')
+      return imageUrl
     }
-    
-    console.log('Image extracted from message.images:', imageUrl)
-    return imageUrl
   }
-  
-  // Fallback: Check message.content for Markdown image or URL
-  if (message.content) {
-    const content = message.content
+
+  // Strategy 2: Check data.output (some models use this)
+  if (data.output && typeof data.output === 'string') {
+    console.log('✅ Image found in data.output')
+    return data.output
+  }
+
+  // Strategy 3: Check data.data[0].url (DALL-E format)
+  if (data.data && Array.isArray(data.data) && data.data[0]?.url) {
+    console.log('✅ Image found in data.data[0].url')
+    return data.data[0].url
+  }
+
+  // Strategy 4: Check choices[0].message.content for URLs or Base64
+  if (data.choices?.[0]?.message?.content) {
+    const content = data.choices[0].message.content
+    
+    // Check if content is a Base64 data URL
+    if (content.startsWith('data:image')) {
+      console.log('✅ Base64 image found in message.content')
+      return content
+    }
     
     // Try to extract Markdown image: ![alt](url)
     const markdownMatch = content.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
-    if (markdownMatch && markdownMatch[1]) {
-      console.log('Image extracted from markdown:', markdownMatch[1])
+    if (markdownMatch?.[1]) {
+      console.log('✅ Image extracted from markdown')
       return markdownMatch[1]
     }
     
     // Try to extract plain URL
     const urlMatch = content.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i)
-    if (urlMatch && urlMatch[1]) {
-      console.log('Image extracted from plain URL:', urlMatch[1])
+    if (urlMatch?.[1]) {
+      console.log('✅ Image extracted from plain URL')
       return urlMatch[1]
     }
   }
+
+  // Strategy 5: Check top-level data.url
+  if (data.url && typeof data.url === 'string') {
+    console.log('✅ Image found in data.url')
+    return data.url
+  }
+
+  // No image found - log structure for debugging
+  console.error('❌ No image found. Response structure:', createSafeLog({
+    hasChoices: !!data.choices,
+    hasOutput: !!data.output,
+    hasData: !!data.data,
+    hasUrl: !!data.url,
+    topLevelKeys: Object.keys(data)
+  }))
   
-  // No image found
-  throw new Error('No image found in OpenRouter response. Check message.images or message.content.')
+  throw new Error('No image found in OpenRouter response. Check logs for response structure.')
 }
 
 export async function POST(request: NextRequest) {
