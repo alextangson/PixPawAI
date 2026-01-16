@@ -6,6 +6,7 @@ import { getDictionary } from '@/lib/dictionary';
 import { Search, Sparkles, X, Eye, Heart } from 'lucide-react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
@@ -164,25 +165,7 @@ export default function GalleryPage() {
     getDictionary(lang).then(setDict);
   }, [lang]);
 
-  // Convert mock data to database format
-  const convertMockToDbFormat = (mockItems: any[]): GalleryImage[] => {
-    return mockItems.map(item => ({
-      id: item.id,
-      output_url: item.src,
-      title: item.title,
-      alt_text: item.alt,
-      style: item.styleId,
-      style_category: item.styleCategory,
-      prompt: item.alt || item.title, // Use alt as prompt
-      created_at: new Date().toISOString(),
-      views: Math.floor(Math.random() * 1000) + 100,
-      likes: Math.floor(Math.random() * 500) + 50,
-      // Preserve original fields for compatibility
-      ...item
-    }));
-  };
-
-  // Fetch public generations from database
+  // Fetch all successful generations from database (real user creations)
   useEffect(() => {
     const fetchGalleryImages = async () => {
       setIsLoading(true);
@@ -191,26 +174,20 @@ export default function GalleryPage() {
         const { data, error } = await supabase
           .from('generations')
           .select('id, output_url, title, alt_text, style, style_category, prompt, created_at, views, likes')
-          .eq('is_public', true)
           .eq('status', 'succeeded')
+          .not('output_url', 'is', null)
           .order('created_at', { ascending: false })
           .limit(100);
 
         if (error) {
           console.error('Error fetching gallery images:', error);
-          // Fallback to mock data if database query fails
-          setGalleryImages(convertMockToDbFormat(GALLERY_ITEMS));
-        } else if (!data || data.length === 0) {
-          // Fallback to mock data if no public images exist yet
-          console.log('No public images in database, using mock data');
-          setGalleryImages(convertMockToDbFormat(GALLERY_ITEMS));
+          setGalleryImages([]);
         } else {
-          setGalleryImages(data);
+          setGalleryImages(data || []);
         }
       } catch (err) {
         console.error('Failed to fetch gallery:', err);
-        // Fallback to mock data on any error
-        setGalleryImages(convertMockToDbFormat(GALLERY_ITEMS));
+        setGalleryImages([]);
       } finally {
         setIsLoading(false);
       }
@@ -241,12 +218,7 @@ export default function GalleryPage() {
   }
 
   // Helper function to detect pet category from prompt/alt_text
-  const detectPetCategory = (item: GalleryImage | any): string => {
-    // If item has petCategory (from mock data), use it directly
-    if (item.petCategory) {
-      return item.petCategory;
-    }
-    
+  const detectPetCategory = (item: GalleryImage): string => {
     const text = `${item.prompt || ''} ${item.alt_text || ''} ${item.title || ''}`.toLowerCase();
     
     // Dogs
@@ -367,7 +339,40 @@ export default function GalleryPage() {
         <div className="container mx-auto px-4 max-w-7xl">
           {filteredItems.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-gray-500 text-lg">No images found. Try a different search or filter.</p>
+              {galleryImages.length === 0 ? (
+                // No images in database at all
+                <div className="max-w-md mx-auto">
+                  <Sparkles className="w-16 h-16 text-coral mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Be the First to Create! 🎨
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    No pet portraits yet. Create your first AI masterpiece and inspire others!
+                  </p>
+                  <Button
+                    onClick={() => router.push(`/${lang}#upload`)}
+                    className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold px-8 py-3"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Create Now
+                  </Button>
+                </div>
+              ) : (
+                // Images exist but filtered out
+                <div>
+                  <p className="text-gray-500 text-lg mb-4">No images found with current filters.</p>
+                  <Button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveFilter('All');
+                    }}
+                    variant="outline"
+                    className="border-2 border-coral text-coral hover:bg-coral hover:text-white"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
