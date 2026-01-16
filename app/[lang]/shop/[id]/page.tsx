@@ -4,7 +4,8 @@ import { ArrowLeft, ShoppingCart, Heart, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
-export default async function ShopPage({ params }: { params: { lang: string; id: string } }) {
+export default async function ShopPage({ params }: { params: Promise<{ lang: string; id: string }> }) {
+  const { lang, id } = await params
   const supabase = await createClient()
   
   const {
@@ -13,19 +14,19 @@ export default async function ShopPage({ params }: { params: { lang: string; id:
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    redirect(`/${params.lang}`)
+    redirect(`/${lang}`)
   }
 
   // Fetch the generation
   const { data: generation } = await supabase
     .from('generations')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .single()
 
   if (!generation) {
-    redirect(`/${params.lang}/dashboard`)
+    redirect(`/${lang}/dashboard`)
   }
 
   return (
@@ -33,7 +34,7 @@ export default async function ShopPage({ params }: { params: { lang: string; id:
       {/* Header */}
       <div className="border-b border-gray-200 bg-white">
         <div className="container mx-auto px-4 py-4">
-          <Link href={`/${params.lang}/dashboard`} className="inline-flex items-center text-gray-600 hover:text-gray-900">
+          <Link href={`/${lang}/dashboard`} className="inline-flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Gallery
           </Link>

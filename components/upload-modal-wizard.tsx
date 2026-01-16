@@ -17,7 +17,7 @@ interface UploadModalWizardProps {
   selectedStyle?: string | null
 }
 
-type Step = 'upload' | 'configure' | 'generating' | 'success'
+type Step = 'upload' | 'configure' | 'generating'
 
 export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle }: UploadModalWizardProps) {
   const router = useRouter()
@@ -118,12 +118,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
   }, [step, funMessages.length])
 
-  // Jump to 100% when generation completes
-  useEffect(() => {
-    if (step === 'success' && progress < 100) {
-      setProgress(100)
-    }
-  }, [step, progress])
+  // Progress is managed by handleGenerate function during generation
 
   if (!isOpen) return null
 
@@ -239,7 +234,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setGeneratedImageUrl(result.outputUrl)
       setRemainingCredits(result.remainingCredits)
       setGenerationId(result.generationId || '')
-      setStep('success')
+      // Success: ResultModal will be shown based on generatedImageUrl and generationId
 
     } catch (err: any) {
       console.error('Generation error:', err)
@@ -259,11 +254,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // ============================================
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className={`bg-white shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
-        step === 'success' ? 'max-w-6xl h-[85vh] rounded-none' : 'max-w-3xl rounded-3xl p-4'
-      }`}>
+      <div className="bg-white shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col max-w-3xl rounded-3xl p-4">
         {/* Header */}
-        {step !== 'success' && (
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {step === 'configure' && (
@@ -279,13 +271,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 {step === 'upload' && 'Upload Your Photo'}
                 {step === 'configure' && 'Configure Your Portrait'}
                 {step === 'generating' && 'Creating Your Portrait...'}
-                {step === 'success' && 'Your Portrait is Ready!'}
               </h2>
               <p className="text-sm text-gray-600 font-sans">
                 {step === 'upload' && 'Start by uploading a photo of your pet'}
                 {step === 'configure' && 'Customize the style and prompt'}
                 {step === 'generating' && 'This may take 10-30 seconds...'}
-                {step === 'success' && `${remainingCredits} credits remaining`}
               </p>
             </div>
           </div>
@@ -297,10 +287,9 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             <X className="w-6 h-6 text-gray-600" />
           </button>
         </div>
-        )}
 
         {/* Content */}
-        <div className={`flex-1 overflow-hidden ${step === 'success' ? '' : 'overflow-y-auto p-6'}`}>
+        <div className="flex-1 overflow-hidden overflow-y-auto p-6">
           {/* Error Display */}
           {error && (
             <div className={`mb-6 rounded-xl p-6 ${
@@ -738,8 +727,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
           )}
 
-          {/* STEP D: SUCCESS - Gallery Reveal (NEW COMPONENT) */}
-          {step === 'success' && generatedImageUrl && generationId && (
+          {/* SUCCESS: Show Result Modal when generation is complete */}
+          {generatedImageUrl && generationId && (
             <ResultModal
               isOpen={true}
               onClose={onClose}
