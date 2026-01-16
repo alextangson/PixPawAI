@@ -118,6 +118,21 @@ async function uploadBase64ToStorage(
   // Convert Base64 to Buffer
   const buffer = Buffer.from(base64Data, 'base64')
   console.log('📦 Converted Base64 to Buffer:', buffer.length, 'bytes')
+  
+  // Get actual image dimensions from the buffer
+  try {
+    // PNG signature check and dimension extraction
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+      const actualWidth = buffer.readUInt32BE(16)
+      const actualHeight = buffer.readUInt32BE(20)
+      const actualRatio = (actualWidth / actualHeight).toFixed(2)
+      console.log('🖼️  ACTUAL Image Dimensions:', `${actualWidth}x${actualHeight}`)
+      console.log('📐 ACTUAL Aspect Ratio:', actualRatio, `(${actualWidth}:${actualHeight})`)
+      console.log(`${actualWidth === 1024 && actualHeight === 1024 ? '⚠️  FLUX generated 1:1 (square) - model may not support custom dimensions' : '✅ Custom dimensions applied!'}`)
+    }
+  } catch (err) {
+    console.log('⚠️  Could not read image dimensions from buffer')
+  }
 
   // Generate file path
   const timestamp = Date.now()
@@ -147,13 +162,55 @@ async function uploadBase64ToStorage(
 }
 
 /**
+ * Convert aspect ratio string to pixel dimensions
+ * All dimensions are multiples of 32 for FLUX compatibility
+ */
+function aspectRatioToDimensions(aspectRatio: string): { width: number; height: number } {
+  const ratioMap: Record<string, { width: number; height: number }> = {
+    '1:1': { width: 1024, height: 1024 },    // Square
+    '3:4': { width: 768, height: 1024 },     // Portrait (Best for Print)
+    '9:16': { width: 576, height: 1024 },    // Vertical (Best for Wallpaper)
+    '4:3': { width: 1024, height: 768 },     // Landscape
+    '16:9': { width: 1024, height: 576 },    // Cinematic
+  }
+
+  return ratioMap[aspectRatio] || ratioMap['1:1'] // Default to square
+}
+
+/**
+ * Normalize image dimensions to be compatible with FLUX model
+ * FLUX requires dimensions to be multiples of 32
+ */
+function normalizeDimensions(width?: number, height?: number): { width: number; height: number } {
+  // Default to 1024x1024 if no dimensions provided
+  if (!width || !height) {
+    return { width: 1024, height: 1024 }
+  }
+
+  // Round to nearest multiple of 32
+  const roundTo32 = (n: number) => Math.round(n / 32) * 32
+
+  // Ensure minimum 256 and maximum 2048
+  const clamp = (n: number) => Math.max(256, Math.min(2048, n))
+
+  return {
+    width: clamp(roundTo32(width)),
+    height: clamp(roundTo32(height))
+  }
+}
+
+/**
  * Generate image using OpenRouter API with FLUX.2-flex model
  * Returns the public Supabase Storage URL (not Base64)
  */
 async function generateWithOpenRouter(
   finalPrompt: string,
   userId: string,
-  generationId: string
+  generationId: string,
+  imageUrl?: string,
+  strength: number = 0.8,
+  width?: number,
+  height?: number
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -162,8 +219,88 @@ async function generateWithOpenRouter(
     throw new Error('OPENROUTER_API_KEY is not configured')
   }
 
+  // Use provided dimensions (already converted from aspect ratio)
+  // Only normalize if dimensions are not provided
+  const dimensions = width && height 
+    ? { width, height }
+    : normalizeDimensions(width, height)
+  
   console.log('🚀 Calling OpenRouter API with FLUX.2-flex...')
   console.log('📝 Prompt:', finalPrompt.substring(0, 100))
+  console.log('📐 Dimensions REQUESTED:', `${dimensions.width}x${dimensions.height}`)
+  console.log('🎯 Strength (preservation):', strength, '- Higher = more like original')
+  console.log('🖼️  Source Image URL:', imageUrl || 'None')
+  console.log('🔍 Raw width/height params:', { width, height })
+  
+  // Log the full request body (without logging full URLs)
+  console.log('📦 Request Body:', JSON.stringify({
+    model: 'black-forest-labs/flux.2-flex',
+    width: dimensions.width,
+    height: dimensions.height,
+    prompt_strength: strength,
+    hasImage: !!imageUrl,
+    messageContent: imageUrl ? 'image + text' : 'text only'
+  }, null, 2))
+
+  // Build message content with image if provided (image-to-image)
+  const messageContent: any = []
+  
+  if (imageUrl) {
+    // Add source image for image-to-image transformation
+    messageContent.push({
+      type: 'image_url',
+      image_url: {
+        url: imageUrl
+      }
+    })
+  }
+  
+  // Add text prompt with aspect ratio hint for better results
+  const aspectRatioHint = width && height ? ` [Aspect ratio: ${width}:${height}, resolution ${width}x${height}]` : '';
+  messageContent.push({
+    type: 'text',
+    text: `Transform this image with the following style and description: ${finalPrompt}. Preserve the subject's identity and key features while applying the artistic style.${aspectRatioHint}`
+  })
+
+  // Build request body following OpenRouter's official format
+  const requestBody: any = {
+    model: 'black-forest-labs/flux.2-flex',
+    messages: [
+      {
+        role: 'user',
+        content: messageContent
+      }
+    ],
+    modalities: ['image', 'text']
+  }
+
+  // Add prompt_strength if image is provided (controls how much to preserve original)
+  if (imageUrl) {
+    requestBody.prompt_strength = strength
+  }
+
+  // Try to pass dimensions via extra_body (OpenRouter format)
+  // Note: FLUX may not support custom dimensions, but we'll try multiple approaches
+  if (width && height) {
+    requestBody.extra_body = {
+      width: dimensions.width,
+      height: dimensions.height,
+      aspect_ratio: `${width}:${height}`
+    }
+  }
+
+  console.log('📦 Full Request Body (sanitized):', JSON.stringify({
+    model: requestBody.model,
+    modalities: requestBody.modalities,
+    prompt_strength: requestBody.prompt_strength,
+    extra_body: requestBody.extra_body,
+    messages: [{
+      role: 'user',
+      content: messageContent.map((c: any) => 
+        c.type === 'image_url' ? { type: 'image_url', url: '[IMAGE]' } : { type: 'text', text: c.text?.substring(0, 100) + '...' }
+      )
+    }]
+  }, null, 2))
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -173,16 +310,7 @@ async function generateWithOpenRouter(
       'X-Title': 'PixPawAI',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: 'black-forest-labs/flux.2-flex',
-      messages: [
-        {
-          role: 'user',
-          content: `Generate an image of: ${finalPrompt}`
-        }
-      ],
-      modalities: ['image', 'text'],
-    }),
+    body: JSON.stringify(requestBody),
   })
 
   console.log('📡 Response Status:', response.status)
@@ -250,7 +378,14 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request data
     const body = await request.json()
-    const { imageUrl, style, prompt: userPrompt, petType = 'pet' } = body
+    const { 
+      imageUrl, 
+      style, 
+      prompt: userPrompt, 
+      petType = 'pet', 
+      aspectRatio = '1:1', // Default to square
+      strength = 0.8 // Default strength to preserve source image (0.1 to 1.0)
+    } = body
 
     if (!style || !userPrompt) {
       return NextResponse.json(
@@ -259,10 +394,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+  // Validate strength parameter (default 0.95 for better similarity to original)
+  const validStrength = Math.max(0.1, Math.min(1.0, Number(strength) || 0.95))
+
+    // Convert aspect ratio to dimensions
+    const dimensions = aspectRatioToDimensions(aspectRatio)
+
     console.log('Generation request:', { 
       userId: user.id, 
       style, 
-      promptLength: userPrompt.length 
+      promptLength: userPrompt.length,
+      aspectRatio,
+      dimensions: `${dimensions.width}x${dimensions.height}`,
+      strength: validStrength,
+      hasImage: !!imageUrl
     })
 
     // 3. Get style configuration
@@ -308,7 +453,7 @@ export async function POST(request: NextRequest) {
         prompt: finalPrompt,
         style: style,
         style_category: style,
-        input_image: imageUrl || null,
+        input_url: imageUrl || '',
         metadata: {
           petType,
           userPrompt,
@@ -316,6 +461,9 @@ export async function POST(request: NextRequest) {
           requestedAt: new Date().toISOString(),
           provider: 'openrouter',
           model: 'black-forest-labs/flux.2-flex',
+          strength: validStrength,
+          aspectRatio,
+          dimensions: `${dimensions.width}x${dimensions.height}`,
         },
       })
       .select()
@@ -352,15 +500,26 @@ export async function POST(request: NextRequest) {
     try {
       // 8. Call OpenRouter API and upload to storage
       console.log('Starting AI generation via OpenRouter...')
-      const publicImageUrl = await generateWithOpenRouter(finalPrompt, user.id, generation.id)
+      const publicImageUrl = await generateWithOpenRouter(
+        finalPrompt, 
+        user.id, 
+        generation.id,
+        imageUrl, // Pass source image for image-to-image
+        validStrength, // Pass strength parameter
+        dimensions.width,
+        dimensions.height
+      )
       console.log('✅ Generation and upload completed')
 
       // 9. Update generation record (status: succeeded)
-      const { error: updateError } = await supabase
+      // Use admin client to bypass any RLS issues
+      const adminSupabase = createAdminClient()
+      const { error: updateError } = await adminSupabase
         .from('generations')
         .update({
           status: 'succeeded',
-          output_image: publicImageUrl,
+          output_url: publicImageUrl,
+          input_url: imageUrl || '',
           metadata: {
             ...generation.metadata,
             completedAt: new Date().toISOString(),
@@ -370,8 +529,25 @@ export async function POST(request: NextRequest) {
         .eq('id', generation.id)
 
       if (updateError) {
-        console.error('Failed to update generation status:', updateError)
+        console.error('❌ CRITICAL: Failed to update generation status:', updateError)
+        console.error('Generation ID:', generation.id)
+        console.error('Update data:', { status: 'succeeded', output_url: publicImageUrl })
+        // This is critical - if status is not updated, user can't share!
+        // Return error to alert user
+        return NextResponse.json(
+          {
+            error: 'Generation completed but failed to save. Please contact support.',
+            message: updateError.message,
+            generationId: generation.id,
+            outputUrl: publicImageUrl,
+            remainingCredits,
+          },
+          { status: 500 }
+        )
       }
+      
+      console.log('✅ Generation status updated to succeeded')
+      console.log('✅ Generation ID:', generation.id, 'Status: succeeded')
 
       // 10. Return success result
       return NextResponse.json({

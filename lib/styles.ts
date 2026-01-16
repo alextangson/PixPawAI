@@ -15,58 +15,72 @@ export const STYLES: Style[] = [
   {
     id: 'Johannes Vermeer',
     label: 'Johannes Vermeer',
-    src: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+    src: 'johannes-vermeer.png',
     promptSuffix: 'wearing a blue and yellow turban headscarf and a large pearl earring, in the style of Johannes Vermeer masterpiece "Girl with a Pearl Earring", classical oil painting, soft natural window light from the left, chiaroscuro, detailed brushstrokes, rich colors, baroque art style, high quality',
-    description: 'Futuristic neon aesthetic with cyberpunk vibes'
+    description: 'Classic Dutch Golden Age painting style'
   },
   {
-    id: 'anime',
-    label: 'Anime',
-    src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=400&fit=crop',
-    promptSuffix: 'anime style, Studio Ghibli inspired, soft cel-shaded, big expressive eyes, colorful and whimsical, Japanese animation art',
-    description: 'Cute anime style inspired by Studio Ghibli'
+    id: 'Victorian-Royal',
+    label: 'Royal Portrait',
+    src: 'iShot_2026-01-16_15.16.00.png',
+    promptSuffix: ', as a majestic royal monarch, wearing an intricate golden crown with red rubies, a luxurious purple velvet robe with ermine fur collar, holding a golden scepter, classical oil painting style, dark moody studio background, dramatic masterpiece, regal and dignified atmosphere.',
+    description: 'Regal royal portrait with crown and velvet robes'
   },
   {
-    id: 'watercolor',
-    label: 'Watercolor',
-    src: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&h=400&fit=crop',
-    promptSuffix: 'watercolor painting style, soft pastel colors, artistic brush strokes, dreamy and ethereal, hand-painted texture, fine art',
-    description: 'Soft watercolor painting with pastel tones'
+    id: 'Christmas-Vibe',
+    label: 'Merry Christmas',
+    src: 'iShot_2026-01-16_15.15.27.png',
+    promptSuffix: ', wearing a fluffy red and white Santa hat, festive holiday spirit, soft white fur texture, bright joyful eyes, solid bold red background, high-end commercial photography, clean composition, warm and cheerful atmosphere, 8k resolution.',
+    description: 'Festive holiday look with a classic Santa hat'
   },
   {
-    id: 'oil-painting',
-    label: 'Oil Painting',
-    src: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&h=400&fit=crop',
-    promptSuffix: 'oil painting style, rich textures, vibrant colors, classical portrait art, museum quality, Renaissance inspired',
-    description: 'Classical oil painting with rich textures'
+    id: 'Vintage-Traveler',
+    label: 'Vintage Traveler',
+    src: 'iShot_2026-01-16_15.15.06.png',
+    promptSuffix: ', dressed in a Victorian gentleman suit with a black top hat and gold bow tie, riding in an ornate hot air balloon basket, surrounded by colorful hot air balloons and flowers in the sky, whimsical steampunk aesthetic, oil painting style, soft dreamy sunset lighting.',
+    description: 'Whimsical adventure in a vintage hot air balloon'
   },
   {
-    id: 'pop-art',
-    label: 'Pop Art',
-    src: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
-    promptSuffix: 'pop art style, Andy Warhol inspired, bold colors, high contrast, graphic design, iconic and vibrant, screen print aesthetic',
-    description: 'Bold pop art with vibrant colors'
+    id: 'Flower-Crown',
+    label: 'Floral Elegance',
+    src: 'iShot_2026-01-16_15.14.51.png',
+    promptSuffix: ', wearing a lush crown of white and pink peonies and wildflowers, classical fine art oil painting, soft chiaroscuro lighting, textured canvas effect, romantic and peaceful mood, detailed floral elements, museum quality.',
+    description: 'Elegant portrait with a beautiful floral crown'
   },
   {
-    id: '3d-render',
-    label: '3D Render',
-    src: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=400&fit=crop',
-    promptSuffix: '3D rendered style, Pixar character design, smooth textures, professional lighting, ultra high quality, CGI animation',
-    description: 'Pixar-style 3D rendered character'
+    id: 'Smart-Casual',
+    label: 'Smart Casual',
+    src: 'iShot_2026-01-16_15.15.47.png',
+    promptSuffix: ', wearing a cozy textured orange turtleneck sweater and a grey herringbone newsboy flat cap, professional pet photography, solid olive green background, sharp focus on eyes, clean and stylish modern aesthetic.',
+    description: 'Trendy look with a sweater and newsboy cap'
   },
   {
-    id: 'sketch',
-    label: 'Pencil Sketch',
-    src: 'https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=400&h=400&fit=crop',
-    promptSuffix: 'pencil sketch style, detailed line work, artistic shading, graphite drawing, classical sketch, hand-drawn appearance',
-    description: 'Detailed pencil sketch with fine lines'
+    id: 'Embroidery-Art',
+    label: 'Embroidery Art',
+    src: 'iShot_2026-01-16_15.17.04.png',
+    promptSuffix: ', created entirely with colorful embroidery thread, textured needlework art, 3D stitched texture, vibrant wool yarn details, handcrafted folk art style, intricate embroidery patterns, unique textile aesthetic.',
+    description: 'Unique handcrafted look made of embroidery thread'
   },
   {
-    id: 'fantasy',
-    label: 'Fantasy',
-    src: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=400&fit=crop',
-    promptSuffix: 'fantasy art style, magical atmosphere, mystical elements, ethereal lighting, epic and dramatic, concept art quality',
-    description: 'Magical fantasy art with mystical elements'
+    id: 'Birthday-Party',
+    label: 'Birthday Party',
+    src: 'iShot_2026-01-16_15.16.22.png',
+    promptSuffix: ', celebrating a birthday, wearing a colorful striped party hat, sitting behind a vibrant yellow and pink birthday cake with a burning candle, blurred party background with balloons and fairy lights, warm indoor lighting, joyful celebration.',
+    description: 'Cheerful birthday celebration with cake and hat'
+  },
+  {
+    id: 'Music-Lover',
+    label: 'Music Lover',
+    src: 'iShot_2026-01-16_15.17.26.png',
+    promptSuffix: ', wearing professional silver wired headphones around the neck, studio portrait, deep blue textured background, cinematic rim lighting, crisp fur details, cool and contemporary vibe, high-quality photography.',
+    description: 'Cool studio portrait with silver headphones'
+  },
+  {
+    id: 'Fine-Sketch',
+    label: 'Master Sketch',
+    src: 'iShot_2026-01-16_15.14.43.png',
+    promptSuffix: ', ultra-detailed charcoal and graphite pencil sketch, high contrast black and white art, meticulous line work, realistic fur texture, clean white background, artistic hand-drawn masterpiece, fine art gallery style.',
+    description: 'Highly detailed black and white pencil drawing'
   }
 ]
 

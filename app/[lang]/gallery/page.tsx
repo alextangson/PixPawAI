@@ -5,8 +5,9 @@ import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
 import { Search, Sparkles, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase/client';
 
 // Mock Gallery Data - Diverse & Inclusive
 const GALLERY_ITEMS = [
@@ -133,6 +134,17 @@ const FILTER_CATEGORIES = [
   { id: 'Farm & Other', label: 'Farm & Other', icon: '🐴' },
 ];
 
+interface GalleryImage {
+  id: string;
+  output_url: string;
+  title: string | null;
+  alt_text: string | null;
+  style: string;
+  style_category: string | null;
+  prompt: string;
+  created_at: string;
+}
+
 export default function GalleryPage({
   params,
 }: {
@@ -142,7 +154,9 @@ export default function GalleryPage({
   const [dict, setDict] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  const [selectedImage, setSelectedImage] = useState<typeof GALLERY_ITEMS[0] | null>(null);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -153,40 +167,98 @@ export default function GalleryPage({
     });
   }, [params]);
 
+  // Fetch public generations from database
+  useEffect(() => {
+    const fetchGalleryImages = async () => {
+      setIsLoading(true);
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('generations')
+          .select('id, output_url, title, alt_text, style, style_category, prompt, created_at')
+          .eq('is_public', true)
+          .eq('status', 'succeeded')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          console.error('Error fetching gallery images:', error);
+        } else {
+          setGalleryImages(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch gallery:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGalleryImages();
+  }, []);
+
   useEffect(() => {
     const imageId = searchParams.get('id');
-    if (imageId) {
-      const image = GALLERY_ITEMS.find(item => item.id === imageId);
+    if (imageId && galleryImages.length > 0) {
+      const image = galleryImages.find(item => item.id === imageId);
       if (image) {
         setSelectedImage(image);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, galleryImages]);
 
-  if (!dict) {
+  if (!dict || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-coral border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loading gallery...</p>
         </div>
       </div>
     );
   }
 
-  const filteredItems = GALLERY_ITEMS.filter(item => {
+  // Helper function to detect pet category from prompt/alt_text
+  const detectPetCategory = (item: GalleryImage): string => {
+    const text = `${item.prompt} ${item.alt_text || ''} ${item.title || ''}`.toLowerCase();
+    
+    // Dogs
+    if (text.match(/\b(dog|puppy|corgi|beagle|retriever|bulldog|poodle|husky|shepherd)\b/)) return 'Dogs';
+    
+    // Cats
+    if (text.match(/\b(cat|kitten|feline|persian|siamese|tabby)\b/)) return 'Cats';
+    
+    // Rabbits
+    if (text.match(/\b(rabbit|bunny|hare)\b/)) return 'Rabbits';
+    
+    // Small Pets
+    if (text.match(/\b(hamster|guinea pig|gerbil|mouse|rat|ferret)\b/)) return 'Small Pets';
+    
+    // Birds
+    if (text.match(/\b(bird|parrot|parakeet|cockatiel|macaw|canary|finch)\b/)) return 'Birds';
+    
+    // Reptiles
+    if (text.match(/\b(lizard|gecko|snake|turtle|tortoise|iguana|chameleon)\b/)) return 'Reptiles';
+    
+    // Farm & Other
+    if (text.match(/\b(horse|pony|cow|pig|sheep|goat|chicken|duck|donkey)\b/)) return 'Farm & Other';
+    
+    return 'Dogs'; // Default fallback
+  };
+
+  const filteredItems = galleryImages.filter(item => {
     const matchesSearch =
       searchQuery === '' ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.title && item.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.alt_text && item.alt_text.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      item.prompt.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesFilter =
-      activeFilter === 'All' || item.petCategory === activeFilter;
+      activeFilter === 'All' || detectPetCategory(item) === activeFilter;
 
     return matchesSearch && matchesFilter;
   });
 
-  const handleImageClick = (item: typeof GALLERY_ITEMS[0]) => {
+  const handleImageClick = (item: GalleryImage) => {
     setSelectedImage(item);
     router.push(`/${lang}/gallery?id=${item.id}`, { scroll: false });
   };
@@ -198,7 +270,7 @@ export default function GalleryPage({
 
   const handleRemixStyle = () => {
     if (selectedImage) {
-      router.push(`/${lang}?style=${selectedImage.styleId}`);
+      router.push(`/${lang}?style=${selectedImage.style}`);
     }
   };
 
@@ -279,8 +351,8 @@ export default function GalleryPage({
                 >
                   {/* Clean Full-Bleed Image - No Overlays */}
                   <img
-                    src={item.src}
-                    alt={item.alt}
+                    src={item.output_url}
+                    alt={item.alt_text || item.title || 'AI generated pet portrait'}
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </button>
@@ -294,47 +366,55 @@ export default function GalleryPage({
       <Dialog open={!!selectedImage} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-7xl w-full p-0 overflow-hidden bg-white rounded-3xl">
           {selectedImage && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 h-auto sm:h-[85vh] max-h-[900px]">
-              {/* Left Column - The Image */}
-              <div className="relative h-[400px] sm:h-full w-full bg-gray-900">
-                <Image
-                  src={selectedImage.src}
-                  alt={selectedImage.alt}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              {/* Right Column - The Content */}
-              <div className="relative p-10 lg:p-12 flex flex-col justify-center items-start text-left bg-white">
-                {/* Close Button (Top-Right Corner) */}
-                <button
-                  onClick={handleCloseModal}
-                  className="absolute top-6 right-6 z-50 bg-gray-100 hover:bg-gray-200 rounded-full p-3 transition-all shadow-md hover:shadow-lg"
-                >
-                  <X className="w-6 h-6 text-gray-700" />
-                </button>
-
-                {/* Tags */}
-                <div className="flex gap-2 mb-6">
-                  {selectedImage.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-600"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+            <>
+              {/* Hidden title for accessibility */}
+              <DialogTitle className="sr-only">
+                {selectedImage.title || 'AI Pet Portrait'}
+              </DialogTitle>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 h-auto sm:h-[85vh] max-h-[900px]">
+                {/* Left Column - The Image */}
+                <div className="relative h-[400px] sm:h-full w-full bg-gray-900 flex items-center justify-center">
+                  {/* Use native img tag to avoid Next.js Image Optimization API errors */}
+                  <img
+                    src={selectedImage.output_url}
+                    alt={selectedImage.alt_text || selectedImage.title || 'AI generated pet portrait'}
+                    className="max-w-full max-h-full object-contain"
+                  />
                 </div>
 
-                {/* Style Name */}
+                {/* Right Column - The Content */}
+                <div className="relative p-10 lg:p-12 flex flex-col justify-center items-start text-left bg-white">
+                  {/* Close Button (Top-Right Corner) */}
+                  <button
+                    onClick={handleCloseModal}
+                    className="absolute top-6 right-6 z-50 bg-gray-100 hover:bg-gray-200 rounded-full p-3 transition-all shadow-md hover:shadow-lg"
+                    aria-label="Close dialog"
+                  >
+                    <X className="w-6 h-6 text-gray-700" />
+                  </button>
+
+                  {/* Tags */}
+                  <div className="flex gap-2 mb-6 flex-wrap">
+                    {/* Pet Category Tag */}
+                    <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                      {detectPetCategory(selectedImage)}
+                    </span>
+                    
+                    {/* Style Tag */}
+                    <span className="px-4 py-2 bg-coral/10 text-coral rounded-full text-sm font-medium">
+                      {selectedImage.style}
+                    </span>
+                  </div>
+
+                {/* Title */}
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                  {selectedImage.styleCategory}
+                  {selectedImage.title || 'AI Pet Portrait'}
                 </h2>
 
                 {/* Description */}
                 <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                  {selectedImage.alt}
+                  {selectedImage.alt_text || selectedImage.prompt.substring(0, 150)}
                 </p>
 
                 {/* Style Features Box */}
@@ -359,8 +439,9 @@ export default function GalleryPage({
                 <p className="text-center text-gray-400 text-sm mt-6 w-full">
                   ⚡ Generated in ~30 seconds • 🎨 4K quality • 💯 Money-back guarantee
                 </p>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

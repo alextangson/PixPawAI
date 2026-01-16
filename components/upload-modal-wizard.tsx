@@ -7,6 +7,8 @@ import { STYLES } from '@/lib/styles'
 import { createClient } from '@/lib/supabase/client'
 import { uploadUserImage } from '@/lib/supabase/storage'
 import type { User } from '@supabase/supabase-js'
+import confetti from 'canvas-confetti'
+import NextImage from 'next/image'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -21,6 +23,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [step, setStep] = useState<Step>('upload')
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null)
   const [userPrompt, setUserPrompt] = useState('')
   const [selectedStyle, setSelectedStyle] = useState<string>(initialStyle || '')
   const [user, setUser] = useState<User | null>(null)
@@ -28,6 +31,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [errorType, setErrorType] = useState<'credits' | 'storage' | 'api' | 'general'>('general')
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
+  const [progress, setProgress] = useState<number>(0)
+  const [messageIndex, setMessageIndex] = useState<number>(0)
+  const [strength, setStrength] = useState<number>(0.95) // Image preservation strength (0.1-1.0) - Higher = more similar to original
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
+  const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
+  const [generationId, setGenerationId] = useState<string>('')
+  const [isSharing, setIsSharing] = useState<boolean>(false)
+  const [isShared, setIsShared] = useState<boolean>(false)
+  const [shareTitle, setShareTitle] = useState<string>('')
+  const [showShareInput, setShowShareInput] = useState<boolean>(false)
 
   // Check user authentication
   useEffect(() => {
@@ -55,9 +68,66 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setError('')
         setErrorType('general')
         setGeneratedImageUrl('')
+        setProgress(0)
+        setMessageIndex(0)
+        setStrength(0.8)
+        setShowAdvanced(false)
+        setAspectRatio('1:1')
+        setGenerationId('')
+        setIsSharing(false)
+        setIsShared(false)
+        setShareTitle('')
+        setShowShareInput(false)
       }, 300)
     }
   }, [isOpen, initialStyle])
+
+  // Fun messages to rotate during generation
+  const funMessages = [
+    '🎨 AI is mixing the colors...',
+    '🐶 Teaching the dog to pose...',
+    '✨ Adding some Pixar magic...',
+    '🦴 Fetching the pixels...',
+    '🖌️ Almost there, applying final touches...',
+  ]
+
+  // Animate progress bar from 0% to 90% over 25 seconds
+  useEffect(() => {
+    if (step !== 'generating') {
+      setProgress(0)
+      setMessageIndex(0)
+      return
+    }
+
+    // Start progress animation: 90% over 25 seconds = 3.6% per second
+    // Update every 100ms, so increment by 0.36% per interval
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        const next = prev + 0.36
+        if (next >= 90) {
+          return 90
+        }
+        return next
+      })
+    }, 100) // Update every 100ms for smooth animation
+
+    // Rotate messages every 3.5 seconds
+    const messageInterval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % funMessages.length)
+    }, 3500)
+
+    return () => {
+      clearInterval(progressInterval)
+      clearInterval(messageInterval)
+    }
+  }, [step, funMessages.length])
+
+  // Jump to 100% when generation completes
+  useEffect(() => {
+    if (step === 'success' && progress < 100) {
+      setProgress(100)
+    }
+  }, [step, progress])
 
   if (!isOpen) return null
 
@@ -80,11 +150,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
 
     setUploadedFile(file)
-    setPreviewUrl(URL.createObjectURL(file))
+    const objectUrl = URL.createObjectURL(file)
+    setPreviewUrl(objectUrl)
     setError('')
     
-    // Auto-advance to configure step
-    setStep('configure')
+    // Get image dimensions (use window.Image to avoid conflict with Next.js Image component)
+    const img = new window.Image()
+    img.onload = () => {
+      setImageDimensions({ width: img.width, height: img.height })
+      console.log('Image dimensions:', img.width, 'x', img.height)
+      // Auto-advance to configure step
+      setStep('configure')
+    }
+    img.onerror = () => {
+      setError('Failed to load image')
+    }
+    img.src = objectUrl
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -101,6 +182,54 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // ============================================
   // STEP B: CONFIGURE - Generate Logic
   // ============================================
+  const handleShare = async () => {
+    if (!generationId) {
+      setError('No generation ID available')
+      return
+    }
+
+    setIsSharing(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          generation_id: generationId,
+          title: shareTitle.trim() || undefined,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to share')
+      }
+
+      // Success! Show confetti effect
+      setIsShared(true)
+      setShowShareInput(false)
+      if (result.credits !== null) {
+        setRemainingCredits(result.credits)
+      }
+
+      // Trigger confetti animation
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+    } catch (err: any) {
+      console.error('Share error:', err)
+      setError(err.message || 'Failed to share')
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
   const handleGenerate = async () => {
     if (!user) {
       // Guest user - redirect to sign in
@@ -135,6 +264,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           style: selectedStyle,
           prompt: userPrompt.trim(),
           petType: 'pet',
+          aspectRatio: aspectRatio, // Pass selected aspect ratio
+          strength: strength, // Pass strength parameter for image preservation
         }),
       })
 
@@ -153,9 +284,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         throw new Error(result.error || result.message || 'Generation failed')
       }
 
-      // 5. Success
+      // 5. Success - jump progress to 100%
+      setProgress(100)
       setGeneratedImageUrl(result.outputUrl)
       setRemainingCredits(result.remainingCredits)
+      setGenerationId(result.generationId || '')
       setStep('success')
 
     } catch (err: any) {
@@ -450,37 +583,147 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   ))}
                 </div>
               </div>
+
+              {/* Aspect Ratio Selector */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Output Aspect Ratio
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { id: '1:1', label: 'Square', dimensions: '1024×1024', icon: '⬜' },
+                    { id: '3:4', label: 'Portrait', dimensions: '768×1024', badge: 'Best for Print', icon: '📄' },
+                    { id: '9:16', label: 'Vertical', dimensions: '576×1024', badge: 'Wallpaper', icon: '📱' },
+                    { id: '4:3', label: 'Landscape', dimensions: '1024×768', icon: '🖼️' },
+                    { id: '16:9', label: 'Cinematic', dimensions: '1024×576', icon: '🎬' },
+                  ].map((ratio) => (
+                    <button
+                      key={ratio.id}
+                      onClick={() => setAspectRatio(ratio.id)}
+                      className={`relative p-3 rounded-xl border-2 transition-all ${
+                        aspectRatio === ratio.id
+                          ? 'border-coral bg-coral/10 ring-2 ring-coral/30'
+                          : 'border-gray-200 hover:border-coral/50'
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div className="text-2xl mb-1">{ratio.icon}</div>
+                        <div className="text-xs font-semibold text-gray-900">{ratio.label}</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">{ratio.id}</div>
+                        {ratio.badge && (
+                          <div className="mt-1 text-[9px] font-bold text-coral bg-coral/10 rounded px-1 py-0.5">
+                            {ratio.badge}
+                          </div>
+                        )}
+                      </div>
+                      {aspectRatio === ratio.id && (
+                        <div className="absolute top-1 right-1 bg-coral text-white rounded-full p-0.5">
+                          <CheckCircle className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Choose the aspect ratio that best fits your needs. Dimensions are optimized for AI generation.
+                </p>
+              </div>
+
+              {/* Advanced Settings */}
+              <div className="border-t border-gray-200 pt-4">
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="text-sm font-semibold text-gray-700">
+                    ⚙️ Advanced Settings
+                  </span>
+                  <span className="text-gray-400 text-sm">
+                    {showAdvanced ? '▼' : '▶'}
+                  </span>
+                </button>
+                
+                {showAdvanced && (
+                  <div className="mt-4 bg-gray-50 rounded-xl p-4 space-y-3">
+                    <div>
+                      <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
+                        <span>Image Similarity</span>
+                        <span className="text-coral font-bold">{Math.round(strength * 100)}%</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1.0"
+                        step="0.05"
+                        value={strength}
+                        onChange={(e) => setStrength(Number(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-coral"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>More Creative</span>
+                        <span>More Similar</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 bg-blue-50 rounded-lg p-2 border border-blue-100">
+                      💡 <strong>Tip:</strong> Higher values (70-100%) preserve more of your pet's features. Lower values (20-50%) allow more artistic freedom.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* STEP C: GENERATING */}
           {step === 'generating' && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="relative">
-                <Loader2 className="w-16 h-16 text-coral animate-spin" />
-                <Sparkles className="w-8 h-8 text-orange-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <div className="flex flex-col items-center justify-center py-8 space-y-6">
+              {/* Progress Bar */}
+              <div className="w-full max-w-md space-y-4">
+                <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-coral to-orange-600 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{Math.round(progress)}%</p>
+                  <p className="text-lg text-gray-700 mt-2 min-h-[28px]">
+                    {funMessages[messageIndex]}
+                  </p>
+                  {/* Show selected aspect ratio */}
+                  <div className="mt-3 inline-flex items-center gap-2 bg-coral/10 text-coral px-3 py-1.5 rounded-full text-sm font-medium">
+                    <span>Creating in {aspectRatio} format</span>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
-                Creating your masterpiece...
-              </h3>
-              <p className="text-gray-600 text-center max-w-md">
-                Our AI is transforming your pet into beautiful art. This usually takes 10-30 seconds.
-              </p>
-              
-              {/* Progress Steps */}
-              <div className="mt-8 space-y-3 w-full max-w-md">
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>Image uploaded</span>
+
+              {/* Placeholder Card (Skeleton Loader) - Dynamic aspect ratio */}
+              <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50">
+                <div 
+                  className="relative overflow-hidden"
+                  style={{
+                    aspectRatio: aspectRatio === '1:1' ? '1/1' : 
+                                aspectRatio === '3:4' ? '3/4' : 
+                                aspectRatio === '9:16' ? '9/16' : 
+                                aspectRatio === '4:3' ? '4/3' : 
+                                aspectRatio === '16:9' ? '16/9' : '1/1'
+                  }}
+                >
+                  {/* Animated shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Loader2 className="w-12 h-12 text-coral animate-spin mx-auto mb-3" />
+                      <p className="text-sm text-gray-500 font-medium">Your portrait will appear here...</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <Loader2 className="w-5 h-5 text-coral animate-spin" />
-                  <span>AI processing...</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-gray-400">
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                  <span>Finalizing results</span>
-                </div>
+              </div>
+
+              {/* Warning Text */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-md">
+                <p className="text-sm text-amber-800 text-center">
+                  ⚠️ <strong>Please keep this tab open.</strong> Good art takes time!
+                </p>
               </div>
             </div>
           )}
@@ -500,13 +743,120 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </p>
               </div>
 
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-200">
-                <img
-                  src={generatedImageUrl}
-                  alt="Generated portrait"
-                  className="w-full"
-                />
+              <div className="rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50">
+                <div 
+                  className="relative w-full"
+                  style={{
+                    aspectRatio: aspectRatio === '1:1' ? '1/1' : 
+                                aspectRatio === '3:4' ? '3/4' : 
+                                aspectRatio === '9:16' ? '9/16' : 
+                                aspectRatio === '4:3' ? '4/3' : 
+                                aspectRatio === '16:9' ? '16/9' : '1/1'
+                  }}
+                >
+                  {/* Use native img for faster loading from Supabase */}
+                  <img
+                    src={generatedImageUrl}
+                    alt="Generated portrait"
+                    className="w-full h-full object-contain"
+                    onLoad={() => console.log('✅ Image loaded successfully')}
+                    onError={(e) => console.error('❌ Image failed to load:', e)}
+                  />
+                </div>
               </div>
+
+              {/* Share to Earn Section */}
+              {!isShared && (
+                <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-2xl p-6 border-2 border-coral/20">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-coral/20 rounded-full flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-coral" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-lg text-gray-900 mb-2">
+                        ✨ Share to Gallery & Earn +1 Credit
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Share your amazing portrait with the community and get a free credit!
+                      </p>
+
+                      {!showShareInput ? (
+                        <Button
+                          onClick={() => setShowShareInput(true)}
+                          disabled={isSharing}
+                          className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Share to Gallery (+1 Credit)
+                        </Button>
+                      ) : (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Add a title (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={shareTitle}
+                              onChange={(e) => setShareTitle(e.target.value)}
+                              placeholder="e.g., My Golden Retriever as a Pixar Star"
+                              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral"
+                              maxLength={100}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              This will help others discover your artwork
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleShare}
+                              disabled={isSharing}
+                              className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
+                            >
+                              {isSharing ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Sharing...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  Confirm Share
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => setShowShareInput(false)}
+                              disabled={isSharing}
+                              variant="outline"
+                              className="px-4"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shared Success Message */}
+              {isShared && (
+                <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
+                  <div className="flex items-center gap-4">
+                    <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-bold text-green-900 mb-1">
+                        Shared Successfully! ✅
+                      </h4>
+                      <p className="text-sm text-green-700">
+                        +1 credit added to your account. Your artwork is now live in the gallery!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <Button
@@ -522,6 +872,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     setPreviewUrl('')
                     setUserPrompt('')
                     setGeneratedImageUrl('')
+                    setGenerationId('')
+                    setIsShared(false)
+                    setShareTitle('')
+                    setShowShareInput(false)
                   }}
                   variant="outline"
                   className="flex-1"

@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { signOut } from '@/lib/auth/actions'
-import { LogOut, User as UserIcon, CreditCard, Settings, Sparkles } from 'lucide-react'
+import { LogOut, Image, CreditCard, Settings as SettingsIcon, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 interface UserMenuProps {
   user: User
@@ -118,42 +119,35 @@ export function UserMenu({ user }: UserMenuProps) {
 
             {/* Menu Items */}
             <div className="py-2">
-              <button
+              <Link
+                href="/en/dashboard?tab=gallery"
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                onClick={() => {
-                  // TODO: Navigate to profile
-                  setIsOpen(false)
-                }}
+                onClick={() => setIsOpen(false)}
               >
-                <UserIcon className="w-4 h-4" />
-                My Profile
-              </button>
+                <Image className="w-4 h-4" />
+                My Gallery
+              </Link>
 
-              <button
+              <Link
+                href="/en/dashboard?tab=credits"
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center justify-between group"
-                onClick={() => {
-                  // Navigate to pricing page to buy more credits
-                  window.location.href = '/en/pricing'
-                  setIsOpen(false)
-                }}
+                onClick={() => setIsOpen(false)}
               >
                 <span className="flex items-center gap-3">
                   <CreditCard className="w-4 h-4 group-hover:text-coral" />
-                  Buy More Credits
+                  Buy Credits
                 </span>
                 <span className="text-xs text-coral font-semibold">→</span>
-              </button>
+              </Link>
 
-              <button
+              <Link
+                href="/en/dashboard?tab=settings"
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                onClick={() => {
-                  // TODO: Navigate to settings
-                  setIsOpen(false)
-                }}
+                onClick={() => setIsOpen(false)}
               >
-                <Settings className="w-4 h-4" />
+                <SettingsIcon className="w-4 h-4" />
                 Settings
-              </button>
+              </Link>
             </div>
 
             {/* Sign Out */}
