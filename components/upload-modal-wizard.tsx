@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Download, ShoppingBag } from 'lucide-react'
+import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { STYLES } from '@/lib/styles'
 import { createClient } from '@/lib/supabase/client'
 import { uploadUserImage } from '@/lib/supabase/storage'
 import type { User } from '@supabase/supabase-js'
-import confetti from 'canvas-confetti'
 import NextImage from 'next/image'
-import { ShareSuccessModal } from '@/components/share-success-modal'
+import { ResultModal } from '@/components/result-modal'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -38,14 +37,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
   const [generationId, setGenerationId] = useState<string>('')
-  const [isSharing, setIsSharing] = useState<boolean>(false)
-  const [shareTitle, setShareTitle] = useState<string>('')
-  const [showShareInput, setShowShareInput] = useState<boolean>(false)
-  
-  // Share Success Modal States
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
-  const [successShareCardUrl, setSuccessShareCardUrl] = useState<string>('')
-  const [successSlogan, setSuccessSlogan] = useState<string>('')
 
   // Check user authentication
   useEffect(() => {
@@ -75,16 +66,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setGeneratedImageUrl('')
         setProgress(0)
         setMessageIndex(0)
-        setStrength(0.8)
+        setStrength(0.95)
         setShowAdvanced(false)
         setAspectRatio('1:1')
         setGenerationId('')
-        setIsSharing(false)
-        setShareTitle('')
-        setShowShareInput(false)
-        setShowSuccessModal(false)
-        setSuccessShareCardUrl('')
-        setSuccessSlogan('')
+        // Note: Share-related states removed (now handled by ResultModal)
       }, 300)
     }
   }, [isOpen, initialStyle])
@@ -189,75 +175,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // ============================================
   // STEP B: CONFIGURE - Generate Logic
   // ============================================
-  const handleShare = async () => {
-    if (!generationId) {
-      setError('No generation ID available')
-      return
-    }
-
-    setIsSharing(true)
-    setError('')
-
-    try {
-      // Call the unified share API (it now generates the card automatically)
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          generation_id: generationId,
-          title: shareTitle.trim() || undefined,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to share')
-      }
-
-      // Debug: Log the result
-      console.log('✅ Share API Response:', result)
-      console.log('📦 Share card URL:', result.share_card_url)
-      console.log('💬 Slogan:', result.slogan)
-
-      // Update credits
-      if (result.credits !== null) {
-        setRemainingCredits(result.credits)
-      }
-
-      // Trigger confetti animation
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 }
-      })
-
-      // Hide the share input
-      setShowShareInput(false)
-
-      // Show the Success Modal with the share card
-      if (result.share_card_url && result.slogan) {
-        console.log('🎉 Opening Success Modal...')
-        setSuccessShareCardUrl(result.share_card_url)
-        setSuccessSlogan(result.slogan)
-        setShowSuccessModal(true)
-      } else {
-        console.warn('⚠️ Missing share card data:', {
-          has_url: !!result.share_card_url,
-          has_slogan: !!result.slogan
-        })
-      }
-
-    } catch (err: any) {
-      console.error('Share error:', err)
-      setError(err.message || 'Failed to share')
-    } finally {
-      setIsSharing(false)
-    }
-  }
-
   const handleGenerate = async () => {
     if (!user) {
       // Guest user - redirect to sign in
@@ -353,13 +270,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               </button>
             )}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-serif font-bold text-gray-900">
                 {step === 'upload' && 'Upload Your Photo'}
                 {step === 'configure' && 'Configure Your Portrait'}
                 {step === 'generating' && 'Creating Your Portrait...'}
                 {step === 'success' && 'Your Portrait is Ready!'}
               </h2>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 font-sans">
                 {step === 'upload' && 'Start by uploading a photo of your pet'}
                 {step === 'configure' && 'Customize the style and prompt'}
                 {step === 'generating' && 'This may take 10-30 seconds...'}
@@ -717,8 +634,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   />
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">{Math.round(progress)}%</p>
-                  <p className="text-lg text-gray-700 mt-2 min-h-[28px]">
+                  <p className="text-2xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
+                  <p className="text-lg text-gray-700 mt-2 min-h-[28px] font-sans">
                     {funMessages[messageIndex]}
                   </p>
                   {/* Show selected aspect ratio */}
@@ -760,186 +677,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
           )}
 
-          {/* STEP D: SUCCESS - Gallery Reveal */}
-          {step === 'success' && (
-            <div className="flex flex-col lg:flex-row h-full animate-fadeIn">
-              {/* Close Button (Top Right) */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-
-              {/* Left Panel: The Art (66%) */}
-              <div className="lg:w-2/3 h-64 lg:h-full bg-zinc-900 relative flex items-center justify-center group cursor-zoom-in">
-                <img
-                  src={generatedImageUrl}
-                  alt="Generated portrait"
-                  className="max-w-full max-h-full object-contain p-4 lg:p-8 transition-transform duration-700 group-hover:scale-105"
-                  onLoad={() => console.log('✅ Image loaded successfully')}
-                  onError={(e) => console.error('❌ Image failed to load:', e)}
-                  onClick={() => window.open(generatedImageUrl, '_blank')}
-                />
-              </div>
-
-              {/* Right Panel: The Curator (33%) */}
-              <div className="lg:w-1/3 h-auto lg:h-full bg-white p-6 lg:p-8 flex flex-col justify-center space-y-6 lg:space-y-8 overflow-y-auto animate-slideInRight">
-                
-                {/* Header */}
-                <div className="text-center lg:text-left">
-                  <h2 className="text-3xl lg:text-4xl font-serif text-gray-900 mb-2" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
-                    Your Portrait<br />is Ready
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {remainingCredits} credits remaining
-                  </p>
-                </div>
-
-                {/* Wall Art Preview Mockup */}
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Visualize It
-                  </p>
-                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner">
-                    {/* Wall Background */}
-                    <div className="absolute inset-0 bg-[#E5E5E5]"></div>
-                    {/* Framed Portrait on Wall */}
-                    <div className="absolute inset-0 flex items-center justify-center p-8">
-                      <div className="w-2/5 aspect-square bg-white border-4 border-white rounded shadow-2xl overflow-hidden">
-                        <img
-                          src={generatedImageUrl}
-                          alt="Wall preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => window.location.href = `/shop/${generationId}`}
-                    className="w-full text-center text-sm text-gray-600 hover:text-coral transition-colors underline"
-                  >
-                    See this on your wall →
-                  </button>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  {/* Download Dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={() => window.open(generatedImageUrl, '_blank')}
-                      className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download Original
-                    </button>
-                  </div>
-
-                  {/* Share to Gallery */}
-                  {!showSuccessModal && !showShareInput && (
-                    <button
-                      onClick={() => setShowShareInput(true)}
-                      disabled={isSharing}
-                      className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-medium py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Share & Earn +1 Credit
-                    </button>
-                  )}
-
-                  {/* Customize Merch */}
-                  <button
-                    onClick={() => window.location.href = `/shop/${generationId}`}
-                    className="w-full border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    Customize Merch
-                  </button>
-                </div>
-
-                {/* Share Input Section */}
-                {showShareInput && !showSuccessModal && (
-                  <div className="border-t border-gray-200 pt-6 space-y-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Add a title (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={shareTitle}
-                      onChange={(e) => setShareTitle(e.target.value)}
-                      placeholder="e.g., My Golden Retriever"
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral"
-                      maxLength={100}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleShare}
-                        disabled={isSharing}
-                        className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
-                      >
-                        {isSharing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Sharing...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            Confirm
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => setShowShareInput(false)}
-                        disabled={isSharing}
-                        variant="outline"
-                        className="px-6"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Create Another Link */}
-                <div className="border-t border-gray-200 pt-6">
-                  <button
-                    onClick={() => {
-                      setStep('upload')
-                      setUploadedFile(null)
-                      setPreviewUrl('')
-                      setUserPrompt('')
-                      setGeneratedImageUrl('')
-                      setGenerationId('')
-                      setShareTitle('')
-                      setShowShareInput(false)
-                    }}
-                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline"
-                  >
-                    ← Create Another Portrait
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* STEP D: SUCCESS - Gallery Reveal (NEW COMPONENT) */}
+          {step === 'success' && generatedImageUrl && generationId && (
+            <ResultModal
+              isOpen={true}
+              onClose={onClose}
+              generatedImageUrl={generatedImageUrl}
+              generationId={generationId}
+              remainingCredits={remainingCredits}
+              isRewarded={false}
+              onShareSuccess={() => {
+                // Refresh credits or update UI if needed
+                console.log('✅ Share successful')
+              }}
+            />
           )}
         </div>
-
-        {/* Share Success Modal */}
-        {showSuccessModal && (
-          <ShareSuccessModal
-            isOpen={showSuccessModal}
-            onClose={() => setShowSuccessModal(false)}
-            shareCardUrl={successShareCardUrl}
-            slogan={successSlogan}
-            generationId={generationId}
-            title={shareTitle}
-            onSloganRefresh={(newUrl, newSlogan) => {
-              setSuccessShareCardUrl(newUrl)
-              setSuccessSlogan(newSlogan)
-            }}
-          />
-        )}
 
         {/* Footer - Generate Button (only show in configure step) */}
         {step === 'configure' && (

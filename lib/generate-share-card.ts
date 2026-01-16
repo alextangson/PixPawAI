@@ -1,29 +1,6 @@
 import sharp from 'sharp'
 import { createAdminClient } from '@/lib/supabase/server'
-
-// 20 Premium Cinematic Slogans
-export const SLOGANS = [
-  "Every paw has a story to tell",
-  "Turning paws into movie stars",
-  "Captured with AI, Loved for Real",
-  "Cinema-grade portraits for your best friend",
-  "Where art meets unconditional love",
-  "A digital hug in every pixel",
-  "Your pet, reimagined as a masterpiece",
-  "From camera roll to red carpet",
-  "Because every pet deserves the spotlight",
-  "Paws that paint a thousand words",
-  "Made with AI magic, sealed with love",
-  "Your furry friend's cinematic debut",
-  "Pixar-quality memories, one click away",
-  "When technology meets tail wags",
-  "Art that makes your heart skip a beat",
-  "Transform moments into movie scenes",
-  "The future of pet portraits is here",
-  "Where pixels become precious memories",
-  "Your pet's journey to stardom starts now",
-  "Creating legends, one paw at a time"
-]
+import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
 
 interface GenerateShareCardParams {
   generationId: string
@@ -55,10 +32,10 @@ export async function generateShareCard({
     console.log('📸 Image URL:', imageUrl)
 
     // 1. Select slogan
-    const selectedIndex = typeof sloganIndex === 'number' && sloganIndex >= 0 && sloganIndex < SLOGANS.length
+    const selectedIndex = typeof sloganIndex === 'number' && sloganIndex >= 0 && sloganIndex < PREMIUM_SLOGANS.length
       ? sloganIndex
-      : Math.floor(Math.random() * SLOGANS.length)
-    const selectedSlogan = SLOGANS[selectedIndex]
+      : Math.floor(Math.random() * PREMIUM_SLOGANS.length)
+    const selectedSlogan = getSloganByIndex(selectedIndex)
 
     // 2. Download and process the image
     const imageResponse = await fetch(imageUrl)
@@ -123,7 +100,7 @@ export async function generateShareCard({
       <svg width="${canvasWidth}" height="${footerHeight}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style type="text/css">
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600&amp;family=Lora:ital@1&amp;display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600&amp;family=Playfair+Display:ital,wght@1,400;1,600&amp;display=swap');
           </style>
         </defs>
         
@@ -177,7 +154,7 @@ export async function generateShareCard({
             x="${canvasWidth * 0.5}" 
             y="${footerHeight * 0.50}" 
             text-anchor="middle" 
-            font-family="Lora, Georgia, serif" 
+            font-family="Playfair Display, Georgia, serif" 
             font-size="${sloganFontSize}" 
             font-style="italic" 
             fill="#888888"

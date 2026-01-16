@@ -6,7 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { generateShareCard, SLOGANS } from '@/lib/generate-share-card'
+import { generateShareCard } from '@/lib/generate-share-card'
+import { PREMIUM_SLOGANS } from '@/lib/constants/slogans'
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,8 +82,8 @@ export async function POST(request: NextRequest) {
     // 7. Generate share card asynchronously (non-blocking)
     let shareCardUrl = ''
     let shareSlogan = ''
-    let shareSloganIndex = Math.floor(Math.random() * SLOGANS.length)
-    shareSlogan = SLOGANS[shareSloganIndex]
+    let shareSloganIndex = Math.floor(Math.random() * PREMIUM_SLOGANS.length)
+    shareSlogan = PREMIUM_SLOGANS[shareSloganIndex]
     
     // Start card generation in background (don't await)
     if (generation.output_url) {

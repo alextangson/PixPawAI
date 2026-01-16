@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
-import { Search, Sparkles, X } from 'lucide-react';
+import { Search, Sparkles, X, Eye, Heart } from 'lucide-react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
@@ -143,6 +143,8 @@ interface GalleryImage {
   style_category: string | null;
   prompt: string;
   created_at: string;
+  views: number;
+  likes: number;
 }
 
 export default function GalleryPage() {
@@ -170,7 +172,7 @@ export default function GalleryPage() {
         const supabase = createClient();
         const { data, error } = await supabase
           .from('generations')
-          .select('id, output_url, title, alt_text, style, style_category, prompt, created_at')
+          .select('id, output_url, title, alt_text, style, style_category, prompt, created_at, views, likes')
           .eq('is_public', true)
           .eq('status', 'succeeded')
           .order('created_at', { ascending: false })
@@ -344,12 +346,33 @@ export default function GalleryPage() {
                   onClick={() => handleImageClick(item)}
                   className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer break-inside-avoid mb-4 w-full block"
                 >
-                  {/* Clean Full-Bleed Image - No Overlays */}
+                  {/* Image */}
                   <img
                     src={item.output_url}
                     alt={item.alt_text || item.title || 'AI generated pet portrait'}
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  
+                  {/* Stats Overlay (Bottom) - Visible on hover */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1.5 text-sm font-medium">
+                          <Eye className="w-4 h-4" />
+                          {item.views ?? 0}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-sm font-medium">
+                          <Heart className="w-4 h-4" />
+                          {item.likes ?? 0}
+                        </span>
+                      </div>
+                      {item.title && (
+                        <span className="text-xs text-white/90 truncate max-w-[150px]">
+                          {item.title}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
@@ -400,6 +423,28 @@ export default function GalleryPage() {
                     <span className="px-4 py-2 bg-coral/10 text-coral rounded-full text-sm font-medium">
                       {selectedImage.style}
                     </span>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                        <Eye className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">{selectedImage.views ?? 0}</p>
+                        <p className="text-xs text-gray-500">Views</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-pink-50 rounded-full flex items-center justify-center">
+                        <Heart className="w-5 h-5 text-pink-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">{selectedImage.likes ?? 0}</p>
+                        <p className="text-xs text-gray-500">Likes</p>
+                      </div>
+                    </div>
                   </div>
 
                 {/* Title */}

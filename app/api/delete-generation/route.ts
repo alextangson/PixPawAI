@@ -33,10 +33,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Delete request:', { userId: user.id, generation_id })
 
-    // 3. Fetch the generation to verify ownership
+    // 3. Fetch the generation to verify ownership and get storage paths
     const { data: generation, error: fetchError } = await supabase
       .from('generations')
-      .select('*')
+      .select('id, user_id, is_rewarded, output_storage_path, input_storage_path, share_card_storage_path, input_url, output_url, share_card_url, metadata')
       .eq('id', generation_id)
       .eq('user_id', user.id)
       .single()
@@ -49,74 +49,112 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Delete storage files
+    // 4. Delete storage files using stored paths (reliable) or fallback to URL parsing
     const adminSupabase = createAdminClient()
-    const filesToDelete: string[] = []
+    let deletedCount = 0
 
-    // Extract file paths from URLs
-    if (generation.input_url) {
-      const inputPath = generation.input_url.split('/user-uploads/').pop()
-      if (inputPath) filesToDelete.push(inputPath)
-    }
+    // Try to get storage path from column or metadata
+    const outputStoragePath = generation.output_storage_path || generation.metadata?.storagePath
 
-    if (generation.output_url) {
+    // Delete output image (generated result)
+    if (outputStoragePath) {
+      // Use stored path (reliable)
+      console.log('🗑️ Deleting output file:', outputStoragePath)
+      const { error: outputDeleteError } = await adminSupabase
+        .storage
+        .from('generated-results')
+        .remove([outputStoragePath])
+      
+      if (outputDeleteError) {
+        console.warn('⚠️  Failed to delete output file:', outputDeleteError)
+      } else {
+        console.log('✅ Deleted output file from storage')
+        deletedCount++
+      }
+    } else if (generation.output_url) {
+      // Fallback: Parse path from URL (less reliable)
+      console.log('⚠️  No storage_path, trying to parse from URL')
       const outputPath = generation.output_url.split('/generated-results/').pop()
-      if (outputPath) filesToDelete.push(outputPath)
-    }
-
-    // Delete from storage
-    if (filesToDelete.length > 0) {
-      // Delete input image
-      if (generation.input_url) {
-        const inputPath = generation.input_url.split('/user-uploads/').pop()
-        if (inputPath) {
-          const { error: inputDeleteError } = await adminSupabase
-            .storage
-            .from('user-uploads')
-            .remove([inputPath])
-          
-          if (inputDeleteError) {
-            console.warn('Failed to delete input file:', inputDeleteError)
-          } else {
-            console.log('✅ Deleted input file')
-          }
-        }
-      }
-
-      // Delete output image
-      if (generation.output_url) {
-        const outputPath = generation.output_url.split('/generated-results/').pop()
-        if (outputPath) {
-          const { error: outputDeleteError } = await adminSupabase
-            .storage
-            .from('generated-results')
-            .remove([outputPath])
-          
-          if (outputDeleteError) {
-            console.warn('Failed to delete output file:', outputDeleteError)
-          } else {
-            console.log('✅ Deleted output file')
-          }
-        }
-      }
-
-      // Delete share card if exists
-      if (generation.share_card_url) {
-        const cardPath = generation.share_card_url.split('/shared-cards/').pop()
-        if (cardPath) {
-          const { error: cardDeleteError } = await adminSupabase
-            .storage
-            .from('shared-cards')
-            .remove([cardPath])
-          
-          if (cardDeleteError) {
-            console.warn('Failed to delete share card:', cardDeleteError)
-          } else {
-            console.log('✅ Deleted share card')
-          }
+      if (outputPath) {
+        const { error: outputDeleteError } = await adminSupabase
+          .storage
+          .from('generated-results')
+          .remove([outputPath])
+        
+        if (outputDeleteError) {
+          console.warn('⚠️  Failed to delete output file:', outputDeleteError)
+        } else {
+          console.log('✅ Deleted output file (via URL parsing)')
+          deletedCount++
         }
       }
     }
+
+    // Delete input image (if stored)
+    if (generation.input_storage_path) {
+      console.log('🗑️ Deleting input file:', generation.input_storage_path)
+      const { error: inputDeleteError } = await adminSupabase
+        .storage
+        .from('user-uploads')
+        .remove([generation.input_storage_path])
+      
+      if (inputDeleteError) {
+        console.warn('⚠️  Failed to delete input file:', inputDeleteError)
+      } else {
+        console.log('✅ Deleted input file from storage')
+        deletedCount++
+      }
+    } else if (generation.input_url) {
+      // Fallback: Parse path from URL
+      const inputPath = generation.input_url.split('/user-uploads/').pop()
+      if (inputPath) {
+        const { error: inputDeleteError } = await adminSupabase
+          .storage
+          .from('user-uploads')
+          .remove([inputPath])
+        
+        if (inputDeleteError) {
+          console.warn('⚠️  Failed to delete input file:', inputDeleteError)
+        } else {
+          console.log('✅ Deleted input file (via URL parsing)')
+          deletedCount++
+        }
+      }
+    }
+
+    // Delete share card (if exists)
+    if (generation.share_card_storage_path) {
+      console.log('🗑️ Deleting share card:', generation.share_card_storage_path)
+      const { error: cardDeleteError } = await adminSupabase
+        .storage
+        .from('shared-cards')
+        .remove([generation.share_card_storage_path])
+      
+      if (cardDeleteError) {
+        console.warn('⚠️  Failed to delete share card:', cardDeleteError)
+      } else {
+        console.log('✅ Deleted share card from storage')
+        deletedCount++
+      }
+    } else if (generation.share_card_url) {
+      // Fallback: Parse path from URL
+      const cardPath = generation.share_card_url.split('/shared-cards/').pop()
+      if (cardPath) {
+        const { error: cardDeleteError } = await adminSupabase
+          .storage
+          .from('shared-cards')
+          .remove([cardPath])
+        
+        if (cardDeleteError) {
+          console.warn('⚠️  Failed to delete share card:', cardDeleteError)
+        } else {
+          console.log('✅ Deleted share card (via URL parsing)')
+          deletedCount++
+        }
+      }
+    }
+
+    console.log(`📊 Deleted ${deletedCount} files from storage`)
 
     // 5. Delete the generation record
     const { error: deleteError } = await adminSupabase

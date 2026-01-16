@@ -4,30 +4,7 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { RotateCw, Download, Sparkles, Loader2 } from 'lucide-react'
-
-// 20 cinematic slogans (same as backend)
-const SLOGANS = [
-  "Every paw has a story.",
-  "Captured forever in pixels.",
-  "A moment frozen in time.",
-  "Where memories become art.",
-  "The look that says everything.",
-  "More than just a portrait.",
-  "Timeless. Priceless. Yours.",
-  "From lens to legacy.",
-  "Eyes that speak volumes.",
-  "A masterpiece in the making.",
-  "Love at first sight.",
-  "The soul behind the gaze.",
-  "Forever begins here.",
-  "Whiskers, wonders, and all.",
-  "The art of being you.",
-  "Elegance in every pixel.",
-  "A tale of fur and feeling.",
-  "Cherished. Always.",
-  "The magic of you.",
-  "Life, in full color."
-]
+import { PREMIUM_SLOGANS } from '@/lib/constants/slogans'
 
 interface ArtCardModalProps {
   isOpen: boolean
@@ -49,7 +26,7 @@ export function ArtCardModal({
   onTitleUpdate
 }: ArtCardModalProps) {
   const [customTitle, setCustomTitle] = useState(originalTitle || '')
-  const [selectedSlogan, setSelectedSlogan] = useState(currentSlogan || SLOGANS[0])
+  const [selectedSlogan, setSelectedSlogan] = useState(currentSlogan || PREMIUM_SLOGANS[0])
   const [isDownloading, setIsDownloading] = useState(false)
   const [previewDate] = useState(new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -60,12 +37,12 @@ export function ArtCardModal({
   // Initialize title and slogan from props
   useEffect(() => {
     setCustomTitle(originalTitle || 'Untitled Portrait')
-    setSelectedSlogan(currentSlogan || SLOGANS[0])
+    setSelectedSlogan(currentSlogan || PREMIUM_SLOGANS[0])
   }, [originalTitle, currentSlogan])
 
   const handleRefreshSlogan = () => {
     // Pick a random slogan different from current
-    const availableSlogans = SLOGANS.filter(s => s !== selectedSlogan)
+    const availableSlogans = PREMIUM_SLOGANS.filter(s => s !== selectedSlogan)
     const randomIndex = Math.floor(Math.random() * availableSlogans.length)
     setSelectedSlogan(availableSlogans[randomIndex])
   }
@@ -95,13 +72,30 @@ export function ArtCardModal({
         onTitleUpdate(customTitle)
       }
 
-      // Trigger download
-      const link = document.createElement('a')
-      link.href = data.share_card_url
-      link.download = `pixpaw-${customTitle.replace(/\s+/g, '-')}-card.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // Trigger download using Blob to avoid opening in new tab
+      try {
+        // Fetch the image as blob
+        const imageResponse = await fetch(data.share_card_url)
+        const blob = await imageResponse.blob()
+        
+        // Create blob URL
+        const blobUrl = URL.createObjectURL(blob)
+        
+        // Trigger download
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = `pixpaw-${customTitle.replace(/\s+/g, '-')}-card.jpg`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // Clean up blob URL
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100)
+      } catch (downloadError) {
+        console.error('Blob download failed, falling back to direct link:', downloadError)
+        // Fallback: open in new tab if blob download fails
+        window.open(data.share_card_url, '_blank')
+      }
 
       // Show success and close
       setTimeout(() => {
@@ -119,6 +113,9 @@ export function ArtCardModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-5xl max-h-[90vh] !p-0 overflow-hidden !block">
+        {/* Hidden title for screen readers */}
+        <DialogTitle className="sr-only">Customize Your Art Card</DialogTitle>
+        
         {/* Modal Layout: Vertical on Mobile, Side-by-Side on Desktop */}
         <div className="flex flex-col md:flex-row min-h-[80vh] md:h-[90vh] w-full">
           
@@ -156,8 +153,7 @@ export function ArtCardModal({
                   </div>
 
                   {/* Slogan */}
-                  <div className="text-gray-600 italic text-[11px] line-clamp-2" style={{ 
-                    fontFamily: 'Georgia, serif',
+                  <div className="text-gray-600 italic text-[11px] line-clamp-2 font-serif" style={{ 
                     color: '#666666'
                   }}>
                     "{selectedSlogan}"
@@ -184,13 +180,10 @@ export function ArtCardModal({
             
             {/* Header */}
             <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-coral" />
-                <h2 className="text-xl font-bold text-gray-900">
-                  Customize Your Card
-                </h2>
-              </div>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">
+                Customize Your<br />Art Card
+              </h2>
+              <p className="text-base text-gray-600 font-sans">
                 Personalize before downloading
               </p>
             </div>

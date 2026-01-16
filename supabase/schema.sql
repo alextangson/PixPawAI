@@ -43,6 +43,7 @@ COMMENT ON COLUMN public.profiles.tier IS 'Subscription tier: free, starter, or 
 -- ---------------------------------------------
 -- Table: generations
 -- Purpose: Stores AI generation history
+-- UPDATED: 2026-01-16 - Added Share-to-Earn columns
 -- ---------------------------------------------
 CREATE TABLE IF NOT EXISTS public.generations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -56,7 +57,25 @@ CREATE TABLE IF NOT EXISTS public.generations (
   replicate_id TEXT,
   webhook_status TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ
+  completed_at TIMESTAMPTZ,
+  
+  -- Share-to-Earn System (Added 2026-01-16)
+  is_public BOOLEAN NOT NULL DEFAULT false,
+  title TEXT,
+  alt_text TEXT,
+  is_rewarded BOOLEAN NOT NULL DEFAULT false,
+  style_category TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  
+  -- Analytics & Social (Added 2026-01-16)
+  views INTEGER NOT NULL DEFAULT 0,
+  likes INTEGER NOT NULL DEFAULT 0,
+  share_card_url TEXT,
+  
+  -- Storage Path Tracking (Added 2026-01-16)
+  input_storage_path TEXT,
+  output_storage_path TEXT,
+  share_card_storage_path TEXT
 );
 
 -- Add indexes for common queries
@@ -65,10 +84,28 @@ CREATE INDEX IF NOT EXISTS idx_generations_status ON public.generations(status);
 CREATE INDEX IF NOT EXISTS idx_generations_created_at ON public.generations(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_generations_replicate_id ON public.generations(replicate_id) WHERE replicate_id IS NOT NULL;
 
+-- Indexes for Share-to-Earn System (Added 2026-01-16)
+CREATE INDEX IF NOT EXISTS idx_generations_is_public ON public.generations(is_public) WHERE is_public = true;
+CREATE INDEX IF NOT EXISTS idx_generations_style_category ON public.generations(style_category) WHERE style_category IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_generations_is_rewarded ON public.generations(is_rewarded) WHERE is_rewarded = true;
+CREATE INDEX IF NOT EXISTS idx_generations_share_card_url ON public.generations(share_card_url) WHERE share_card_url IS NOT NULL;
+
 -- Add comments
 COMMENT ON TABLE public.generations IS 'AI generation history and status tracking';
 COMMENT ON COLUMN public.generations.status IS 'Current status: processing, succeeded, or failed';
 COMMENT ON COLUMN public.generations.replicate_id IS 'Replicate API prediction ID for tracking';
+COMMENT ON COLUMN public.generations.is_public IS 'Whether this generation is shared publicly in the gallery';
+COMMENT ON COLUMN public.generations.title IS 'User-provided title for public gallery display';
+COMMENT ON COLUMN public.generations.alt_text IS 'SEO-friendly alt text for the image';
+COMMENT ON COLUMN public.generations.is_rewarded IS 'Whether user has received the +1 credit reward for sharing (one-time only)';
+COMMENT ON COLUMN public.generations.style_category IS 'Style category for filtering in gallery';
+COMMENT ON COLUMN public.generations.metadata IS 'Additional metadata (JSONB): aspectRatio, dimensions, strength, provider, model, etc.';
+COMMENT ON COLUMN public.generations.views IS 'Number of times this generation was viewed in the gallery';
+COMMENT ON COLUMN public.generations.likes IS 'Number of likes this generation received';
+COMMENT ON COLUMN public.generations.share_card_url IS 'URL of the premium Leica/Polaroid-style branded card for social media';
+COMMENT ON COLUMN public.generations.input_storage_path IS 'Storage path for input image (for reliable deletion)';
+COMMENT ON COLUMN public.generations.output_storage_path IS 'Storage path for output image (for reliable deletion)';
+COMMENT ON COLUMN public.generations.share_card_storage_path IS 'Storage path for share card (for reliable deletion)';
 
 -- ---------------------------------------------
 -- Table: gallery_images
@@ -164,6 +201,30 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 COMMENT ON FUNCTION public.decrement_credits IS 'Safely decrements user credits (atomic operation)';
 
 -- ---------------------------------------------
+-- Function: increment_credits
+-- Purpose: Safely increment user credits (for refunds and rewards)
+-- ---------------------------------------------
+CREATE OR REPLACE FUNCTION public.increment_credits(user_uuid UUID, amount INTEGER DEFAULT 1)
+RETURNS INTEGER AS $$
+DECLARE
+  new_credits INTEGER;
+BEGIN
+  UPDATE public.profiles
+  SET credits = credits + amount
+  WHERE id = user_uuid
+  RETURNING credits INTO new_credits;
+  
+  IF new_credits IS NULL THEN
+    RAISE EXCEPTION 'User not found: %', user_uuid;
+  END IF;
+  
+  RETURN new_credits;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.increment_credits IS 'Safely increments user credits (atomic operation) - for refunds and share rewards';
+
+-- ---------------------------------------------
 -- Function: increment_generation_count
 -- Purpose: Track total generations per user
 -- ---------------------------------------------
@@ -245,12 +306,20 @@ CREATE POLICY "Service role has full access to profiles"
 -- RLS Policies: generations
 -- ---------------------------------------------
 
--- Policy: Users can view their own generations
+-- Policy: Users can view their own generations OR public shared ones
 DROP POLICY IF EXISTS "Users can view own generations" ON public.generations;
 CREATE POLICY "Users can view own generations"
   ON public.generations
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR is_public = true);
+
+-- Policy: Anonymous users can view public shared generations
+DROP POLICY IF EXISTS "Public can view shared generations" ON public.generations;
+CREATE POLICY "Public can view shared generations"
+  ON public.generations
+  FOR SELECT
+  TO anon
+  USING (is_public = true);
 
 -- Policy: Users can insert their own generations
 DROP POLICY IF EXISTS "Users can insert own generations" ON public.generations;
@@ -327,6 +396,13 @@ VALUES
     true,
     20971520, -- 20MB limit
     ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  ),
+  (
+    'shared-cards',
+    'shared-cards',
+    true,
+    20971520, -- 20MB limit
+    ARRAY['image/jpeg', 'image/jpg']
   )
 ON CONFLICT (id) DO NOTHING;
 
@@ -392,6 +468,35 @@ CREATE POLICY "Service role can delete results"
   FOR DELETE
   USING (
     bucket_id = 'generated-results' AND
+    auth.jwt()->>'role' = 'service_role'
+  );
+
+-- ---------------------------------------------
+-- Storage Policies: shared-cards (Public Read)
+-- ---------------------------------------------
+
+-- Policy: Anyone can view share cards (public bucket)
+DROP POLICY IF EXISTS "Public can view share cards" ON storage.objects;
+CREATE POLICY "Public can view share cards"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'shared-cards');
+
+-- Policy: Authenticated users can upload their own share cards
+DROP POLICY IF EXISTS "Users can upload share cards" ON storage.objects;
+CREATE POLICY "Users can upload share cards"
+  ON storage.objects
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'shared-cards');
+
+-- Policy: Service role can delete share cards
+DROP POLICY IF EXISTS "Service role can delete share cards" ON storage.objects;
+CREATE POLICY "Service role can delete share cards"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'shared-cards' AND
     auth.jwt()->>'role' = 'service_role'
   );
 

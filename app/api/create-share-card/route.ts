@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
-
-// 20 Cinematic Slogans (matching ArtCardModal)
-const SLOGANS = [
-  "Every paw has a story.",
-  "Captured forever in pixels.",
-  "A moment frozen in time.",
-  "Where memories become art.",
-  "The look that says everything.",
-  "More than just a portrait.",
-  "Timeless. Priceless. Yours.",
-  "From lens to legacy.",
-  "Eyes that speak volumes.",
-  "A masterpiece in the making.",
-  "Love at first sight.",
-  "The soul behind the gaze.",
-  "Forever begins here.",
-  "Whiskers, wonders, and all.",
-  "The art of being you.",
-  "Elegance in every pixel.",
-  "A tale of fur and feeling.",
-  "Cherished. Always.",
-  "The magic of you.",
-  "Life, in full color."
-]
+import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,12 +58,12 @@ export async function POST(request: NextRequest) {
     if (custom_slogan) {
       // Use the custom slogan provided by user
       selectedSlogan = custom_slogan
-    } else if (typeof slogan_index === 'number' && slogan_index >= 0 && slogan_index < SLOGANS.length) {
+    } else if (typeof slogan_index === 'number' && slogan_index >= 0 && slogan_index < PREMIUM_SLOGANS.length) {
       // Use specific slogan by index
-      selectedSlogan = SLOGANS[slogan_index]
+      selectedSlogan = getSloganByIndex(slogan_index)
     } else {
       // Random slogan
-      selectedSlogan = SLOGANS[Math.floor(Math.random() * SLOGANS.length)]
+      selectedSlogan = PREMIUM_SLOGANS[Math.floor(Math.random() * PREMIUM_SLOGANS.length)]
     }
 
     // 5. Download the generated image from Supabase Storage
@@ -283,7 +260,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint to fetch available slogans
 export async function GET(request: NextRequest) {
   return NextResponse.json({
-    slogans: SLOGANS,
-    total: SLOGANS.length
+    slogans: PREMIUM_SLOGANS,
+    total: PREMIUM_SLOGANS.length
   })
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Playfair_Display } from "next/font/google"
 import "../globals.css"
 import { i18n, type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
@@ -7,7 +7,18 @@ import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { getUser } from '@/lib/auth/actions'
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const playfair = Playfair_Display({ 
+  subsets: ["latin"],
+  variable: '--font-serif',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900'],
+})
 
 export async function generateStaticParams() {
   return i18n.locales.map((locale) => ({ lang: locale }))
@@ -56,7 +67,7 @@ export default async function RootLayout({
   return (
     <html lang={lang} suppressHydrationWarning>
       <body 
-        className={inter.className} 
+        className={`${inter.variable} ${playfair.variable} font-sans`}
         suppressHydrationWarning
       >
         <Navbar dict={dict} lang={lang} user={user} />

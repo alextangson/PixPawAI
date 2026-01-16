@@ -47,7 +47,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
             <div className="w-8 h-8 bg-gradient-to-br from-coral to-orange-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
               <PawPrint className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">
+            <span className="text-xl font-serif font-bold text-gray-900">
               {dict.nav.logo}
             </span>
           </Link>

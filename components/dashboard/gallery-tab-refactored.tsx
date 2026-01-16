@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Download, Sparkles, CheckCircle, ShoppingBag, MoreVertical, Trash2, EyeOff, BarChart3, Loader2, Heart, Eye } from 'lucide-react'
+import { Download, Sparkles, CheckCircle, ShoppingBag, Trash2, EyeOff, BarChart3, Loader2, Heart, Eye, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import {
@@ -14,14 +14,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ShareSuccessModal } from '@/components/share-success-modal'
 import { ArtCardModal } from '@/components/art-card-modal'
+import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
 import confetti from 'canvas-confetti'
 
 interface GalleryTabProps {
   generations: any[]
   onGenerationsUpdate?: () => void
+  onLocalUpdate?: (updater: (prevGenerations: any[]) => any[]) => void
 }
 
-export function GalleryTabRefactored({ generations, onGenerationsUpdate }: GalleryTabProps) {
+export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocalUpdate }: GalleryTabProps) {
   const succeededGenerations = generations.filter(g => g.status === 'succeeded')
   
   // Share Dialog States
@@ -43,12 +45,32 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
   // Art Card Modal
   const [artCardModalOpen, setArtCardModalOpen] = useState(false)
   const [selectedGenerationForCard, setSelectedGenerationForCard] = useState<any>(null)
+  
+  // Analytics Modal
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false)
+  const [selectedGenerationForAnalytics, setSelectedGenerationForAnalytics] = useState<any>(null)
+  
+  // Shop Fake Door
+  const [shopFakeDoorOpen, setShopFakeDoorOpen] = useState(false)
+  const [selectedGenerationForShop, setSelectedGenerationForShop] = useState<any>(null)
 
   const handleShareClick = (generation: any) => {
     setSelectedGeneration(generation)
     setShareTitle(generation.title || '')
     setShareError('')
     setShareDialogOpen(true)
+  }
+  
+  const handleShopClick = (generation: any) => {
+    // Log fake door interaction
+    console.log('🚪 FakeDoor_Shop_Clicked', {
+      source: 'GalleryTab',
+      generationId: generation.id,
+      petTitle: generation.title,
+      timestamp: new Date().toISOString()
+    })
+    setSelectedGenerationForShop(generation)
+    setShopFakeDoorOpen(true)
   }
 
   const handleShareConfirm = async () => {
@@ -87,11 +109,18 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
       setSuccessGenerationId(selectedGeneration.id)
       setShowSuccessModal(true)
 
-      // Update local state
-      selectedGeneration.is_public = true
-      selectedGeneration.is_rewarded = true
+      // Update local state immediately (instant UI feedback)
+      if (onLocalUpdate) {
+        onLocalUpdate((prevGenerations) =>
+          prevGenerations.map((gen) =>
+            gen.id === selectedGeneration.id
+              ? { ...gen, is_public: true, is_rewarded: true, title: shareTitle.trim() || gen.title }
+              : gen
+          )
+        )
+      }
       
-      // Refresh data
+      // Refresh data from server (background sync)
       if (onGenerationsUpdate) {
         onGenerationsUpdate()
       }
@@ -123,7 +152,18 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
 
       console.log('✅ Unshared successfully')
       
-      // Refresh data
+      // Update local state immediately (instant UI feedback)
+      if (onLocalUpdate) {
+        onLocalUpdate((prevGenerations) =>
+          prevGenerations.map((gen) =>
+            gen.id === generationId
+              ? { ...gen, is_public: false }
+              : gen
+          )
+        )
+      }
+      
+      // Refresh data from server (background sync)
       if (onGenerationsUpdate) {
         onGenerationsUpdate()
       }
@@ -152,10 +192,18 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
 
       console.log('✅ Deleted successfully')
       
+      const deletedId = generationToDelete.id
       setDeleteDialogOpen(false)
       setGenerationToDelete(null)
       
-      // Refresh data
+      // Update local state immediately (instant UI feedback)
+      if (onLocalUpdate) {
+        onLocalUpdate((prevGenerations) =>
+          prevGenerations.filter((gen) => gen.id !== deletedId)
+        )
+      }
+      
+      // Refresh data from server (background sync)
       if (onGenerationsUpdate) {
         onGenerationsUpdate()
       }
@@ -339,6 +387,85 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
         />
       )}
 
+      {/* Analytics Modal */}
+      <Dialog open={analyticsModalOpen} onOpenChange={setAnalyticsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-coral" />
+              Analytics
+            </DialogTitle>
+            <DialogDescription>
+              Performance metrics for your shared artwork
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedGenerationForAnalytics && (
+            <div className="space-y-4">
+              {/* Image Preview */}
+              <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={selectedGenerationForAnalytics.output_url}
+                  alt={selectedGenerationForAnalytics.title || 'Portrait'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Title */}
+              {selectedGenerationForAnalytics.title && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    {selectedGenerationForAnalytics.title}
+                  </p>
+                </div>
+              )}
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <Eye className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-blue-900">
+                    {selectedGenerationForAnalytics.views ?? 0}
+                  </p>
+                  <p className="text-xs text-blue-700 font-medium">Views</p>
+                </div>
+                <div className="bg-pink-50 rounded-lg p-4 text-center">
+                  <Heart className="w-6 h-6 text-pink-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-pink-900">
+                    {selectedGenerationForAnalytics.likes ?? 0}
+                  </p>
+                  <p className="text-xs text-pink-700 font-medium">Likes</p>
+                </div>
+              </div>
+
+              {/* Date Info */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Shared on:</span>
+                  <span className="font-medium">
+                    {new Date(selectedGenerationForAnalytics.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Gallery Link */}
+              <Button
+                onClick={() => window.open(`/en/gallery?id=${selectedGenerationForAnalytics.id}`, '_blank')}
+                variant="outline"
+                className="w-full border-coral/30 hover:bg-coral/10 text-coral"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                View in Public Gallery
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Gallery Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {succeededGenerations.map((generation) => (
@@ -356,44 +483,19 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
                 unoptimized
               />
               
-              {/* More Menu (Top Right) */}
+              {/* Delete Menu (Top Right) - Destructive actions only */}
               <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {generation.is_public && (
-                      <>
-                        <DropdownMenuItem onClick={() => handleUnshare(generation.id)}>
-                          <EyeOff className="w-4 h-4 mr-2" />
-                          Make Private
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          View Analytics
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-                    <DropdownMenuItem
-                      className="text-red-600"
-                      onClick={() => {
-                        setGenerationToDelete(generation)
-                        setDeleteDialogOpen(true)
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete permanently
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white hover:bg-red-50 shadow-lg transition-colors"
+                  onClick={() => {
+                    setGenerationToDelete(generation)
+                    setDeleteDialogOpen(true)
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 text-gray-600 hover:text-red-600" />
+                </Button>
               </div>
             </div>
             
@@ -448,11 +550,11 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Action Buttons - PERMANENT 3-BUTTON LAYOUT */}
               <div className="flex gap-2">
                 {generation.status === 'succeeded' ? (
                   <>
-                    {/* Download Dropdown */}
+                    {/* Button 1: Download (TOOLS - Always Active) */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -464,47 +566,77 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
                           Download
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
+                      <DropdownMenuContent align="start">
                         <DropdownMenuItem onClick={() => window.open(generation.output_url, '_blank')}>
-                          Original
+                          <Download className="w-4 h-4 mr-2" />
+                          Original Image
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           setSelectedGenerationForCard(generation)
                           setArtCardModalOpen(true)
                         }}>
-                          Art Card
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Create Art Card
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Share Button */}
+                    {/* Button 2: Status (Toggle - Share or Shared Dropdown) */}
                     {!generation.is_public ? (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 border-coral/30 hover:bg-coral/10"
+                        className="flex-1 border-coral/30 hover:bg-coral/10 text-coral"
                         onClick={() => handleShareClick(generation)}
                       >
-                        <Sparkles className="w-4 h-4 mr-1" />
+                        <Share2 className="w-4 h-4 mr-1" />
                         Share
                       </Button>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 bg-green-50 border-green-200 text-green-700"
-                        disabled
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Shared
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Shared
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedGenerationForAnalytics(generation)
+                            setAnalyticsModalOpen(true)
+                          }}>
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            View Analytics
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleUnshare(generation.id)}>
+                            <EyeOff className="w-4 h-4 mr-2" />
+                            Make Private
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
+
+                    {/* Button 3: Shop (COMMERCE - Always Active) */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-coral/20 hover:bg-coral/5"
+                      onClick={() => handleShopClick(generation)}
+                    >
+                      <ShoppingBag className="w-4 h-4 mr-1" />
+                      Shop
+                    </Button>
                   </>
                 ) : generation.status === 'processing' ? (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1"
+                    className="w-full"
                     disabled
                   >
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -514,22 +646,10 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 text-red-500"
+                    className="w-full text-red-500"
                     disabled
                   >
                     Generation Failed
-                  </Button>
-                )}
-
-                {/* Shop Button */}
-                {generation.status === 'succeeded' && (
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white"
-                    onClick={() => window.location.href = `/shop/${generation.id}`}
-                  >
-                    <ShoppingBag className="w-4 h-4 mr-1" />
-                    Shop
                   </Button>
                 )}
               </div>
@@ -537,6 +657,19 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
           </div>
         ))}
       </div>
+
+      {/* Shop Fake Door Dialog */}
+      {selectedGenerationForShop && (
+        <ShopFakeDoorDialog
+          isOpen={shopFakeDoorOpen}
+          onClose={() => {
+            setShopFakeDoorOpen(false)
+            setSelectedGenerationForShop(null)
+          }}
+          generationId={selectedGenerationForShop.id}
+          petName={selectedGenerationForShop.title || 'your pet'}
+        />
+      )}
     </>
   )
 }

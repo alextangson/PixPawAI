@@ -111,7 +111,7 @@ async function uploadBase64ToStorage(
   base64Data: string,
   userId: string,
   generationId: string
-): Promise<string> {
+): Promise<{ publicUrl: string; storagePath: string }> {
   // Use admin client to bypass RLS policies
   const supabase = createAdminClient()
   
@@ -158,23 +158,53 @@ async function uploadBase64ToStorage(
     .getPublicUrl(data.path)
 
   console.log('✅ Uploaded to storage:', publicUrlData.publicUrl)
-  return publicUrlData.publicUrl
+  console.log('📁 Storage path:', data.path)
+  
+  return {
+    publicUrl: publicUrlData.publicUrl,
+    storagePath: data.path
+  }
 }
 
 /**
- * Convert aspect ratio string to pixel dimensions
+ * 🎯 DUAL-FORCE FIX: Convert aspect ratio string to pixel dimensions
  * All dimensions are multiples of 32 for FLUX compatibility
+ * This is the "HARD" limit - explicit integer mapping
  */
-function aspectRatioToDimensions(aspectRatio: string): { width: number; height: number } {
-  const ratioMap: Record<string, { width: number; height: number }> = {
-    '1:1': { width: 1024, height: 1024 },    // Square
-    '3:4': { width: 768, height: 1024 },     // Portrait (Best for Print)
-    '9:16': { width: 576, height: 1024 },    // Vertical (Best for Wallpaper)
-    '4:3': { width: 1024, height: 768 },     // Landscape
-    '16:9': { width: 1024, height: 576 },    // Cinematic
+function aspectRatioToDimensions(aspectRatio: string): { width: number; height: number; arSuffix: string } {
+  // FIX 1: Explicit Resolution Mapping (The "Hard" Limit)
+  let width = 1024
+  let height = 1024
+  let arSuffix = " --ar 1:1"
+
+  switch (aspectRatio) {
+    case "3:4":
+      width = 768
+      height = 1024
+      arSuffix = " --ar 3:4"
+      break
+    case "4:3":
+      width = 1024
+      height = 768
+      arSuffix = " --ar 4:3"
+      break
+    case "16:9":
+      width = 1024
+      height = 576
+      arSuffix = " --ar 16:9"
+      break
+    case "9:16":
+      width = 576
+      height = 1024
+      arSuffix = " --ar 9:16"
+      break
+    default: // "1:1"
+      width = 1024
+      height = 1024
+      arSuffix = " --ar 1:1"
   }
 
-  return ratioMap[aspectRatio] || ratioMap['1:1'] // Default to square
+  return { width, height, arSuffix }
 }
 
 /**
@@ -201,7 +231,7 @@ function normalizeDimensions(width?: number, height?: number): { width: number; 
 
 /**
  * Generate image using OpenRouter API with FLUX.2-flex model
- * Returns the public Supabase Storage URL (not Base64)
+ * Returns the public Supabase Storage URL and storage path
  */
 async function generateWithOpenRouter(
   finalPrompt: string,
@@ -210,8 +240,9 @@ async function generateWithOpenRouter(
   imageUrl?: string,
   strength: number = 0.8,
   width?: number,
-  height?: number
-): Promise<string> {
+  height?: number,
+  arSuffix?: string
+): Promise<{ publicUrl: string; storagePath: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -219,29 +250,21 @@ async function generateWithOpenRouter(
     throw new Error('OPENROUTER_API_KEY is not configured')
   }
 
-  // Use provided dimensions (already converted from aspect ratio)
-  // Only normalize if dimensions are not provided
+  // 🎯 CRITICAL: Use exact dimensions provided (already mapped from aspect ratio)
+  // DO NOT normalize or modify these dimensions
   const dimensions = width && height 
     ? { width, height }
-    : normalizeDimensions(width, height)
+    : { width: 1024, height: 1024 } // Fallback only if not provided
   
-  console.log('🚀 Calling OpenRouter API with FLUX.2-flex...')
-  console.log('📝 Prompt:', finalPrompt.substring(0, 100))
-  console.log('📐 Dimensions REQUESTED:', `${dimensions.width}x${dimensions.height}`)
-  console.log('🎯 Strength (preservation):', strength, '- Higher = more like original')
-  console.log('🖼️  Source Image URL:', imageUrl || 'None')
-  console.log('🔍 Raw width/height params:', { width, height })
+  console.log('🚀 SENDING TO OPENROUTER:')
+  console.log('  📐 Model: black-forest-labs/flux.2-flex')
+  console.log('  📏 Width:', dimensions.width, '(integer)')
+  console.log('  📏 Height:', dimensions.height, '(integer)')
+  console.log('  💬 AR Suffix:', arSuffix || 'none')
+  console.log('  🎯 Strength:', strength, '- Higher = more like original')
+  console.log('  🖼️  Has Source Image:', !!imageUrl)
+  console.log('  📝 Prompt tail:', finalPrompt.slice(-50))
   
-  // Log the full request body (without logging full URLs)
-  console.log('📦 Request Body:', JSON.stringify({
-    model: 'black-forest-labs/flux.2-flex',
-    width: dimensions.width,
-    height: dimensions.height,
-    prompt_strength: strength,
-    hasImage: !!imageUrl,
-    messageContent: imageUrl ? 'image + text' : 'text only'
-  }, null, 2))
-
   // Build message content with image if provided (image-to-image)
   const messageContent: any = []
   
@@ -255,13 +278,20 @@ async function generateWithOpenRouter(
     })
   }
   
-  // Add text prompt with aspect ratio hint for better results
-  const aspectRatioHint = width && height ? ` [Aspect ratio: ${width}:${height}, resolution ${width}x${height}]` : '';
+  // 🎯 FIX 2: Prompt Injection (The "Soft" Hint)
+  // Inject the AR into the prompt text itself as a backup
+  const promptWithAR = arSuffix 
+    ? `${finalPrompt}${arSuffix}` 
+    : finalPrompt
+  
+  console.log('  ✍️  Final prompt:', promptWithAR.slice(-100))
+  
   messageContent.push({
     type: 'text',
-    text: `Transform this image with the following style and description: ${finalPrompt}. Preserve the subject's identity and key features while applying the artistic style.${aspectRatioHint}`
+    text: `Transform this image with the following style and description: ${promptWithAR}. Preserve the subject's identity and key features while applying the artistic style.`
   })
 
+  // 🎯 FIX 3: Correct API Body Structure (CRITICAL)
   // Build request body following OpenRouter's official format
   const requestBody: any = {
     model: 'black-forest-labs/flux.2-flex',
@@ -279,28 +309,22 @@ async function generateWithOpenRouter(
     requestBody.prompt_strength = strength
   }
 
-  // Try to pass dimensions via extra_body (OpenRouter format)
-  // Note: FLUX may not support custom dimensions, but we'll try multiple approaches
-  if (width && height) {
-    requestBody.extra_body = {
-      width: dimensions.width,
-      height: dimensions.height,
-      aspect_ratio: `${width}:${height}`
-    }
+  // 🎯 CRITICAL: Pass dimensions via extra_body (OpenRouter format for FLUX models)
+  // Use EXACT integer values from aspect ratio mapping
+  requestBody.extra_body = {
+    width: dimensions.width,   // Integer (e.g., 768)
+    height: dimensions.height, // Integer (e.g., 1024)
+    aspect_ratio: undefined    // ✅ Remove conflicting string params
   }
 
-  console.log('📦 Full Request Body (sanitized):', JSON.stringify({
-    model: requestBody.model,
-    modalities: requestBody.modalities,
-    prompt_strength: requestBody.prompt_strength,
-    extra_body: requestBody.extra_body,
-    messages: [{
-      role: 'user',
-      content: messageContent.map((c: any) => 
-        c.type === 'image_url' ? { type: 'image_url', url: '[IMAGE]' } : { type: 'text', text: c.text?.substring(0, 100) + '...' }
-      )
-    }]
-  }, null, 2))
+  // 🎯 FIX 4: Debug Logging
+  console.log('📦 FINAL API PAYLOAD:')
+  console.log('  model:', requestBody.model)
+  console.log('  extra_body.width:', requestBody.extra_body.width, typeof requestBody.extra_body.width)
+  console.log('  extra_body.height:', requestBody.extra_body.height, typeof requestBody.extra_body.height)
+  console.log('  prompt_strength:', requestBody.prompt_strength)
+  console.log('  has_image:', !!imageUrl)
+  console.log('  ar_suffix_in_prompt:', arSuffix || 'none')
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -338,15 +362,20 @@ async function generateWithOpenRouter(
   if (base64Data) {
     console.log('📊 Received Base64 length:', base64Data.length, 'chars')
     
-    // Upload Base64 to Supabase Storage and return public URL
-    const publicUrl = await uploadBase64ToStorage(base64Data, userId, generationId)
-    return publicUrl
+    // Upload Base64 to Supabase Storage and return public URL + storage path
+    const result = await uploadBase64ToStorage(base64Data, userId, generationId)
+    return result
   }
 
   // If no Base64, check for direct URLs (fallback)
+  // Note: Direct URLs don't give us storage path, so we can't delete them later
   if (data.data?.[0]?.url) {
     console.log('✅ Direct URL found in data.data[0].url')
-    return data.data[0].url
+    console.log('⚠️  Warning: Direct URL without storage path - cannot delete later')
+    return {
+      publicUrl: data.data[0].url,
+      storagePath: '' // No storage path for external URLs
+    }
   }
 
   if (data.choices?.[0]?.message?.images?.[0]) {
@@ -354,7 +383,11 @@ async function generateWithOpenRouter(
     const url = typeof img === 'string' ? img : img?.url
     if (url?.startsWith('http')) {
       console.log('✅ Direct URL found in message.images')
-      return url
+      console.log('⚠️  Warning: Direct URL without storage path - cannot delete later')
+      return {
+        publicUrl: url,
+        storagePath: '' // No storage path for external URLs
+      }
     }
   }
 
@@ -397,15 +430,16 @@ export async function POST(request: NextRequest) {
   // Validate strength parameter (default 0.95 for better similarity to original)
   const validStrength = Math.max(0.1, Math.min(1.0, Number(strength) || 0.95))
 
-    // Convert aspect ratio to dimensions
+    // 🎯 DUAL-FORCE FIX: Convert aspect ratio to exact pixel dimensions
     const dimensions = aspectRatioToDimensions(aspectRatio)
 
-    console.log('Generation request:', { 
+    console.log('🎯 Generation request:', { 
       userId: user.id, 
       style, 
       promptLength: userPrompt.length,
       aspectRatio,
       dimensions: `${dimensions.width}x${dimensions.height}`,
+      arSuffix: dimensions.arSuffix,
       strength: validStrength,
       hasImage: !!imageUrl
     })
@@ -502,17 +536,21 @@ export async function POST(request: NextRequest) {
 
     try {
       // 8. Call OpenRouter API and upload to storage
-      console.log('Starting AI generation via OpenRouter...')
-      const publicImageUrl = await generateWithOpenRouter(
+      console.log('🚀 Starting AI generation via OpenRouter...')
+      console.log('📐 Using aspect ratio:', aspectRatio, '→', `${dimensions.width}x${dimensions.height}`)
+      console.log('💬 Prompt suffix:', dimensions.arSuffix)
+      const { publicUrl: publicImageUrl, storagePath } = await generateWithOpenRouter(
         finalPrompt, 
         user.id, 
         generation.id,
         imageUrl, // Pass source image for image-to-image
         validStrength, // Pass strength parameter
         dimensions.width,
-        dimensions.height
+        dimensions.height,
+        dimensions.arSuffix // Pass aspect ratio suffix for prompt injection
       )
       console.log('✅ Generation and upload completed')
+      console.log('📁 Storage path saved:', storagePath)
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
@@ -522,6 +560,7 @@ export async function POST(request: NextRequest) {
         .update({
           status: 'succeeded',
           output_url: publicImageUrl,
+          output_storage_path: storagePath, // ✅ Save storage path for reliable deletion
           input_url: imageUrl || '',
           metadata: {
             ...generation.metadata,

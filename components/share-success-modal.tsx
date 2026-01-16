@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { RotateCw, Download as DownloadIcon, ExternalLink, Loader2, Sparkles } from 'lucide-react'
+import { RotateCw, Download as DownloadIcon, ExternalLink, Loader2, Sparkles, X, CheckCircle2 } from 'lucide-react'
 
 interface ShareSuccessModalProps {
   isOpen: boolean
@@ -105,133 +105,117 @@ export function ShareSuccessModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] !p-0 overflow-hidden !block">
-        {/* Responsive Layout: Vertical on Mobile, Side-by-Side on Desktop */}
-        <div className="flex flex-col md:flex-row min-h-[80vh] md:h-[90vh] w-full">
+      <DialogContent className="sm:max-w-7xl w-full p-0 overflow-hidden bg-white rounded-3xl">
+        {/* Hidden title for screen readers */}
+        <DialogTitle className="sr-only">Share Card Ready</DialogTitle>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-auto lg:h-[85vh] max-h-[900px]">
           
-          {/* Left: Card Preview (60%) */}
-          <div className="md:w-[60%] bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-6 relative min-h-[50vh] md:min-h-full">
-            {/* Card Image Preview */}
-            <div className="w-full max-w-md">
-              <div className="relative rounded-xl overflow-hidden shadow-2xl transition-all duration-500 ease-in-out">
-                {(isRefreshing || isPolling) && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 animate-fadeIn">
-                    <div className="text-center">
-                      <Loader2 className="w-8 h-8 text-coral animate-spin mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 font-medium">
-                        {isPolling ? 'Creating your premium card...' : 'Refreshing slogan...'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {currentCardUrl ? (
-                  <img
-                    src={currentCardUrl}
-                    alt="Premium share card"
-                    className={`w-full h-auto transition-opacity duration-500 ${(isRefreshing || isPolling) ? 'opacity-50' : 'opacity-100'}`}
-                  />
-                ) : (
-                  <div className="w-full aspect-[4/5] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                    <div className="text-center px-8">
-                      <Sparkles className="w-12 h-12 text-coral mx-auto mb-4 animate-pulse" />
-                      <p className="text-lg font-semibold text-gray-700 mb-2">
-                        Crafting Your Gallery Card
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        We're creating a premium-quality card for your masterpiece...
-                      </p>
-                    </div>
-                  </div>
-                )}
+          {/* Close Button (Top Right) */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+
+          {/* LEFT PANEL: Card Preview (Dark Background) */}
+          <div className="relative h-[400px] lg:h-full w-full bg-zinc-900 flex items-center justify-center p-8">
+            {/* Loading Overlay */}
+            {(isRefreshing || isPolling) && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="text-center">
+                  <Loader2 className="w-10 h-10 text-coral animate-spin mx-auto mb-3" />
+                  <p className="text-white font-medium">
+                    {isPolling ? 'Creating premium card...' : 'Refreshing...'}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
+            
+            {/* Card Image */}
+            {currentCardUrl ? (
+              <img
+                src={currentCardUrl}
+                alt="Premium share card"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              />
+            ) : (
+              <div className="text-center text-white">
+                <Sparkles className="w-16 h-16 mx-auto mb-4 text-coral animate-pulse" />
+                <p className="text-xl font-semibold mb-2">Crafting Your Card</p>
+                <p className="text-gray-400">Premium quality, just a moment...</p>
+              </div>
+            )}
           </div>
 
-          {/* Right: Controls & Actions (40%) */}
-          <div className="md:w-[40%] flex flex-col p-6 bg-white overflow-y-auto max-h-[40vh] md:max-h-full">
-            {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-coral" />
-                <h2 className="text-xl font-bold text-gray-900">
-                  🎉 Share Card Ready!
-                </h2>
-              </div>
+          {/* RIGHT PANEL: Content & Actions */}
+          <div className="relative p-10 lg:p-12 flex flex-col justify-center items-start text-left bg-white overflow-y-auto">
+            
+            {/* Success Badge */}
+            <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-full mb-6">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="text-sm font-semibold">+1 Credit Added</span>
             </div>
 
-            {/* Success Message */}
-            <div className="bg-green-50 border-l-4 border-green-400 rounded p-4 mb-5">
-              <p className="text-green-800 font-semibold text-sm">
-                ✅ +1 Credit Added! Your artwork is now live in the gallery
-              </p>
-            </div>
+            {/* Main Heading */}
+            <h2 className="text-3xl lg:text-4xl font-serif text-gray-900 mb-3">
+              Your Share Card<br />is Ready
+            </h2>
+            
+            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+              Download this premium branded card and share it on social media to drive traffic back to PixPawAI.
+            </p>
 
-            {/* Slogan Display with Refresh */}
-            <div className="mb-5">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Current Slogan
-              </label>
-              <div className="relative">
-                <div className="bg-gradient-to-r from-coral/5 to-orange/5 rounded-lg p-4 border border-coral/20 min-h-[60px] flex items-center">
-                  <p className="text-sm italic text-gray-700 font-medium">
+            {/* Current Slogan with Refresh */}
+            <div className="w-full bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-coral rounded-xl p-6 mb-8 relative">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-coral uppercase tracking-wide mb-2">Current Slogan</p>
+                  <p className="text-gray-700 italic font-serif text-base leading-relaxed">
                     "{currentSlogan}"
                   </p>
                 </div>
-                <Button
+                <button
                   onClick={handleRefreshSlogan}
                   disabled={isRefreshing}
-                  size="sm"
-                  variant="outline"
-                  className="absolute -top-3 -right-3 h-10 w-10 p-0 rounded-full bg-white border-2 border-coral hover:bg-coral/10 shadow-lg transition-all hover:scale-110"
+                  className="flex-shrink-0 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all hover:scale-110 disabled:opacity-50"
+                  title="Refresh slogan"
                 >
                   <RotateCw className={`w-5 h-5 text-coral ${isRefreshing ? 'animate-spin' : ''}`} />
-                </Button>
+                </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Click refresh to try a different slogan
-              </p>
             </div>
 
-            {/* Spacer */}
-            <div className="flex-1 min-h-4"></div>
-
             {/* Action Buttons */}
-            <div className="space-y-3 mt-6">
+            <div className="w-full space-y-3">
               <Button
                 onClick={handleDownload}
                 disabled={!currentCardUrl || isPolling}
-                className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full text-lg font-bold py-6 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white rounded-2xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
-                <DownloadIcon className="w-4 h-4 mr-2" />
-                Download for Social
+                <DownloadIcon className="w-5 h-5 mr-2" />
+                Download Card
               </Button>
+              
               <Button
                 onClick={() => window.open('/en/gallery', '_blank')}
                 variant="outline"
-                className="w-full border-coral/30 hover:bg-coral/10 h-11 border-2"
+                className="w-full py-6 border-2 hover:bg-gray-50 font-medium rounded-2xl"
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Go to Gallery
+                <ExternalLink className="w-5 h-5 mr-2" />
+                View in Gallery
               </Button>
             </div>
-          </div>
 
-          {/* Tips Section */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-sm text-blue-800 text-center">
-              💡 <strong>Pro Tip:</strong> Share this branded card on Instagram, Twitter, or Little Red Book to drive more traffic to PixPawAI.com!
-            </p>
+            {/* Pro Tip */}
+            <div className="mt-8 w-full bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800 text-center">
+                💡 <strong>Pro Tip:</strong> Share on Instagram, Twitter, or 小红书 to grow your audience!
+              </p>
+            </div>
           </div>
-
-          {/* Close Button */}
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="w-full h-11"
-          >
-            Close
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
