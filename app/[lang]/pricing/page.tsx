@@ -5,10 +5,11 @@ import { Check, X, Lock, Gift, Zap, Shield, Link as LinkIcon } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 export default function PricingPage() {
   const params = useParams();
+  const router = useRouter();
   const lang = (params?.lang as Locale) || 'en';
   
   const [dict, setDict] = useState<any>(null);
@@ -16,6 +17,10 @@ export default function PricingPage() {
   useEffect(() => {
     getDictionary(lang).then(setDict);
   }, [lang]);
+
+  const handleStartCreating = () => {
+    router.push(`/${lang}#upload`);
+  };
 
   if (!dict) {
     return <div>Loading...</div>;
@@ -86,6 +91,7 @@ export default function PricingPage() {
               <Button
                 variant="outline"
                 className="w-full py-6 text-lg font-semibold border-2 border-gray-300 hover:border-coral hover:text-coral transition-all"
+                onClick={handleStartCreating}
               >
                 {dict.pricing.cards.free.button}
               </Button>
@@ -119,6 +125,7 @@ export default function PricingPage() {
               <Button
                 variant="secondary"
                 className="w-full py-6 text-lg font-semibold bg-gray-800 hover:bg-gray-900 text-white transition-all"
+                onClick={handleStartCreating}
               >
                 {dict.pricing.cards.starter.button}
               </Button>
@@ -162,6 +169,7 @@ export default function PricingPage() {
               
               <Button
                 className="w-full py-7 text-xl font-bold bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                onClick={handleStartCreating}
               >
                 {dict.pricing.cards.pro.button} 🚀
               </Button>
@@ -197,6 +205,7 @@ export default function PricingPage() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all"
+                onClick={handleStartCreating}
               >
                 {dict.pricing.referral.button}
               </Button>
@@ -277,6 +286,7 @@ export default function PricingPage() {
           <Button
             size="lg"
             className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold px-12 py-7 text-xl shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
+            onClick={handleStartCreating}
           >
             Start Creating Now 🎨
           </Button>

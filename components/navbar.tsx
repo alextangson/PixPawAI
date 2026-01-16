@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, Heart, PawPrint } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,8 @@ interface NavbarProps {
 }
 
 export function Navbar({ dict, lang, user }: NavbarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -37,6 +40,17 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
     { href: `/${lang}/how-to`, label: dict.nav.links.howToGuide },
     { href: `/${lang}/pricing`, label: dict.nav.links.pricing },
   ];
+
+  const handleCreateClick = () => {
+    const isHomePage = pathname === `/${lang}` || pathname === `/${lang}/`;
+    if (isHomePage) {
+      // If already on homepage, trigger hash change event manually
+      window.location.hash = 'upload';
+    } else {
+      // Navigate to homepage with hash
+      router.push(`/${lang}#upload`);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-cream/80 backdrop-blur-md border-b border-orange-100">
@@ -93,11 +107,12 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
               {user ? (
                 <>
                   {/* CTA Button for logged in users */}
-                  <Link href={`/${lang}#upload`}>
-                    <Button className="bg-coral hover:bg-orange-600 text-white font-semibold px-6">
-                      {dict.nav.cta}
-                    </Button>
-                  </Link>
+                  <Button 
+                    className="bg-coral hover:bg-orange-600 text-white font-semibold px-6"
+                    onClick={handleCreateClick}
+                  >
+                    {dict.nav.cta}
+                  </Button>
                   {/* User Menu */}
                   <UserMenu user={user} />
                 </>
@@ -170,11 +185,15 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                     </p>
                   </div>
                   {/* Mobile CTA */}
-                  <Link href={`/${lang}#upload`} onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full bg-coral hover:bg-orange-600 text-white font-semibold">
-                      {dict.nav.cta}
-                    </Button>
-                  </Link>
+                  <Button 
+                    className="w-full bg-coral hover:bg-orange-600 text-white font-semibold"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleCreateClick();
+                    }}
+                  >
+                    {dict.nav.cta}
+                  </Button>
                 </>
               ) : (
                 <>
