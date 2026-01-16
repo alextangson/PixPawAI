@@ -9,6 +9,7 @@ import { uploadUserImage } from '@/lib/supabase/storage'
 import type { User } from '@supabase/supabase-js'
 import confetti from 'canvas-confetti'
 import NextImage from 'next/image'
+import { ShareSuccessModal } from '@/components/share-success-modal'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -38,9 +39,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
   const [generationId, setGenerationId] = useState<string>('')
   const [isSharing, setIsSharing] = useState<boolean>(false)
-  const [isShared, setIsShared] = useState<boolean>(false)
   const [shareTitle, setShareTitle] = useState<string>('')
   const [showShareInput, setShowShareInput] = useState<boolean>(false)
+  
+  // Share Success Modal States
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
+  const [successShareCardUrl, setSuccessShareCardUrl] = useState<string>('')
+  const [successSlogan, setSuccessSlogan] = useState<string>('')
 
   // Check user authentication
   useEffect(() => {
@@ -75,9 +80,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setAspectRatio('1:1')
         setGenerationId('')
         setIsSharing(false)
-        setIsShared(false)
         setShareTitle('')
         setShowShareInput(false)
+        setShowSuccessModal(false)
+        setSuccessShareCardUrl('')
+        setSuccessSlogan('')
       }, 300)
     }
   }, [isOpen, initialStyle])
@@ -192,6 +199,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     setError('')
 
     try {
+      // Call the unified share API (it now generates the card automatically)
       const response = await fetch('/api/share', {
         method: 'POST',
         headers: {
@@ -209,19 +217,39 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         throw new Error(result.error || 'Failed to share')
       }
 
-      // Success! Show confetti effect
-      setIsShared(true)
-      setShowShareInput(false)
+      // Debug: Log the result
+      console.log('✅ Share API Response:', result)
+      console.log('📦 Share card URL:', result.share_card_url)
+      console.log('💬 Slogan:', result.slogan)
+
+      // Update credits
       if (result.credits !== null) {
         setRemainingCredits(result.credits)
       }
 
       // Trigger confetti animation
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 150,
+        spread: 80,
         origin: { y: 0.6 }
       })
+
+      // Hide the share input
+      setShowShareInput(false)
+
+      // Show the Success Modal with the share card
+      if (result.share_card_url && result.slogan) {
+        console.log('🎉 Opening Success Modal...')
+        setSuccessShareCardUrl(result.share_card_url)
+        setSuccessSlogan(result.slogan)
+        setShowSuccessModal(true)
+      } else {
+        console.warn('⚠️ Missing share card data:', {
+          has_url: !!result.share_card_url,
+          has_slogan: !!result.slogan
+        })
+      }
+
     } catch (err: any) {
       console.error('Share error:', err)
       setError(err.message || 'Failed to share')
@@ -766,7 +794,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               </div>
 
               {/* Share to Earn Section */}
-              {!isShared && (
+              {!showSuccessModal && (
                 <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-2xl p-6 border-2 border-coral/20">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-12 h-12 bg-coral/20 rounded-full flex items-center justify-center">
@@ -841,22 +869,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </div>
               )}
 
-              {/* Shared Success Message */}
-              {isShared && (
-                <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
-                  <div className="flex items-center gap-4">
-                    <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-bold text-green-900 mb-1">
-                        Shared Successfully! ✅
-                      </h4>
-                      <p className="text-sm text-green-700">
-                        +1 credit added to your account. Your artwork is now live in the gallery!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-3">
                 <Button
@@ -873,7 +885,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     setUserPrompt('')
                     setGeneratedImageUrl('')
                     setGenerationId('')
-                    setIsShared(false)
                     setShareTitle('')
                     setShowShareInput(false)
                   }}
@@ -886,6 +897,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
           )}
         </div>
+
+        {/* Share Success Modal */}
+        {showSuccessModal && (
+          <ShareSuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => setShowSuccessModal(false)}
+            shareCardUrl={successShareCardUrl}
+            slogan={successSlogan}
+            generationId={generationId}
+            title={shareTitle}
+            onSloganRefresh={(newUrl, newSlogan) => {
+              setSuccessShareCardUrl(newUrl)
+              setSuccessSlogan(newSlogan)
+            }}
+          />
+        )}
 
         {/* Footer - Generate Button (only show in configure step) */}
         {step === 'configure' && (

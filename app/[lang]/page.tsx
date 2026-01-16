@@ -11,23 +11,19 @@ import { FinalCta } from '@/components/final-cta'
 import { UploadModalWizard } from '@/components/upload-modal-wizard'
 import { type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
+import { useParams } from 'next/navigation'
 
-export default function Home({
-  params,
-}: {
-  params: Promise<{ lang: Locale }>
-}) {
-  const [lang, setLang] = useState<Locale>('en')
+export default function Home() {
+  const params = useParams()
+  const lang = (params?.lang as Locale) || 'en'
+  
   const [dict, setDict] = useState<any>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null)
 
   useEffect(() => {
-    params.then(({ lang: resolvedLang }) => {
-      setLang(resolvedLang)
-      getDictionary(resolvedLang).then(setDict)
-    })
-  }, [params])
+    getDictionary(lang).then(setDict)
+  }, [lang])
 
   // 监听 hash 变化，如果是 #upload 则打开 Modal
   useEffect(() => {

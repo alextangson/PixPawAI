@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { generateShareCard, SLOGANS } from '@/lib/generate-share-card'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,13 +50,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Check if already rewarded
-    if (generation.is_rewarded) {
-      return NextResponse.json(
-        { error: 'You have already received a reward for sharing this generation' },
-        { status: 400 }
-      )
-    }
+    // 4. Check reward eligibility (for credit increment)
+    const isEligibleForReward = !generation.is_rewarded
+    
+    console.log('Share eligibility check:', {
+      generation_id,
+      is_rewarded: generation.is_rewarded,
+      eligible_for_credit: isEligibleForReward
+    })
 
     // 5. Check if generation succeeded
     if (generation.status !== 'succeeded') {
@@ -76,7 +78,43 @@ export async function POST(request: NextRequest) {
       altText = `AI generated pet portrait: ${promptPreview}`
     }
 
-    // 7. Update generation: set public, title, alt_text, and is_rewarded
+    // 7. Generate share card asynchronously (non-blocking)
+    let shareCardUrl = ''
+    let shareSlogan = ''
+    let shareSloganIndex = Math.floor(Math.random() * SLOGANS.length)
+    shareSlogan = SLOGANS[shareSloganIndex]
+    
+    // Start card generation in background (don't await)
+    if (generation.output_url) {
+      console.log('🚀 Starting async share card generation...')
+      
+      // Fire and forget - generate card in background
+      generateShareCard({
+        generationId: generation_id,
+        imageUrl: generation.output_url,
+        title: title || generation.title || undefined,
+        sloganIndex: shareSloganIndex
+      }).then(async (result) => {
+        if (result.success && result.shareCardUrl) {
+          // Update the database with the generated card URL
+          const adminSupabase = createAdminClient()
+          await adminSupabase
+            .from('generations')
+            .update({ share_card_url: result.shareCardUrl })
+            .eq('id', generation_id)
+          
+          console.log('✅ Background card generation complete:', result.shareCardUrl)
+        } else {
+          console.error('⚠️ Background card generation failed:', result.error)
+        }
+      }).catch((err) => {
+        console.error('💥 Background card generation error:', err)
+      })
+    } else {
+      console.warn('⚠️ No output_url available for card generation')
+    }
+
+    // 8. Update generation: set public, title, alt_text, is_rewarded, and share_card_url
     // Use admin client to bypass RLS policies
     const adminSupabase = createAdminClient()
     const { error: updateError } = await adminSupabase
@@ -86,6 +124,7 @@ export async function POST(request: NextRequest) {
         title: title || null,
         alt_text: altText,
         is_rewarded: true,
+        share_card_url: shareCardUrl || null,
       })
       .eq('id', generation_id)
       .eq('user_id', user.id)
@@ -93,7 +132,7 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('❌ CRITICAL: Failed to update generation for sharing:', updateError)
       console.error('Generation ID:', generation_id)
-      console.error('Update data:', { is_public: true, title, alt_text: altText, is_rewarded: true })
+      console.error('Update data:', { is_public: true, title, alt_text: altText, is_rewarded: true, share_card_url: shareCardUrl })
       return NextResponse.json(
         { error: 'Failed to share generation', details: updateError.message },
         { status: 500 }
@@ -101,37 +140,52 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Generation shared successfully:', generation_id)
-    console.log('✅ Set is_public=true, is_rewarded=true')
+    console.log('✅ Set is_public=true, is_rewarded=true, share_card_url saved')
 
-    // 8. Increment user's credits by 1 (use admin client)
-    const { data: updatedCredits, error: creditError } = await adminSupabase.rpc(
-      'increment_credits',
-      { user_uuid: user.id, amount: 1 }
-    )
-
-    if (creditError) {
-      console.error('Failed to increment credits:', creditError)
-      // Note: Generation is already shared, but credit increment failed
-      // This is a recoverable error - we still return success but log the issue
-      return NextResponse.json(
-        {
-          success: true,
-          message: 'Generation shared successfully, but credit reward is pending',
-          credits: null,
-        },
-        { status: 200 }
+    // 9. Increment user's credits ONLY if this is the first time sharing (one-time reward)
+    let updatedCredits = null
+    
+    if (isEligibleForReward) {
+      const { data: creditData, error: creditError } = await adminSupabase.rpc(
+        'increment_credits',
+        { user_uuid: user.id, amount: 1 }
       )
+
+      if (creditError) {
+        console.error('❌ Failed to increment credits:', creditError)
+        // Note: Generation is already shared, but credit increment failed
+        // This is a recoverable error - we still return success but log the issue
+      } else {
+        updatedCredits = creditData
+        console.log('💰 Credits incremented (+1), new balance:', updatedCredits)
+      }
+    } else {
+      console.log('ℹ️  No credit granted - already rewarded for this generation')
+      // Fetch current credits without incrementing
+      const { data: profile } = await adminSupabase
+        .from('profiles')
+        .select('credits')
+        .eq('id', user.id)
+        .single()
+      
+      updatedCredits = profile?.credits || null
     }
 
-    console.log('Credits incremented, new balance:', updatedCredits)
-
-    // 9. Return success
+    // 10. Return success with share card data
+    const successMessage = isEligibleForReward
+      ? 'Generation shared successfully! +1 credit earned'
+      : 'Generation shared successfully!'
+    
     return NextResponse.json({
       success: true,
-      message: 'Generation shared successfully! +1 credit earned',
+      message: successMessage,
       credits: updatedCredits,
+      credited: isEligibleForReward,
       generation_id,
       is_public: true,
+      share_card_url: shareCardUrl,
+      slogan: shareSlogan,
+      slogan_index: shareSloganIndex,
     })
   } catch (error: any) {
     console.error('Share API error:', error)

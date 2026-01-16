@@ -5,21 +5,17 @@ import { getDictionary } from '@/lib/dictionary';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 
-export default function ShopPage({
-  params,
-}: {
-  params: Promise<{ lang: Locale }>;
-}) {
-  const [lang, setLang] = useState<Locale>('en');
+export default function ShopPage() {
+  const params = useParams();
+  const lang = (params?.lang as Locale) || 'en';
+  
   const [dict, setDict] = useState<any>(null);
 
   useEffect(() => {
-    params.then(({ lang: resolvedLang }) => {
-      setLang(resolvedLang);
-      getDictionary(resolvedLang).then(setDict);
-    });
-  }, [params]);
+    getDictionary(lang).then(setDict);
+  }, [lang]);
 
   if (!dict) {
     return (

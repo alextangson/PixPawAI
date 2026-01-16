@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { GalleryTab } from '@/components/dashboard/gallery-tab'
+import { GalleryTabRefactored as GalleryTab } from '@/components/dashboard/gallery-tab-refactored'
 import { CreditsTab } from '@/components/dashboard/credits-tab'
 import { SettingsTab } from '@/components/dashboard/settings-tab'
 
@@ -15,6 +16,12 @@ interface DashboardClientProps {
 
 export function DashboardClient({ user, profile, generations }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState('gallery')
+  const router = useRouter()
+
+  const handleGenerationsUpdate = () => {
+    // Refresh the server component data
+    router.refresh()
+  }
 
   return (
     <main className="min-h-screen bg-cream py-12">
@@ -52,7 +59,10 @@ export function DashboardClient({ user, profile, generations }: DashboardClientP
           </TabsList>
 
           <TabsContent value="gallery">
-            <GalleryTab generations={generations} />
+            <GalleryTab 
+              generations={generations} 
+              onGenerationsUpdate={handleGenerationsUpdate}
+            />
           </TabsContent>
 
           <TabsContent value="credits">

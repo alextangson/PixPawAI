@@ -65,14 +65,14 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
       <DialogContent className="sm:max-w-md bg-white p-8 rounded-2xl shadow-xl border-0">
         <div className="flex flex-col gap-6">
           {/* Header Section */}
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">
+          <DialogHeader className="text-center space-y-2">
+            <DialogTitle className="text-2xl font-bold text-gray-900">
               Welcome to PixPaw AI 👋
-            </h2>
-            <p className="text-sm text-gray-500">
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
               Log in to save your pet portraits.
-            </p>
-          </div>
+            </DialogDescription>
+          </DialogHeader>
 
           {/* Google Sign In Button */}
           <Button

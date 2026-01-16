@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
 import { Search, Sparkles, X } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -145,12 +145,10 @@ interface GalleryImage {
   created_at: string;
 }
 
-export default function GalleryPage({
-  params,
-}: {
-  params: Promise<{ lang: Locale }>;
-}) {
-  const [lang, setLang] = useState<Locale>('en');
+export default function GalleryPage() {
+  const params = useParams();
+  const lang = (params?.lang as Locale) || 'en';
+  
   const [dict, setDict] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -161,11 +159,8 @@ export default function GalleryPage({
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    params.then(({ lang: resolvedLang }) => {
-      setLang(resolvedLang);
-      getDictionary(resolvedLang).then(setDict);
-    });
-  }, [params]);
+    getDictionary(lang).then(setDict);
+  }, [lang]);
 
   // Fetch public generations from database
   useEffect(() => {

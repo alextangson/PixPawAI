@@ -5,30 +5,19 @@ import { Check, X, Lock, Gift, Zap, Shield, Link as LinkIcon } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
+import { useParams } from 'next/navigation';
 
-export default function PricingPage({
-  params,
-}: {
-  params: Promise<{ lang: Locale }>;
-}) {
+export default function PricingPage() {
+  const params = useParams();
+  const lang = (params?.lang as Locale) || 'en';
+  
   const [dict, setDict] = useState<any>(null);
-  const [lang, setLang] = useState<Locale | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      const resolvedParams = await params;
-      const resolvedLang = resolvedParams.lang;
-      setLang(resolvedLang);
-      
-      const loadedDict = await getDictionary(resolvedLang);
-      setDict(loadedDict);
-    };
-    if (!dict && !lang) {
-      loadData();
-    }
-  }, [params, dict, lang]);
+    getDictionary(lang).then(setDict);
+  }, [lang]);
 
-  if (!dict || !lang) {
+  if (!dict) {
     return <div>Loading...</div>;
   }
 
