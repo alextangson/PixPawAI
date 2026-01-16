@@ -336,7 +336,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     <div className="space-y-3">
                       <div className="bg-white rounded-lg p-4 border border-blue-200">
                         <p className="text-sm text-gray-700 mb-3">
-                          ✨ <strong>Why log in?</strong> Save your creations, get 3 free credits, and access all your portraits anytime!
+                          ✨ <strong>Why log in?</strong> Save your creations, get 2 free credits, and access all your portraits anytime!
                         </p>
                         <div className="flex gap-2">
                           <LoginButton redirectTo={typeof window !== 'undefined' ? window.location.pathname + '#upload' : '/#upload'}>
@@ -800,7 +800,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               ) : (
                 <>
                   <ImageIcon className="w-5 h-5 mr-2" />
-                  Sign in to Generate (5 Free Credits)
+                  Sign in to Generate (2 Free Credits)
                 </>
               )}
             </Button>
