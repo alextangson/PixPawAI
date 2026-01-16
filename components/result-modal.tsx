@@ -154,13 +154,13 @@ export function ResultModal({
           </button>
 
           {/* LEFT PANEL: The Asset (Image + Actions) */}
-          <div className="lg:w-[58%] flex flex-col bg-zinc-900 overflow-y-auto">
+          <div className="lg:w-[58%] flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto">
             {/* Image Display Area */}
             <div className="flex-shrink-0 relative flex items-center justify-center p-4 lg:p-8 min-h-[50vh] lg:min-h-[60vh]">
               <img
                 src={generatedImageUrl}
                 alt="Your AI-generated pet portrait"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
+                className="max-w-full max-h-full object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
                 onClick={() => window.open(generatedImageUrl, '_blank')}
               />
             </div>

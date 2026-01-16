@@ -63,4 +63,10 @@ When asked to build features, break them down into:
 2.  **Logic Connection:** Hook up state and event handlers.
 3.  **Backend Integration:** Create the necessary API routes and Database schemas.
 
+## 文档生成偏好
+- **NEVER** 主动创建总结文档（*.md）
+- **NEVER** 创建 README、CHANGELOG、SUMMARY 等文档
+- **ONLY** 在用户明确要求时才创建文档
+- 完成任务后，直接告诉我做了什么，不要写成文档
+
 Always think: "How does this look on an iPhone?" and "Can Google bot read this page?"

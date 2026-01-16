@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { STYLES } from '@/lib/styles'
 import { createClient } from '@/lib/supabase/client'
@@ -19,6 +20,8 @@ interface UploadModalWizardProps {
 type Step = 'upload' | 'configure' | 'generating' | 'success'
 
 export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle }: UploadModalWizardProps) {
+  const router = useRouter()
+  
   // State
   const [step, setStep] = useState<Step>('upload')
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -33,7 +36,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
   const [progress, setProgress] = useState<number>(0)
   const [messageIndex, setMessageIndex] = useState<number>(0)
-  const [strength, setStrength] = useState<number>(0.95) // Image preservation strength (0.1-1.0) - Higher = more similar to original
+  const [strength, setStrength] = useState<number>(0.92) // Image preservation strength (0.1-1.0) - Very high to preserve exact animal features
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
   const [generationId, setGenerationId] = useState<string>('')
@@ -151,7 +154,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     const img = new window.Image()
     img.onload = () => {
       setImageDimensions({ width: img.width, height: img.height })
-      console.log('Image dimensions:', img.width, 'x', img.height)
       // Auto-advance to configure step
       setStep('configure')
     }
@@ -182,10 +184,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       return
     }
 
-    if (!uploadedFile || !selectedStyle || !userPrompt.trim()) {
-      setError('Please complete all fields')
+    if (!uploadedFile || !selectedStyle) {
+      setError('Please upload a photo and select a style')
       return
     }
+    
+    // Default prompt if user leaves it empty
+    const finalUserPrompt = userPrompt.trim() || 'my pet'
 
     setStep('generating')
     setError('')
@@ -207,10 +212,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         body: JSON.stringify({
           imageUrl: uploadResult.url,
           style: selectedStyle,
-          prompt: userPrompt.trim(),
+          prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
           petType: 'pet',
-          aspectRatio: aspectRatio, // Pass selected aspect ratio
-          strength: strength, // Pass strength parameter for image preservation
+          aspectRatio: aspectRatio,
+          strength: strength,
         }),
       })
 
@@ -481,12 +486,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               {/* User Prompt */}
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  What do you want to see?
+                  Describe your pet <span className="text-xs text-gray-500 font-normal">(Optional - AI will reference your photo)</span>
                 </label>
                 <textarea
                   value={userPrompt}
                   onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="e.g., a majestic portrait of my golden retriever"
+                  placeholder="e.g., my fluffy white dog, my orange cat, my pet rabbit... (Keep it simple - the AI will preserve your pet's exact appearance from the photo!)"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral transition-all resize-none"
                   rows={3}
                 />
@@ -530,6 +535,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       )}
                     </button>
                   ))}
+                  
+                  {/* More Styles Button */}
+                  <button
+                    onClick={() => {
+                      onClose()
+                      router.push('/en/gallery')
+                    }}
+                    className="relative aspect-square rounded-xl overflow-hidden border-3 border-dashed border-gray-300 hover:border-coral/50 transition-all bg-gradient-to-br from-gray-50 to-gray-100 hover:from-coral/5 hover:to-coral/10"
+                  >
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                      <Grid3x3 className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs font-semibold text-gray-600">
+                        More Styles
+                      </span>
+                    </div>
+                  </button>
                 </div>
               </div>
 
@@ -614,7 +635,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       </div>
                     </div>
                     <p className="text-xs text-gray-600 bg-blue-50 rounded-lg p-2 border border-blue-100">
-                      💡 <strong>Tip:</strong> Higher values (70-100%) preserve more of your pet's features. Lower values (20-50%) allow more artistic freedom.
+                      💡 <strong>Recommended:</strong> 90-95% to keep your pet's exact appearance. Lower values (70-85%) allow more artistic interpretation but may change features.
                     </p>
                   </div>
                 )}
@@ -645,8 +666,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </div>
               </div>
 
-              {/* Placeholder Card (Skeleton Loader) - Dynamic aspect ratio */}
-              <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50">
+              {/* Original Image with Magic Effect */}
+              <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
                 <div 
                   className="relative overflow-hidden"
                   style={{
@@ -657,16 +678,56 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                                 aspectRatio === '16:9' ? '16/9' : '1/1'
                   }}
                 >
-                  {/* Animated shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <Loader2 className="w-12 h-12 text-coral animate-spin mx-auto mb-3" />
-                      <p className="text-sm text-gray-500 font-medium">Your portrait will appear here...</p>
+                  {/* User's Original Photo */}
+                  <img 
+                    src={previewUrl} 
+                    alt="Your pet" 
+                    className="w-full h-full object-cover opacity-70"
+                  />
+                  
+                  {/* Magic Overlay Effect - Animated Scan */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-coral/30 to-transparent animate-shimmer" 
+                       style={{
+                         backgroundSize: '200% 100%',
+                         animation: 'shimmer 2s infinite'
+                       }}
+                  />
+                  
+                  {/* Sparkle Particles */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-ping" />
+                    <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                    <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-coral rounded-full animate-ping" style={{ animationDelay: '0.6s' }} />
+                    <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }} />
+                  </div>
+                  
+                  {/* Center Icon with Glow */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-coral rounded-full blur-xl opacity-60 animate-pulse" />
+                      <Sparkles className="w-16 h-16 text-white relative z-10 animate-bounce" />
                     </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Add keyframe animation for shimmer */}
+              <style jsx>{`
+                @keyframes shimmer {
+                  0% { background-position: -200% 0; }
+                  100% { background-position: 200% 0; }
+                }
+                .animate-shimmer {
+                  animation: shimmer 2s infinite;
+                  background: linear-gradient(
+                    90deg,
+                    transparent 0%,
+                    rgba(255, 140, 66, 0.3) 50%,
+                    transparent 100%
+                  );
+                  background-size: 200% 100%;
+                }
+              `}</style>
 
               {/* Warning Text */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-md">
@@ -699,7 +760,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           <div className="border-t border-gray-200 px-6 py-4">
             <Button
               onClick={handleGenerate}
-              disabled={!userPrompt.trim() || !selectedStyle}
+              disabled={!selectedStyle}
               className="w-full bg-coral hover:bg-orange-600 text-white font-semibold h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {user ? (

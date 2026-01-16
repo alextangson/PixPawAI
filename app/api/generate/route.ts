@@ -1,24 +1,15 @@
 /**
  * AI Image Generation API Endpoint
  * POST /api/generate
- * Using OpenRouter API for global accessibility
+ * Using SiliconFlow API with FLUX.1-dev for high-quality, cost-effective generation
+ * Native fetch implementation with correct image_size parameter to fix aspect ratio handling
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
 
-/**
- * Safe logging helper to prevent terminal crashes from large Base64 strings
- */
-function createSafeLog(data: any): string {
-  return JSON.stringify(data, (key, value) => {
-    if (typeof value === 'string' && value.length > 100) {
-      return value.substring(0, 100) + '...[TRUNCATED ' + value.length + ' chars]'
-    }
-    return value
-  }, 2)
-}
+// Logging disabled for performance - large objects cause 100% CPU usage
 
 /**
  * Extract Base64 image data from various response formats
@@ -26,7 +17,6 @@ function createSafeLog(data: any): string {
 function extractBase64FromResponse(data: any): string | null {
   // Strategy 1: data.data[0].b64_json (DALL-E format)
   if (data.data && Array.isArray(data.data) && data.data[0]?.b64_json) {
-    console.log('✅ Base64 found in data.data[0].b64_json')
     return data.data[0].b64_json
   }
 
@@ -34,13 +24,11 @@ function extractBase64FromResponse(data: any): string | null {
   if (data.choices?.[0]?.message?.images && Array.isArray(data.choices[0].message.images)) {
     const firstImage = data.choices[0].message.images[0]
     
-    // Handle nested structure: { image_url: { url: "data:image..." } }
     let imageData: string | undefined
     
     if (typeof firstImage === 'string') {
       imageData = firstImage
     } else if (firstImage?.image_url?.url) {
-      // OpenRouter FLUX.2 nested format
       imageData = firstImage.image_url.url
     } else if (firstImage?.url) {
       imageData = firstImage.url
@@ -49,17 +37,12 @@ function extractBase64FromResponse(data: any): string | null {
     }
     
     if (imageData) {
-      // Check if it's Base64 (starts with data:image or is raw base64)
       if (imageData.startsWith('data:image')) {
-        console.log('✅ Base64 data URL found in message.images')
-        return imageData.split(',')[1] // Extract base64 part after comma
+        return imageData.split(',')[1]
       }
-      // If it's a URL, return null (not base64)
       if (imageData.startsWith('http')) {
         return null
       }
-      // Otherwise assume it's raw base64
-      console.log('✅ Raw Base64 found in message.images')
       return imageData
     }
   }
@@ -68,15 +51,11 @@ function extractBase64FromResponse(data: any): string | null {
   if (data.choices?.[0]?.message?.content) {
     const content = data.choices[0].message.content
     
-    // Check if it's a data URL
     if (content.startsWith('data:image')) {
-      console.log('✅ Base64 data URL found in message.content')
       return content.split(',')[1]
     }
     
-    // Check if it's raw base64 (very long string, no http)
     if (content.length > 1000 && !content.startsWith('http')) {
-      console.log('✅ Raw Base64 found in message.content')
       return content
     }
   }
@@ -84,18 +63,15 @@ function extractBase64FromResponse(data: any): string | null {
   // Strategy 4: data.output (Replicate format)
   if (data.output && typeof data.output === 'string') {
     if (data.output.startsWith('data:image')) {
-      console.log('✅ Base64 data URL found in data.output')
       return data.output.split(',')[1]
     }
     if (data.output.length > 1000 && !data.output.startsWith('http')) {
-      console.log('✅ Raw Base64 found in data.output')
       return data.output
     }
   }
 
   // Strategy 5: Top-level b64_json
   if (data.b64_json && typeof data.b64_json === 'string') {
-    console.log('✅ Base64 found in data.b64_json')
     return data.b64_json
   }
 
@@ -117,22 +93,6 @@ async function uploadBase64ToStorage(
   
   // Convert Base64 to Buffer
   const buffer = Buffer.from(base64Data, 'base64')
-  console.log('📦 Converted Base64 to Buffer:', buffer.length, 'bytes')
-  
-  // Get actual image dimensions from the buffer
-  try {
-    // PNG signature check and dimension extraction
-    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
-      const actualWidth = buffer.readUInt32BE(16)
-      const actualHeight = buffer.readUInt32BE(20)
-      const actualRatio = (actualWidth / actualHeight).toFixed(2)
-      console.log('🖼️  ACTUAL Image Dimensions:', `${actualWidth}x${actualHeight}`)
-      console.log('📐 ACTUAL Aspect Ratio:', actualRatio, `(${actualWidth}:${actualHeight})`)
-      console.log(`${actualWidth === 1024 && actualHeight === 1024 ? '⚠️  FLUX generated 1:1 (square) - model may not support custom dimensions' : '✅ Custom dimensions applied!'}`)
-    }
-  } catch (err) {
-    console.log('⚠️  Could not read image dimensions from buffer')
-  }
 
   // Generate file path
   const timestamp = Date.now()
@@ -156,9 +116,6 @@ async function uploadBase64ToStorage(
   const { data: publicUrlData } = supabase.storage
     .from('generated-results')
     .getPublicUrl(data.path)
-
-  console.log('✅ Uploaded to storage:', publicUrlData.publicUrl)
-  console.log('📁 Storage path:', data.path)
   
   return {
     publicUrl: publicUrlData.publicUrl,
@@ -167,233 +124,105 @@ async function uploadBase64ToStorage(
 }
 
 /**
- * 🎯 DUAL-FORCE FIX: Convert aspect ratio string to pixel dimensions
- * All dimensions are multiples of 32 for FLUX compatibility
- * This is the "HARD" limit - explicit integer mapping
+ * 🎯 ASPECT RATIO FIX: Map aspect ratio to SiliconFlow image_size format
+ * SiliconFlow uses "WIDTHxHEIGHT" string format (e.g., "768x1024")
+ * All dimensions are multiples of 32 for FLUX.1-schnell compatibility
  */
-function aspectRatioToDimensions(aspectRatio: string): { width: number; height: number; arSuffix: string } {
-  // FIX 1: Explicit Resolution Mapping (The "Hard" Limit)
-  let width = 1024
-  let height = 1024
-  let arSuffix = " --ar 1:1"
-
+function aspectRatioToImageSize(aspectRatio: string): string {
   switch (aspectRatio) {
     case "3:4":
-      width = 768
-      height = 1024
-      arSuffix = " --ar 3:4"
-      break
+      return "768x1024"   // Portrait
     case "4:3":
-      width = 1024
-      height = 768
-      arSuffix = " --ar 4:3"
-      break
+      return "1024x768"   // Landscape
     case "16:9":
-      width = 1024
-      height = 576
-      arSuffix = " --ar 16:9"
-      break
+      return "1024x576"   // Wide
     case "9:16":
-      width = 576
-      height = 1024
-      arSuffix = " --ar 9:16"
-      break
+      return "576x1024"   // Tall
     default: // "1:1"
-      width = 1024
-      height = 1024
-      arSuffix = " --ar 1:1"
-  }
-
-  return { width, height, arSuffix }
-}
-
-/**
- * Normalize image dimensions to be compatible with FLUX model
- * FLUX requires dimensions to be multiples of 32
- */
-function normalizeDimensions(width?: number, height?: number): { width: number; height: number } {
-  // Default to 1024x1024 if no dimensions provided
-  if (!width || !height) {
-    return { width: 1024, height: 1024 }
-  }
-
-  // Round to nearest multiple of 32
-  const roundTo32 = (n: number) => Math.round(n / 32) * 32
-
-  // Ensure minimum 256 and maximum 2048
-  const clamp = (n: number) => Math.max(256, Math.min(2048, n))
-
-  return {
-    width: clamp(roundTo32(width)),
-    height: clamp(roundTo32(height))
+      return "1024x1024"  // Square
   }
 }
 
 /**
- * Generate image using OpenRouter API with FLUX.2-flex model
+ * Generate image using SiliconFlow API with FLUX.1-dev model
+ * Uses native fetch with correct image_size parameter to fix aspect ratio bug
+ * FLUX.1-dev provides high quality while maintaining cost-effectiveness
  * Returns the public Supabase Storage URL and storage path
  */
-async function generateWithOpenRouter(
+async function generateWithSiliconFlow(
   finalPrompt: string,
   userId: string,
   generationId: string,
-  imageUrl?: string,
-  strength: number = 0.8,
-  width?: number,
-  height?: number,
-  arSuffix?: string
+  imageSize: string = "1024x1024",
+  imageUrl?: string,  // Optional: source image for image-to-image
+  strength: number = 0.85  // Image-to-image strength (0.1-1.0)
 ): Promise<{ publicUrl: string; storagePath: string }> {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const apiKey = process.env.SILICONFLOW_API_KEY
 
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY is not configured')
+    throw new Error('SILICONFLOW_API_KEY is not configured')
   }
 
-  // 🎯 CRITICAL: Use exact dimensions provided (already mapped from aspect ratio)
-  // DO NOT normalize or modify these dimensions
-  const dimensions = width && height 
-    ? { width, height }
-    : { width: 1024, height: 1024 } // Fallback only if not provided
-  
-  console.log('🚀 SENDING TO OPENROUTER:')
-  console.log('  📐 Model: black-forest-labs/flux.2-flex')
-  console.log('  📏 Width:', dimensions.width, '(integer)')
-  console.log('  📏 Height:', dimensions.height, '(integer)')
-  console.log('  💬 AR Suffix:', arSuffix || 'none')
-  console.log('  🎯 Strength:', strength, '- Higher = more like original')
-  console.log('  🖼️  Has Source Image:', !!imageUrl)
-  console.log('  📝 Prompt tail:', finalPrompt.slice(-50))
-  
-  // Build message content with image if provided (image-to-image)
-  const messageContent: any = []
-  
-  if (imageUrl) {
-    // Add source image for image-to-image transformation
-    messageContent.push({
-      type: 'image_url',
-      image_url: {
-        url: imageUrl
-      }
-    })
-  }
-  
-  // 🎯 FIX 2: Prompt Injection (The "Soft" Hint)
-  // Inject the AR into the prompt text itself as a backup
-  const promptWithAR = arSuffix 
-    ? `${finalPrompt}${arSuffix}` 
-    : finalPrompt
-  
-  console.log('  ✍️  Final prompt:', promptWithAR.slice(-100))
-  
-  messageContent.push({
-    type: 'text',
-    text: `Transform this image with the following style and description: ${promptWithAR}. Preserve the subject's identity and key features while applying the artistic style.`
-  })
-
-  // 🎯 FIX 3: Correct API Body Structure (CRITICAL)
-  // Build request body following OpenRouter's official format
+  // Build request body following SiliconFlow's API format
   const requestBody: any = {
-    model: 'black-forest-labs/flux.2-flex',
-    messages: [
-      {
-        role: 'user',
-        content: messageContent
-      }
-    ],
-    modalities: ['image', 'text']
+    model: "black-forest-labs/FLUX.1-dev",
+    prompt: finalPrompt,
+    image_size: imageSize,
+    num_inference_steps: 28
   }
 
-  // Add prompt_strength if image is provided (controls how much to preserve original)
+  // Add image-to-image parameters if source image provided
   if (imageUrl) {
-    requestBody.prompt_strength = strength
+    requestBody.image = imageUrl  // Source image URL
+    requestBody.strength = 1 - strength  // Inverted: 0 = keep original, 1 = full creativity
   }
 
-  // 🎯 CRITICAL: Pass dimensions via extra_body (OpenRouter format for FLUX models)
-  // Use EXACT integer values from aspect ratio mapping
-  requestBody.extra_body = {
-    width: dimensions.width,   // Integer (e.g., 768)
-    height: dimensions.height, // Integer (e.g., 1024)
-    aspect_ratio: undefined    // ✅ Remove conflicting string params
-  }
-
-  // 🎯 FIX 4: Debug Logging
-  console.log('📦 FINAL API PAYLOAD:')
-  console.log('  model:', requestBody.model)
-  console.log('  extra_body.width:', requestBody.extra_body.width, typeof requestBody.extra_body.width)
-  console.log('  extra_body.height:', requestBody.extra_body.height, typeof requestBody.extra_body.height)
-  console.log('  prompt_strength:', requestBody.prompt_strength)
-  console.log('  has_image:', !!imageUrl)
-  console.log('  ar_suffix_in_prompt:', arSuffix || 'none')
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetch('https://api.siliconflow.com/v1/images/generations', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': siteUrl,
-      'X-Title': 'PixPawAI',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(requestBody),
   })
 
-  console.log('📡 Response Status:', response.status)
-
   if (!response.ok) {
     const errorBody = await response.text()
-    console.error('❌ OpenRouter API error:', response.status, errorBody.substring(0, 500))
-    throw new Error(`OpenRouter API failed: ${response.status} ${response.statusText}`)
+    console.error('SiliconFlow API error:', response.status, errorBody.substring(0, 200))
+    throw new Error(`SiliconFlow API failed: ${response.status} ${response.statusText}`)
   }
 
   const data = await response.json()
-  
-  // Safe logging (NEVER log full Base64)
-  console.log('✅ Response received. Structure:', createSafeLog(data))
 
   // Check for errors in response
   if (data.error) {
-    console.error('❌ OpenRouter error:', data.error)
+    console.error('❌ SiliconFlow error:', data.error)
     throw new Error(data.error.message || JSON.stringify(data.error))
   }
 
-  // Try to extract Base64 data
-  const base64Data = extractBase64FromResponse(data)
+  // SiliconFlow returns URL format: images[0].url or data[0].url
+  const generatedImageUrl = data.images?.[0]?.url || data.data?.[0]?.url
 
-  if (base64Data) {
-    console.log('📊 Received Base64 length:', base64Data.length, 'chars')
-    
-    // Upload Base64 to Supabase Storage and return public URL + storage path
-    const result = await uploadBase64ToStorage(base64Data, userId, generationId)
-    return result
+  if (!generatedImageUrl) {
+    throw new Error('No image URL found in SiliconFlow response')
   }
 
-  // If no Base64, check for direct URLs (fallback)
-  // Note: Direct URLs don't give us storage path, so we can't delete them later
-  if (data.data?.[0]?.url) {
-    console.log('✅ Direct URL found in data.data[0].url')
-    console.log('⚠️  Warning: Direct URL without storage path - cannot delete later')
-    return {
-      publicUrl: data.data[0].url,
-      storagePath: '' // No storage path for external URLs
-    }
+  // Download image from SiliconFlow URL
+  const imageResponse = await fetch(generatedImageUrl)
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download image: ${imageResponse.status}`)
   }
 
-  if (data.choices?.[0]?.message?.images?.[0]) {
-    const img = data.choices[0].message.images[0]
-    const url = typeof img === 'string' ? img : img?.url
-    if (url?.startsWith('http')) {
-      console.log('✅ Direct URL found in message.images')
-      console.log('⚠️  Warning: Direct URL without storage path - cannot delete later')
-      return {
-        publicUrl: url,
-        storagePath: '' // No storage path for external URLs
-      }
-    }
-  }
+  // Convert to Buffer
+  const arrayBuffer = await imageResponse.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
 
-  // No image found
-  console.error('❌ No image found. Response keys:', Object.keys(data))
-  throw new Error('No image data found in OpenRouter response')
+  // Convert to Base64 for storage
+  const base64Data = buffer.toString('base64')
+  
+  // Upload to Supabase Storage and return public URL + storage path
+  const result = await uploadBase64ToStorage(base64Data, userId, generationId)
+  return result
 }
 
 export async function POST(request: NextRequest) {
@@ -417,7 +246,7 @@ export async function POST(request: NextRequest) {
       prompt: userPrompt, 
       petType = 'pet', 
       aspectRatio = '1:1', // Default to square
-      strength = 0.8 // Default strength to preserve source image (0.1 to 1.0)
+      strength = 0.85 // Image-to-image strength (0.1-1.0), default 0.85
     } = body
 
     if (!style || !userPrompt) {
@@ -427,22 +256,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  // Validate strength parameter (default 0.95 for better similarity to original)
-  const validStrength = Math.max(0.1, Math.min(1.0, Number(strength) || 0.95))
-
-    // 🎯 DUAL-FORCE FIX: Convert aspect ratio to exact pixel dimensions
-    const dimensions = aspectRatioToDimensions(aspectRatio)
-
-    console.log('🎯 Generation request:', { 
-      userId: user.id, 
-      style, 
-      promptLength: userPrompt.length,
-      aspectRatio,
-      dimensions: `${dimensions.width}x${dimensions.height}`,
-      arSuffix: dimensions.arSuffix,
-      strength: validStrength,
-      hasImage: !!imageUrl
-    })
+    // 🎯 ASPECT RATIO FIX: Convert aspect ratio to SiliconFlow image_size format
+    const imageSize = aspectRatioToImageSize(aspectRatio)
 
     // 3. Get style configuration
     const styleConfig = getStyleById(style)
@@ -453,9 +268,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Construct final prompt
-    const finalPrompt = `${userPrompt}, ${styleConfig.promptSuffix}`
-    console.log('Final prompt:', finalPrompt)
+    // 4. Construct final prompt with image-to-image optimization
+    let finalPrompt = ''
+    
+    if (imageUrl) {
+      // Image-to-image: Let the image be the PRIMARY reference
+      // Prompt should be minimal and only describe the STYLE, not the subject
+      // The subject (animal type, breed, features) comes from the IMAGE
+      finalPrompt = `The EXACT SAME animal from the reference image, preserving ALL physical features, colors, and characteristics${styleConfig.promptSuffix}. Keep the subject identical to the reference photo.`
+    } else {
+      // Text-to-image: Standard prompt
+      finalPrompt = `${userPrompt}, ${styleConfig.promptSuffix}`
+    }
 
     // 5. Check user credits
     const { data: profile, error: profileError } = await supabase
@@ -496,11 +320,10 @@ export async function POST(request: NextRequest) {
           userPrompt,
           stylePromptSuffix: styleConfig.promptSuffix,
           requestedAt: new Date().toISOString(),
-          provider: 'openrouter',
-          model: 'black-forest-labs/flux.2-flex',
-          strength: validStrength,
+          provider: 'siliconflow',
+          model: 'black-forest-labs/FLUX.1-dev',
           aspectRatio,
-          dimensions: `${dimensions.width}x${dimensions.height}`,
+          imageSize,
         },
       })
       .select()
@@ -513,8 +336,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('Generation record created:', generation.id)
 
     // 7. Decrement 1 credit (atomic operation)
     const { data: remainingCredits, error: creditError } = await supabase.rpc(
@@ -532,25 +353,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Credits decremented, remaining:', remainingCredits)
-
     try {
-      // 8. Call OpenRouter API and upload to storage
-      console.log('🚀 Starting AI generation via OpenRouter...')
-      console.log('📐 Using aspect ratio:', aspectRatio, '→', `${dimensions.width}x${dimensions.height}`)
-      console.log('💬 Prompt suffix:', dimensions.arSuffix)
-      const { publicUrl: publicImageUrl, storagePath } = await generateWithOpenRouter(
+      // 8. Call SiliconFlow API and upload to storage
+      const { publicUrl: publicImageUrl, storagePath } = await generateWithSiliconFlow(
         finalPrompt, 
         user.id, 
         generation.id,
-        imageUrl, // Pass source image for image-to-image
-        validStrength, // Pass strength parameter
-        dimensions.width,
-        dimensions.height,
-        dimensions.arSuffix // Pass aspect ratio suffix for prompt injection
+        imageSize,
+        imageUrl,
+        strength
       )
-      console.log('✅ Generation and upload completed')
-      console.log('📁 Storage path saved:', storagePath)
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
@@ -571,11 +383,7 @@ export async function POST(request: NextRequest) {
         .eq('id', generation.id)
 
       if (updateError) {
-        console.error('❌ CRITICAL: Failed to update generation status:', updateError)
-        console.error('Generation ID:', generation.id)
-        console.error('Update data:', { status: 'succeeded', output_url: publicImageUrl })
-        // This is critical - if status is not updated, user can't share!
-        // Return error to alert user
+        console.error('CRITICAL: Failed to update generation status:', updateError)
         return NextResponse.json(
           {
             error: 'Generation completed but failed to save. Please contact support.',
@@ -587,9 +395,6 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
-      
-      console.log('✅ Generation status updated to succeeded')
-      console.log('✅ Generation ID:', generation.id, 'Status: succeeded')
 
       // 10. Return success result
       return NextResponse.json({
@@ -617,8 +422,6 @@ export async function POST(request: NextRequest) {
         user_uuid: user.id,
         amount: 1
       })
-
-      console.log('Credit refunded, new balance:', refundedCredits || remainingCredits + 1)
 
       return NextResponse.json(
         {
