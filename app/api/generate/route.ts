@@ -1,13 +1,15 @@
 /**
  * AI Image Generation API Endpoint
  * POST /api/generate
- * Using SiliconFlow API with FLUX.1-dev for high-quality, cost-effective generation
- * Native fetch implementation with correct image_size parameter to fix aspect ratio handling
+ * Using SiliconFlow API with FLUX.1-Kontext-dev for true image-to-image generation
+ * Base64 processing happens ONLY in server memory (never cached to avoid performance issues)
+ * Cost: $0.015/image (40% cheaper than FLUX.1-dev)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
+import sharp from 'sharp'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -144,9 +146,70 @@ function aspectRatioToImageSize(aspectRatio: string): string {
 }
 
 /**
- * Generate image using SiliconFlow API with FLUX.1-dev model
- * Uses native fetch with correct image_size parameter to fix aspect ratio bug
- * FLUX.1-dev provides high quality while maintaining cost-effectiveness
+ * 🎨 Smart Canvas Expansion with Blurred Background (iOS-Wallpaper Style)
+ * Preserves pet completely by fitting it inside target dimensions
+ * Uses blurred/darkened version of source as artistic background fill
+ * 
+ * @param sourceBuffer - Original uploaded image buffer
+ * @param targetSize - Target dimensions in "WIDTHxHEIGHT" format (e.g., "768x1024")
+ * @returns Processed image buffer ready for AI generation
+ */
+async function createSmartCanvas(
+  sourceBuffer: Buffer,
+  targetSize: string
+): Promise<Buffer> {
+  // Parse target dimensions
+  const [targetWidth, targetHeight] = targetSize.split('x').map(Number)
+  
+  // Get source image metadata
+  const sourceImage = sharp(sourceBuffer)
+  const metadata = await sourceImage.metadata()
+  const sourceWidth = metadata.width!
+  const sourceHeight = metadata.height!
+  
+  // Calculate scale to fit source inside target (preserving aspect ratio & pet)
+  const scaleX = targetWidth / sourceWidth
+  const scaleY = targetHeight / sourceHeight
+  const scale = Math.min(scaleX, scaleY) // Fit inside (no cropping)
+  
+  const scaledWidth = Math.round(sourceWidth * scale)
+  const scaledHeight = Math.round(sourceHeight * scale)
+  
+  // Calculate positioning (center pet in canvas)
+  const offsetX = Math.round((targetWidth - scaledWidth) / 2)
+  const offsetY = Math.round((targetHeight - scaledHeight) / 2)
+  
+  // Step 1: Create blurred background (enlarge source and blur heavily)
+  const blurredBackground = await sharp(sourceBuffer)
+    .resize(targetWidth, targetHeight, { fit: 'cover' }) // Fill entire canvas
+    .blur(50) // Heavy blur for artistic effect
+    .modulate({ brightness: 0.7 }) // Slightly darken to make pet stand out
+    .toBuffer()
+  
+  // Step 2: Resize clear source image (pet stays sharp)
+  const clearPet = await sharp(sourceBuffer)
+    .resize(scaledWidth, scaledHeight, { fit: 'inside' })
+    .toBuffer()
+  
+  // Step 3: Composite clear pet onto blurred background
+  const finalCanvas = await sharp(blurredBackground)
+    .composite([
+      {
+        input: clearPet,
+        left: offsetX,
+        top: offsetY,
+      }
+    ])
+    .png() // Ensure PNG format for quality
+    .toBuffer()
+  
+  return finalCanvas
+}
+
+/**
+ * Generate image using SiliconFlow API with FLUX.1-Kontext-dev model
+ * Uses image-to-image endpoint for true breed/feature preservation
+ * Base64 processing happens ONLY in server memory (never cached locally)
  * Returns the public Supabase Storage URL and storage path
  */
 async function generateWithSiliconFlow(
@@ -154,8 +217,7 @@ async function generateWithSiliconFlow(
   userId: string,
   generationId: string,
   imageSize: string = "1024x1024",
-  imageUrl?: string,  // Optional: source image for image-to-image
-  strength: number = 0.85  // Image-to-image strength (0.1-1.0)
+  imageUrl?: string  // Optional: source image URL (will be converted to Base64 in memory)
 ): Promise<{ publicUrl: string; storagePath: string }> {
   const apiKey = process.env.SILICONFLOW_API_KEY
 
@@ -165,16 +227,43 @@ async function generateWithSiliconFlow(
 
   // Build request body following SiliconFlow's API format
   const requestBody: any = {
-    model: "black-forest-labs/FLUX.1-dev",
+    model: "black-forest-labs/FLUX.1-Kontext-dev",  // Image-to-image専用モデル
     prompt: finalPrompt,
-    image_size: imageSize,
-    num_inference_steps: 28
+    image_size: imageSize,  // 🎯 User-selected aspect ratio
+    num_inference_steps: 30,  // Max allowed by SiliconFlow for Kontext-dev
+    batch_size: 1,
+    seed: Math.floor(Math.random() * 2147483647),
+    prompt_enhancement: false  // Keep prompt as-is
   }
 
-  // Add image-to-image parameters if source image provided
+  // 🎨 Smart Canvas Processing: Adapt source image to target aspect ratio
   if (imageUrl) {
-    requestBody.image = imageUrl  // Source image URL
-    requestBody.strength = 1 - strength  // Inverted: 0 = keep original, 1 = full creativity
+    // Step 1: Download source image from Supabase
+    const imageResponse = await fetch(imageUrl)
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch source image: ${imageResponse.status}`)
+    }
+    
+    // Step 2: Convert to buffer
+    const sourceBuffer = Buffer.from(await imageResponse.arrayBuffer())
+    
+    // Step 3: 🎨 Apply smart canvas expansion (blurred background fill)
+    // This preserves the pet completely while adapting to user's selected aspect ratio
+    const processedBuffer = await createSmartCanvas(sourceBuffer, imageSize)
+    
+    // Step 4: Convert processed image to Base64
+    const base64Image = processedBuffer.toString('base64')
+    
+    // Step 5: Add to request body (will be released after API call)
+    requestBody.image = `data:image/png;base64,${base64Image}`
+    
+    console.log('✅ Smart canvas applied:', { 
+      targetSize: imageSize,
+      originalSize: `${sourceBuffer.length} bytes`,
+      processedSize: `${processedBuffer.length} bytes`
+    })
+    
+    // Note: All processing happens in server memory only, never cached locally
   }
 
   const response = await fetch('https://api.siliconflow.com/v1/images/generations', {
@@ -321,7 +410,7 @@ export async function POST(request: NextRequest) {
           stylePromptSuffix: styleConfig.promptSuffix,
           requestedAt: new Date().toISOString(),
           provider: 'siliconflow',
-          model: 'black-forest-labs/FLUX.1-dev',
+          model: 'black-forest-labs/FLUX.1-Kontext-dev',
           aspectRatio,
           imageSize,
         },
@@ -355,13 +444,13 @@ export async function POST(request: NextRequest) {
 
     try {
       // 8. Call SiliconFlow API and upload to storage
+      // Base64 conversion happens in server memory only (never cached locally)
       const { publicUrl: publicImageUrl, storagePath } = await generateWithSiliconFlow(
         finalPrompt, 
         user.id, 
         generation.id,
         imageSize,
-        imageUrl,
-        strength
+        imageUrl  // URL will be converted to Base64 in server memory
       )
 
       // 9. Update generation record (status: succeeded)
