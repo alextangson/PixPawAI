@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { ShareSuccessModal } from '@/components/share-success-modal'
+import { ArtCardModal } from '@/components/art-card-modal'
 import confetti from 'canvas-confetti'
 
 interface GalleryTabProps {
@@ -38,6 +39,10 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [generationToDelete, setGenerationToDelete] = useState<any>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Art Card Modal
+  const [artCardModalOpen, setArtCardModalOpen] = useState(false)
+  const [selectedGenerationForCard, setSelectedGenerationForCard] = useState<any>(null)
 
   const handleShareClick = (generation: any) => {
     setSelectedGeneration(generation)
@@ -311,6 +316,29 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
         </DialogContent>
       </Dialog>
 
+      {/* Art Card Modal */}
+      {selectedGenerationForCard && (
+        <ArtCardModal
+          isOpen={artCardModalOpen}
+          onClose={() => {
+            setArtCardModalOpen(false)
+            setSelectedGenerationForCard(null)
+          }}
+          generationId={selectedGenerationForCard.id}
+          imageUrl={selectedGenerationForCard.output_url}
+          originalTitle={selectedGenerationForCard.title || 'Untitled Portrait'}
+          currentSlogan={selectedGenerationForCard.slogan}
+          onTitleUpdate={(newTitle) => {
+            // Update local state
+            selectedGenerationForCard.title = newTitle
+            // Refresh data
+            if (onGenerationsUpdate) {
+              onGenerationsUpdate()
+            }
+          }}
+        />
+      )}
+
       {/* Gallery Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {succeededGenerations.map((generation) => (
@@ -380,7 +408,18 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
                     day: 'numeric'
                   })}
                 </span>
-                {generation.is_public && (
+                {generation.status === 'processing' && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Processing
+                  </span>
+                )}
+                {generation.status === 'failed' && (
+                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                    Failed
+                  </span>
+                )}
+                {generation.status === 'succeeded' && generation.is_public && (
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     Shared
@@ -400,73 +439,99 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate }: Galle
                 <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                   <span className="flex items-center gap-1">
                     <Eye className="w-3.5 h-3.5" />
-                    {generation.views || 0}
+                    {generation.views ?? 0}
                   </span>
                   <span className="flex items-center gap-1">
                     <Heart className="w-3.5 h-3.5" />
-                    {generation.likes || 0}
+                    {generation.likes ?? 0}
                   </span>
                 </div>
               )}
 
               {/* Action Buttons */}
               <div className="flex gap-2">
-                {/* Download Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      Download
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => window.open(generation.output_url, '_blank')}>
-                      Original
-                    </DropdownMenuItem>
-                    {generation.share_card_url && (
-                      <DropdownMenuItem onClick={() => window.open(generation.share_card_url, '_blank')}>
-                        Art Card
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {generation.status === 'succeeded' ? (
+                  <>
+                    {/* Download Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Download
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => window.open(generation.output_url, '_blank')}>
+                          Original
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedGenerationForCard(generation)
+                          setArtCardModalOpen(true)
+                        }}>
+                          Art Card
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                {/* Share Button */}
-                {!generation.is_public ? (
+                    {/* Share Button */}
+                    {!generation.is_public ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 border-coral/30 hover:bg-coral/10"
+                        onClick={() => handleShareClick(generation)}
+                      >
+                        <Sparkles className="w-4 h-4 mr-1" />
+                        Share
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 bg-green-50 border-green-200 text-green-700"
+                        disabled
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Shared
+                      </Button>
+                    )}
+                  </>
+                ) : generation.status === 'processing' ? (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 border-coral/30 hover:bg-coral/10"
-                    onClick={() => handleShareClick(generation)}
+                    className="flex-1"
+                    disabled
                   >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    Share
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    Processing...
                   </Button>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 bg-green-50 border-green-200 text-green-700"
+                    className="flex-1 text-red-500"
                     disabled
                   >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Shared
+                    Generation Failed
                   </Button>
                 )}
 
                 {/* Shop Button */}
-                <Button
-                  size="sm"
-                  className="flex-1 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white"
-                  onClick={() => window.location.href = `/shop/${generation.id}`}
-                >
-                  <ShoppingBag className="w-4 h-4 mr-1" />
-                  Shop
-                </Button>
+                {generation.status === 'succeeded' && (
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white"
+                    onClick={() => window.location.href = `/shop/${generation.id}`}
+                  >
+                    <ShoppingBag className="w-4 h-4 mr-1" />
+                    Shop
+                  </Button>
+                )}
               </div>
             </div>
           </div>

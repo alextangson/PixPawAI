@@ -454,6 +454,9 @@ export async function POST(request: NextRequest) {
         style: style,
         style_category: style,
         input_url: imageUrl || '',
+        views: 0,
+        likes: 0,
+        is_rewarded: false,
         metadata: {
           petType,
           userPrompt,

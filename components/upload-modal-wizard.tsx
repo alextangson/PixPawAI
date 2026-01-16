@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Download, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { STYLES } from '@/lib/styles'
 import { createClient } from '@/lib/supabase/client'
@@ -336,9 +336,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // RENDER
   // ============================================
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
+      <div className={`bg-white shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+        step === 'success' ? 'max-w-6xl h-[85vh] rounded-none' : 'max-w-3xl rounded-3xl p-4'
+      }`}>
         {/* Header */}
+        {step !== 'success' && (
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {step === 'configure' && (
@@ -372,9 +375,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             <X className="w-6 h-6 text-gray-600" />
           </button>
         </div>
+        )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className={`flex-1 overflow-hidden ${step === 'success' ? '' : 'overflow-y-auto p-6'}`}>
           {/* Error Display */}
           {error && (
             <div className={`mb-6 rounded-xl p-6 ${
@@ -756,143 +760,166 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
           )}
 
-          {/* STEP D: SUCCESS */}
+          {/* STEP D: SUCCESS - Gallery Reveal */}
           {step === 'success' && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Your Portrait is Ready! 🎉
-                </h3>
-                <p className="text-gray-600">
-                  {remainingCredits} credits remaining
-                </p>
+            <div className="flex flex-col lg:flex-row h-full animate-fadeIn">
+              {/* Close Button (Top Right) */}
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {/* Left Panel: The Art (66%) */}
+              <div className="lg:w-2/3 h-64 lg:h-full bg-zinc-900 relative flex items-center justify-center group cursor-zoom-in">
+                <img
+                  src={generatedImageUrl}
+                  alt="Generated portrait"
+                  className="max-w-full max-h-full object-contain p-4 lg:p-8 transition-transform duration-700 group-hover:scale-105"
+                  onLoad={() => console.log('✅ Image loaded successfully')}
+                  onError={(e) => console.error('❌ Image failed to load:', e)}
+                  onClick={() => window.open(generatedImageUrl, '_blank')}
+                />
               </div>
 
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50">
-                <div 
-                  className="relative w-full"
-                  style={{
-                    aspectRatio: aspectRatio === '1:1' ? '1/1' : 
-                                aspectRatio === '3:4' ? '3/4' : 
-                                aspectRatio === '9:16' ? '9/16' : 
-                                aspectRatio === '4:3' ? '4/3' : 
-                                aspectRatio === '16:9' ? '16/9' : '1/1'
-                  }}
-                >
-                  {/* Use native img for faster loading from Supabase */}
-                  <img
-                    src={generatedImageUrl}
-                    alt="Generated portrait"
-                    className="w-full h-full object-contain"
-                    onLoad={() => console.log('✅ Image loaded successfully')}
-                    onError={(e) => console.error('❌ Image failed to load:', e)}
-                  />
+              {/* Right Panel: The Curator (33%) */}
+              <div className="lg:w-1/3 h-auto lg:h-full bg-white p-6 lg:p-8 flex flex-col justify-center space-y-6 lg:space-y-8 overflow-y-auto animate-slideInRight">
+                
+                {/* Header */}
+                <div className="text-center lg:text-left">
+                  <h2 className="text-3xl lg:text-4xl font-serif text-gray-900 mb-2" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
+                    Your Portrait<br />is Ready
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {remainingCredits} credits remaining
+                  </p>
                 </div>
-              </div>
 
-              {/* Share to Earn Section */}
-              {!showSuccessModal && (
-                <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-2xl p-6 border-2 border-coral/20">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-coral/20 rounded-full flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-coral" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg text-gray-900 mb-2">
-                        ✨ Share to Gallery & Earn +1 Credit
-                      </h4>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Share your amazing portrait with the community and get a free credit!
-                      </p>
-
-                      {!showShareInput ? (
-                        <Button
-                          onClick={() => setShowShareInput(true)}
-                          disabled={isSharing}
-                          className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold"
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Share to Gallery (+1 Credit)
-                        </Button>
-                      ) : (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Add a title (optional)
-                            </label>
-                            <input
-                              type="text"
-                              value={shareTitle}
-                              onChange={(e) => setShareTitle(e.target.value)}
-                              placeholder="e.g., My Golden Retriever as a Pixar Star"
-                              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral"
-                              maxLength={100}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              This will help others discover your artwork
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={handleShare}
-                              disabled={isSharing}
-                              className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
-                            >
-                              {isSharing ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  Sharing...
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  Confirm Share
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              onClick={() => setShowShareInput(false)}
-                              disabled={isSharing}
-                              variant="outline"
-                              className="px-4"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                {/* Wall Art Preview Mockup */}
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Visualize It
+                  </p>
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner">
+                    {/* Wall Background */}
+                    <div className="absolute inset-0 bg-[#E5E5E5]"></div>
+                    {/* Framed Portrait on Wall */}
+                    <div className="absolute inset-0 flex items-center justify-center p-8">
+                      <div className="w-2/5 aspect-square bg-white border-4 border-white rounded shadow-2xl overflow-hidden">
+                        <img
+                          src={generatedImageUrl}
+                          alt="Wall preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={() => window.location.href = `/shop/${generationId}`}
+                    className="w-full text-center text-sm text-gray-600 hover:text-coral transition-colors underline"
+                  >
+                    See this on your wall →
+                  </button>
                 </div>
-              )}
 
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  {/* Download Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => window.open(generatedImageUrl, '_blank')}
+                      className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Original
+                    </button>
+                  </div>
 
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => window.open(generatedImageUrl, '_blank')}
-                  className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
-                >
-                  Download
-                </Button>
-                <Button
-                  onClick={() => {
-                    setStep('upload')
-                    setUploadedFile(null)
-                    setPreviewUrl('')
-                    setUserPrompt('')
-                    setGeneratedImageUrl('')
-                    setGenerationId('')
-                    setShareTitle('')
-                    setShowShareInput(false)
-                  }}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Create Another
-                </Button>
+                  {/* Share to Gallery */}
+                  {!showSuccessModal && !showShareInput && (
+                    <button
+                      onClick={() => setShowShareInput(true)}
+                      disabled={isSharing}
+                      className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-medium py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Share & Earn +1 Credit
+                    </button>
+                  )}
+
+                  {/* Customize Merch */}
+                  <button
+                    onClick={() => window.location.href = `/shop/${generationId}`}
+                    className="w-full border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    Customize Merch
+                  </button>
+                </div>
+
+                {/* Share Input Section */}
+                {showShareInput && !showSuccessModal && (
+                  <div className="border-t border-gray-200 pt-6 space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Add a title (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={shareTitle}
+                      onChange={(e) => setShareTitle(e.target.value)}
+                      placeholder="e.g., My Golden Retriever"
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral"
+                      maxLength={100}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleShare}
+                        disabled={isSharing}
+                        className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
+                      >
+                        {isSharing ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sharing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Confirm
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => setShowShareInput(false)}
+                        disabled={isSharing}
+                        variant="outline"
+                        className="px-6"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Create Another Link */}
+                <div className="border-t border-gray-200 pt-6">
+                  <button
+                    onClick={() => {
+                      setStep('upload')
+                      setUploadedFile(null)
+                      setPreviewUrl('')
+                      setUserPrompt('')
+                      setGeneratedImageUrl('')
+                      setGenerationId('')
+                      setShareTitle('')
+                      setShowShareInput(false)
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline"
+                  >
+                    ← Create Another Portrait
+                  </button>
+                </div>
               </div>
             </div>
           )}

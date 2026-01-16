@@ -2,33 +2,33 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
 
-// 20 Cinematic Slogans for Random Selection
+// 20 Cinematic Slogans (matching ArtCardModal)
 const SLOGANS = [
-  "Every paw has a story to tell",
-  "Turning paws into movie stars",
-  "Captured with AI, Loved for Real",
-  "Cinema-grade portraits for your best friend",
-  "Where art meets unconditional love",
-  "A digital hug in every pixel",
-  "Your pet, reimagined as a masterpiece",
-  "From camera roll to red carpet",
-  "Because every pet deserves the spotlight",
-  "Paws that paint a thousand words",
-  "Made with AI magic, sealed with love",
-  "Your furry friend's cinematic debut",
-  "Pixar-quality memories, one click away",
-  "When technology meets tail wags",
-  "Art that makes your heart skip a beat",
-  "Transform moments into movie scenes",
-  "The future of pet portraits is here",
-  "Where pixels become precious memories",
-  "Your pet's journey to stardom starts now",
-  "Creating legends, one paw at a time"
+  "Every paw has a story.",
+  "Captured forever in pixels.",
+  "A moment frozen in time.",
+  "Where memories become art.",
+  "The look that says everything.",
+  "More than just a portrait.",
+  "Timeless. Priceless. Yours.",
+  "From lens to legacy.",
+  "Eyes that speak volumes.",
+  "A masterpiece in the making.",
+  "Love at first sight.",
+  "The soul behind the gaze.",
+  "Forever begins here.",
+  "Whiskers, wonders, and all.",
+  "The art of being you.",
+  "Elegance in every pixel.",
+  "A tale of fur and feeling.",
+  "Cherished. Always.",
+  "The magic of you.",
+  "Life, in full color."
 ]
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // 1. Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { generation_id, title, slogan_index } = body
+    const { generation_id, custom_title, custom_slogan, slogan_index } = body
 
     if (!generation_id) {
       return NextResponse.json({ error: 'generation_id is required' }, { status: 400 })
@@ -59,102 +59,146 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Generated image URL not found' }, { status: 400 })
     }
 
-    // 3. Select a random slogan (or use the provided index)
-    let selectedSloganIndex: number
-    if (typeof slogan_index === 'number' && slogan_index >= 0 && slogan_index < SLOGANS.length) {
-      selectedSloganIndex = slogan_index
-    } else {
-      selectedSloganIndex = Math.floor(Math.random() * SLOGANS.length)
-    }
-    const selectedSlogan = SLOGANS[selectedSloganIndex]
+    // 3. Update title in database if custom_title provided
+    let finalTitle = custom_title || generation.title || 'My Pet Portrait'
+    if (custom_title && custom_title.trim() !== generation.title) {
+      const { error: updateError } = await supabase
+        .from('generations')
+        .update({ title: custom_title.trim() })
+        .eq('id', generation_id)
+        .eq('user_id', user.id)
 
-    // 4. Download the generated image from Supabase Storage
+      if (updateError) {
+        console.error('Failed to update title:', updateError)
+        // Continue anyway, don't fail the whole request
+      } else {
+        console.log('✅ Title updated in database:', custom_title)
+      }
+    }
+
+    // 4. Determine the slogan to use
+    let selectedSlogan: string
+    if (custom_slogan) {
+      // Use the custom slogan provided by user
+      selectedSlogan = custom_slogan
+    } else if (typeof slogan_index === 'number' && slogan_index >= 0 && slogan_index < SLOGANS.length) {
+      // Use specific slogan by index
+      selectedSlogan = SLOGANS[slogan_index]
+    } else {
+      // Random slogan
+      selectedSlogan = SLOGANS[Math.floor(Math.random() * SLOGANS.length)]
+    }
+
+    // 5. Download the generated image from Supabase Storage
     const imageResponse = await fetch(generation.output_url)
     if (!imageResponse.ok) {
       return NextResponse.json({ error: 'Failed to fetch generated image' }, { status: 500 })
     }
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer())
 
-    // 5. Get image metadata
+    // 6. Get image metadata and ensure minimum size
     const imageMetadata = await sharp(imageBuffer).metadata()
-    const originalWidth = imageMetadata.width || 1024
-    const originalHeight = imageMetadata.height || 1024
+    let targetWidth = imageMetadata.width || 1024
+    let targetHeight = imageMetadata.height || 1024
+    
+    // Ensure minimum width of 2000px for high-quality output
+    if (targetWidth < 2000) {
+      const scaleFactor = 2000 / targetWidth
+      targetWidth = 2000
+      targetHeight = Math.round(targetHeight * scaleFactor)
+    }
 
-    // 6. Design Parameters (Leica/Polaroid Style)
-    const borderSize = 60 // Uniform white border on top/left/right
-    const footerHeight = 200 // Large white footer
-    const canvasWidth = originalWidth + (borderSize * 2)
-    const canvasHeight = originalHeight + borderSize + footerHeight
+    // 7. Design Parameters (Golden Ratio Leica/Polaroid Style)
+    const borderSize = Math.round(targetWidth * 0.08) // 8% of image width
+    const footerHeight = Math.round(targetWidth * 0.25) // 25% of image width
+    const canvasWidth = targetWidth + (borderSize * 2)
+    const canvasHeight = targetHeight + borderSize + footerHeight
 
-    // 7. Prepare the main image with resize to fit canvas
+    // 8. Prepare the main image with high-quality resize
     const resizedImage = await sharp(imageBuffer)
-      .resize(originalWidth, originalHeight, { fit: 'cover' })
+      .resize(targetWidth, targetHeight, { 
+        fit: 'cover',
+        kernel: sharp.kernel.lanczos3 
+      })
       .toBuffer()
 
-    // 8. Create text overlays using SVG
+    // 9. Create text overlays using SVG (Refined Typography)
     const currentDate = new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     })
 
-    const cardTitle = title || generation.title || 'My Pet Portrait'
+    // Calculate font sizes proportionally
+    const titleFontSize = Math.round(targetWidth * 0.022) // ~44px for 2000px width
+    const dateFontSize = Math.round(targetWidth * 0.015) // ~30px
+    const urlFontSize = Math.round(targetWidth * 0.013) // ~26px
+    const sloganFontSize = Math.round(targetWidth * 0.016) // ~32px
+    const logoFontSize = Math.round(targetWidth * 0.015) // ~30px (reduced by 40%)
 
-    // SVG for text layout (3-column footer)
+    // SVG for text layout (3-section footer, refined design)
     const textSVG = `
       <svg width="${canvasWidth}" height="${footerHeight}">
-        <!-- Left Column: Title + Date -->
+        <!-- Left Section: Title + Date -->
         <text 
-          x="80" 
-          y="80" 
-          font-family="Arial, sans-serif" 
-          font-size="22" 
-          font-weight="600" 
-          fill="#2D2D2D"
-        >${cardTitle}</text>
+          x="${borderSize}" 
+          y="${footerHeight * 0.3}" 
+          font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" 
+          font-size="${titleFontSize}" 
+          font-weight="700" 
+          fill="#333333"
+        >${finalTitle}</text>
         <text 
-          x="80" 
-          y="110" 
-          font-family="Arial, sans-serif" 
-          font-size="16" 
-          fill="#666666"
+          x="${borderSize}" 
+          y="${footerHeight * 0.45}" 
+          font-family="Inter, -apple-system, sans-serif" 
+          font-size="${dateFontSize}" 
+          fill="#888888"
         >${currentDate}</text>
 
-        <!-- Center Column: URL + Slogan -->
+        <!-- Center: Separator line -->
+        <line 
+          x1="${borderSize}" 
+          y1="${footerHeight * 0.55}" 
+          x2="${canvasWidth - borderSize}" 
+          y2="${footerHeight * 0.55}" 
+          stroke="#E5E5E5" 
+          stroke-width="2"
+        />
+
+        <!-- Center Section: URL + Slogan -->
         <text 
-          x="${canvasWidth / 2}" 
-          y="70" 
-          text-anchor="middle" 
-          font-family="Arial, sans-serif" 
-          font-size="24" 
-          font-weight="700" 
-          fill="#FF8C42"
+          x="${borderSize}" 
+          y="${footerHeight * 0.7}" 
+          font-family="Inter, sans-serif" 
+          font-size="${urlFontSize}" 
+          font-weight="500" 
+          fill="#888888"
         >PixPawAI.com</text>
         <text 
-          x="${canvasWidth / 2}" 
-          y="105" 
-          text-anchor="middle" 
-          font-family="Georgia, serif" 
-          font-size="16" 
+          x="${borderSize}" 
+          y="${footerHeight * 0.85}" 
+          font-family="Georgia, 'Times New Roman', serif" 
+          font-size="${sloganFontSize}" 
           font-style="italic" 
-          fill="#555555"
-        >${selectedSlogan}</text>
+          fill="#666666"
+        >"${selectedSlogan}"</text>
 
-        <!-- Right Column: Logo placeholder -->
-        <circle cx="${canvasWidth - 100}" cy="85" r="40" fill="#FF8C42" opacity="0.2"/>
+        <!-- Right Section: Logo (40% smaller) -->
         <text 
-          x="${canvasWidth - 100}" 
-          y="95" 
-          text-anchor="middle" 
-          font-family="Arial, sans-serif" 
-          font-size="28" 
+          x="${canvasWidth - borderSize - 10}" 
+          y="${footerHeight * 0.8}" 
+          text-anchor="end" 
+          font-family="Inter, sans-serif" 
+          font-size="${logoFontSize}" 
           font-weight="900" 
+          letter-spacing="2" 
           fill="#FF8C42"
-        >🐾</text>
+        >PIXPAW AI</text>
       </svg>
     `
 
-    // 9. Composite the final share card
+    // 10. Composite the final share card
     const shareCardBuffer = await sharp({
       create: {
         width: canvasWidth,
@@ -171,15 +215,15 @@ export async function POST(request: NextRequest) {
         },
         {
           input: Buffer.from(textSVG),
-          top: originalHeight + borderSize,
+          top: targetHeight + borderSize,
           left: 0
         }
       ])
-      .jpeg({ quality: 95 })
+      .jpeg({ quality: 90 })
       .toBuffer()
 
-    // 10. Upload to Supabase Storage (shared-cards bucket)
-    const fileName = `${generation_id}-${Date.now()}-slogan-${selectedSloganIndex}.jpg`
+    // 11. Upload to Supabase Storage (shared-cards bucket)
+    const fileName = `${generation_id}-${Date.now()}-custom.jpg`
     const { data: uploadData, error: uploadError } = await supabase
       .storage
       .from('shared-cards')
@@ -194,22 +238,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload share card' }, { status: 500 })
     }
 
-    // 11. Get public URL
+    // 12. Get public URL
     const { data: { publicUrl } } = supabase
       .storage
       .from('shared-cards')
       .getPublicUrl(uploadData.path)
 
-    // 12. Return the result
+    // 13. Update share_card_url in database
+    const { error: cardUpdateError } = await supabase
+      .from('generations')
+      .update({ share_card_url: publicUrl })
+      .eq('id', generation_id)
+      .eq('user_id', user.id)
+
+    if (cardUpdateError) {
+      console.error('Failed to update share_card_url:', cardUpdateError)
+      // Continue anyway, user can still download
+    }
+
+    console.log('✅ Share card created:', publicUrl)
+
+    // 14. Return the result
     return NextResponse.json({
       success: true,
       share_card_url: publicUrl,
+      title: finalTitle,
       slogan: selectedSlogan,
-      slogan_index: selectedSloganIndex,
       dimensions: {
         width: canvasWidth,
         height: canvasHeight
-      }
+      },
+      title_updated: custom_title && custom_title.trim() !== generation.title
     })
 
   } catch (error) {
