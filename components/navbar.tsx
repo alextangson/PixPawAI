@@ -199,7 +199,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                 <>
                   {/* Mobile Login */}
                   <LoginButton redirectTo={`/${lang}#upload`}>
-                    <Button variant="outline" className="w-full border-2 border-coral text-coral hover:bg-coral hover:text-white font-semibold" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full border-2 border-coral text-coral hover:bg-coral hover:text-white font-semibold">
                       Log In
                     </Button>
                   </LoginButton>

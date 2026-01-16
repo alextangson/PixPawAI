@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3 } from 'lucide-react'
+import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3, LogIn } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { STYLES } from '@/lib/styles'
@@ -10,6 +10,7 @@ import { uploadUserImage } from '@/lib/supabase/storage'
 import type { User } from '@supabase/supabase-js'
 import NextImage from 'next/image'
 import { ResultModal } from '@/components/result-modal'
+import { LoginButton } from '@/components/auth/login-button'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -31,7 +32,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [selectedStyle, setSelectedStyle] = useState<string>(initialStyle || '')
   const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string>('')
-  const [errorType, setErrorType] = useState<'credits' | 'storage' | 'api' | 'general'>('general')
+  const [errorType, setErrorType] = useState<'credits' | 'storage' | 'api' | 'general' | 'auth'>('general')
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
   const [progress, setProgress] = useState<number>(0)
@@ -173,14 +174,15 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // STEP B: CONFIGURE - Generate Logic
   // ============================================
   const handleGenerate = async () => {
-    if (!user) {
-      // Guest user - redirect to sign in
-      window.location.href = '/en'
+    if (!uploadedFile || !selectedStyle) {
+      setError('Please upload a photo and select a style')
       return
     }
 
-    if (!uploadedFile || !selectedStyle) {
-      setError('Please upload a photo and select a style')
+    if (!user) {
+      // Guest user - show error prompting to log in
+      setError('You need to log in to create your AI pet portrait. Your uploaded photo will be saved!')
+      setErrorType('auth')
       return
     }
     
@@ -295,6 +297,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             <div className={`mb-6 rounded-xl p-6 ${
               errorType === 'credits' 
                 ? 'bg-orange-50 border border-orange-200' 
+                : errorType === 'auth'
+                ? 'bg-blue-50 border border-blue-200'
                 : 'bg-red-50 border border-red-200'
             }`}>
               <div className="flex items-start gap-4">
@@ -302,25 +306,61 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <div className="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
                     <Sparkles className="w-6 h-6 text-orange-600" />
                   </div>
+                ) : errorType === 'auth' ? (
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <LogIn className="w-6 h-6 text-blue-600" />
+                  </div>
                 ) : (
                   <X className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
                 )}
                 
                 <div className="flex-1">
                   <h3 className={`font-bold text-lg mb-2 ${
-                    errorType === 'credits' ? 'text-orange-900' : 'text-red-900'
+                    errorType === 'credits' ? 'text-orange-900' : errorType === 'auth' ? 'text-blue-900' : 'text-red-900'
                   }`}>
                     {errorType === 'credits' && 'Credits Required'}
+                    {errorType === 'auth' && 'Login Required 🔐'}
                     {errorType === 'storage' && 'Storage Error'}
                     {errorType === 'api' && 'AI Service Error'}
                     {errorType === 'general' && 'Generation Failed'}
                   </h3>
                   
                   <p className={`text-sm mb-4 ${
-                    errorType === 'credits' ? 'text-orange-700' : 'text-red-700'
+                    errorType === 'credits' ? 'text-orange-700' : errorType === 'auth' ? 'text-blue-700' : 'text-red-700'
                   }`}>
                     {error}
                   </p>
+
+                  {/* Auth 错误 - 显示登录按钮 */}
+                  {errorType === 'auth' && (
+                    <div className="space-y-3">
+                      <div className="bg-white rounded-lg p-4 border border-blue-200">
+                        <p className="text-sm text-gray-700 mb-3">
+                          ✨ <strong>Why log in?</strong> Save your creations, get 3 free credits, and access all your portraits anytime!
+                        </p>
+                        <div className="flex gap-2">
+                          <LoginButton redirectTo={typeof window !== 'undefined' ? window.location.pathname + '#upload' : '/#upload'}>
+                            <Button
+                              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold"
+                            >
+                              <LogIn className="w-4 h-4 mr-2" />
+                              Log In to Continue
+                            </Button>
+                          </LoginButton>
+                          <Button
+                            onClick={() => {
+                              setError('')
+                              setErrorType('general')
+                            }}
+                            variant="outline"
+                            className="px-4"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Credits 错误 - 显示充值按钮 */}
                   {errorType === 'credits' && (
