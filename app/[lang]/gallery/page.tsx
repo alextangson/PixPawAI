@@ -164,6 +164,24 @@ export default function GalleryPage() {
     getDictionary(lang).then(setDict);
   }, [lang]);
 
+  // Convert mock data to database format
+  const convertMockToDbFormat = (mockItems: any[]): GalleryImage[] => {
+    return mockItems.map(item => ({
+      id: item.id,
+      output_url: item.src,
+      title: item.title,
+      alt_text: item.alt,
+      style: item.styleId,
+      style_category: item.styleCategory,
+      prompt: item.alt || item.title, // Use alt as prompt
+      created_at: new Date().toISOString(),
+      views: Math.floor(Math.random() * 1000) + 100,
+      likes: Math.floor(Math.random() * 500) + 50,
+      // Preserve original fields for compatibility
+      ...item
+    }));
+  };
+
   // Fetch public generations from database
   useEffect(() => {
     const fetchGalleryImages = async () => {
@@ -180,11 +198,19 @@ export default function GalleryPage() {
 
         if (error) {
           console.error('Error fetching gallery images:', error);
+          // Fallback to mock data if database query fails
+          setGalleryImages(convertMockToDbFormat(GALLERY_ITEMS));
+        } else if (!data || data.length === 0) {
+          // Fallback to mock data if no public images exist yet
+          console.log('No public images in database, using mock data');
+          setGalleryImages(convertMockToDbFormat(GALLERY_ITEMS));
         } else {
-          setGalleryImages(data || []);
+          setGalleryImages(data);
         }
       } catch (err) {
         console.error('Failed to fetch gallery:', err);
+        // Fallback to mock data on any error
+        setGalleryImages(convertMockToDbFormat(GALLERY_ITEMS));
       } finally {
         setIsLoading(false);
       }
@@ -215,8 +241,13 @@ export default function GalleryPage() {
   }
 
   // Helper function to detect pet category from prompt/alt_text
-  const detectPetCategory = (item: GalleryImage): string => {
-    const text = `${item.prompt} ${item.alt_text || ''} ${item.title || ''}`.toLowerCase();
+  const detectPetCategory = (item: GalleryImage | any): string => {
+    // If item has petCategory (from mock data), use it directly
+    if (item.petCategory) {
+      return item.petCategory;
+    }
+    
+    const text = `${item.prompt || ''} ${item.alt_text || ''} ${item.title || ''}`.toLowerCase();
     
     // Dogs
     if (text.match(/\b(dog|puppy|corgi|beagle|retriever|bulldog|poodle|husky|shepherd)\b/)) return 'Dogs';
@@ -247,7 +278,7 @@ export default function GalleryPage() {
       searchQuery === '' ||
       (item.title && item.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.alt_text && item.alt_text.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      item.prompt.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.prompt && item.prompt.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesFilter =
       activeFilter === 'All' || detectPetCategory(item) === activeFilter;
