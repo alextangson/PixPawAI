@@ -249,19 +249,14 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     
     try {
       // Upload image to get public URL for Qwen
-      if (!user) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:no-user',message:'No user logged in, skipping quality check',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        
-        // Skip quality check if not logged in, proceed to configure
-        setTimeout(() => {
-          setStep('configure')
-        }, 500)
-        return
-      }
+      // Support guest users with anonymous ID
+      const userId = user?.id || `guest-${Date.now()}`
       
-      const uploadResult = await uploadUserImage(file, user.id)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:guest-support',message:'Proceeding with quality check',data:{hasUser:!!user,userId:userId.startsWith('guest-') ? 'guest' : 'authenticated'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
+      const uploadResult = await uploadUserImage(file, userId)
       
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:after-upload',message:'Image uploaded to Supabase',data:{hasError:'error' in uploadResult,url:'error' in uploadResult ? null : uploadResult.url},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
