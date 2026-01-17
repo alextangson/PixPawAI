@@ -240,12 +240,20 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   
   // Quality check function
   const performQualityCheck = async (imageUrl: string, file: File) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:entry',message:'Quality check started',data:{hasUser:!!user,fileName:file.name,fileSize:file.size},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
     setIsCheckingQuality(true)
     setShowQualityWarning(false)
     
     try {
       // Upload image to get public URL for Qwen
       if (!user) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:no-user',message:'No user logged in, skipping quality check',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
         // Skip quality check if not logged in, proceed to configure
         setTimeout(() => {
           setStep('configure')
@@ -254,6 +262,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       }
       
       const uploadResult = await uploadUserImage(file, user.id)
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:after-upload',message:'Image uploaded to Supabase',data:{hasError:'error' in uploadResult,url:'error' in uploadResult ? null : uploadResult.url},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       
       if ('error' in uploadResult) {
         throw new Error('Failed to upload image for analysis')
@@ -266,11 +278,20 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         body: JSON.stringify({ imageUrl: uploadResult.url })
       })
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:api-response',message:'Quality check API responded',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      
       if (!response.ok) {
         throw new Error('Quality check failed')
       }
       
       const result: QualityCheckResult = await response.json()
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:parsed-result',message:'Quality check result parsed',data:{hasPet:result.hasPet,quality:result.quality,issues:result.issues},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      
       setQualityCheckResult(result)
       setIsCheckingQuality(false)
       
@@ -278,12 +299,20 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       // Check if no pet detected or quality is unusable
       if (!result.hasPet || result.quality === 'unusable') {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:showing-warning',message:'Setting quality warning to true',data:{hasPet:result.hasPet,quality:result.quality},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
+        
         setShowQualityWarning(true)
         return
       }
       
       // Auto-proceed if quality is good/excellent
       if (result.quality === 'excellent' || result.quality === 'good') {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:auto-proceed',message:'Auto-proceeding to configure',data:{quality:result.quality},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
+        
         setTimeout(() => {
           setStep('configure')
         }, 1500) // Short delay to show success
@@ -292,6 +321,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setShowQualityWarning(true)
       }
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload-modal-wizard.tsx:performQualityCheck:error',message:'Quality check threw error',data:{errorMessage:error instanceof Error ? error.message : String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      
       console.error('Quality check error:', error)
       setIsCheckingQuality(false)
       // On error, proceed anyway

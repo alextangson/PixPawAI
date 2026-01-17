@@ -116,22 +116,45 @@ If no pet detected:
     
     console.log('🔍 Qwen Quality Check Raw Response:', content)
     
+    // #region agent log
+    await fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'check-quality/route.ts:qwen-response',message:'Qwen API raw response',data:{contentPreview:content.substring(0,200),contentLength:content.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    
     // Parse JSON response
     try {
       const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/)
       const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content
       
+      // #region agent log
+      await fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'check-quality/route.ts:before-parse',message:'Attempting to parse JSON',data:{jsonStr:jsonStr.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
       const parsed = JSON.parse(jsonStr) as QualityCheckResult
       console.log('✅ Parsed Quality Check:', parsed)
+      
+      // #region agent log
+      await fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'check-quality/route.ts:parsed-success',message:'Successfully parsed JSON',data:{hasPet:parsed.hasPet,quality:parsed.quality,issues:parsed.issues},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
       return parsed
     } catch (parseError) {
       console.error('❌ Failed to parse JSON from Qwen:', content)
       console.error('Parse error:', parseError)
       
+      // #region agent log
+      await fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'check-quality/route.ts:parse-failed',message:'JSON parse failed, using fallback',data:{error:parseError instanceof Error ? parseError.message : String(parseError),contentSample:content.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
       // If parsing fails, check if content contains indicators of no pet
       const lowerContent = content.toLowerCase()
-      if (lowerContent.includes('no pet') || lowerContent.includes('not a pet') || 
-          lowerContent.includes('no animal') || lowerContent.includes('not an animal')) {
+      const noPetDetected = lowerContent.includes('no pet') || lowerContent.includes('not a pet') || 
+          lowerContent.includes('no animal') || lowerContent.includes('not an animal')
+      
+      // #region agent log
+      await fetch('http://127.0.0.1:7242/ingest/9c61b946-d6dd-4114-a3ce-0f03f0572130',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'check-quality/route.ts:text-detection',message:'Checking for no-pet keywords',data:{noPetDetected,lowerContentSample:lowerContent.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      if (noPetDetected) {
         return {
           hasPet: false,
           petType: 'none',
