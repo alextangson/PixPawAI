@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3, LogIn } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
 import { STYLES } from '@/lib/styles'
 import { createClient } from '@/lib/supabase/client'
 import { uploadUserImage } from '@/lib/supabase/storage'
@@ -70,7 +71,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setGeneratedImageUrl('')
         setProgress(0)
         setMessageIndex(0)
-        setStrength(0.95)
+        setStrength(0.92) // Default to 92% for optimal quality
         setShowAdvanced(false)
         setAspectRatio('1:1')
         setGenerationId('')
@@ -643,29 +644,62 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </button>
                 
                 {showAdvanced && (
-                  <div className="mt-4 bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="mt-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 space-y-4 border border-gray-200">
+                    {/* Style Strength Slider */}
                     <div>
-                      <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
-                        <span>Image Similarity</span>
-                        <span className="text-coral font-bold">{Math.round(strength * 100)}%</span>
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1.0"
-                        step="0.05"
-                        value={strength}
-                        onChange={(e) => setStrength(Number(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-coral"
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-coral" />
+                          Style Strength
+                        </label>
+                        <span className="text-lg font-bold text-coral bg-white px-3 py-1 rounded-full shadow-sm">
+                          {Math.round(strength * 100)}%
+                        </span>
+                      </div>
+                      
+                      <Slider
+                        min={0.7}
+                        max={0.95}
+                        step={0.05}
+                        value={[strength]}
+                        onValueChange={(value) => setStrength(value[0])}
+                        className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>More Creative</span>
-                        <span>More Similar</span>
+                      
+                      <div className="flex justify-between text-xs text-gray-600 mt-2 px-1">
+                        <span className="flex items-center gap-1">
+                          <span className="text-base">🎨</span>
+                          <span className="font-medium">More Creative</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="font-medium">More Realistic</span>
+                          <span className="text-base">📸</span>
+                        </span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-600 bg-blue-50 rounded-lg p-2 border border-blue-100">
-                      💡 <strong>Recommended:</strong> 90-95% to keep your pet's exact appearance. Lower values (70-85%) allow more artistic interpretation but may change features.
-                    </p>
+                    
+                    {/* Recommendation based on strength */}
+                    <div className={`text-xs rounded-lg p-3 border ${
+                      strength >= 0.9 
+                        ? 'bg-green-50 border-green-200 text-green-800' 
+                        : strength >= 0.80 
+                        ? 'bg-blue-50 border-blue-200 text-blue-800'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}>
+                      {strength >= 0.9 ? (
+                        <>
+                          <strong>✅ Recommended for most pets:</strong> High accuracy preserves your pet's unique features (eyes, fur, markings).
+                        </>
+                      ) : strength >= 0.80 ? (
+                        <>
+                          <strong>⚖️ Balanced mode:</strong> Good mix of style and accuracy. May slightly alter some details.
+                        </>
+                      ) : (
+                        <>
+                          <strong>🎨 Creative mode:</strong> More artistic interpretation. Features like eye color or markings may change.
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
