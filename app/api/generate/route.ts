@@ -1,83 +1,162 @@
 /**
  * AI Image Generation API Endpoint
  * POST /api/generate
- * Using SiliconFlow API with FLUX.1-Kontext-dev for true image-to-image generation
- * Base64 processing happens ONLY in server memory (never cached to avoid performance issues)
- * Cost: $0.015/image (40% cheaper than FLUX.1-dev)
+ * Using Replicate API with FLUX.1-dev for true image-to-image generation
+ * Supports aspect ratio selection and smart canvas processing
+ * Cost: $0.025/image
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
+import Replicate from 'replicate'
 import sharp from 'sharp'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
 /**
- * Extract Base64 image data from various response formats
+ * Pre-process image with blurred background padding
+ * This ensures the output matches the target aspect ratio perfectly
+ * while keeping the pet complete and centered
  */
-function extractBase64FromResponse(data: any): string | null {
-  // Strategy 1: data.data[0].b64_json (DALL-E format)
-  if (data.data && Array.isArray(data.data) && data.data[0]?.b64_json) {
-    return data.data[0].b64_json
+async function padImageWithBlur(
+  imageUrl: string,
+  targetWidth: number,
+  targetHeight: number,
+  userId: string,
+  generationId: string
+): Promise<string> {
+  // Fetch the original image
+  const response = await fetch(imageUrl)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.status}`)
   }
-
-  // Strategy 2: choices[0].message.images (FLUX.2 format with Base64)
-  if (data.choices?.[0]?.message?.images && Array.isArray(data.choices[0].message.images)) {
-    const firstImage = data.choices[0].message.images[0]
-    
-    let imageData: string | undefined
-    
-    if (typeof firstImage === 'string') {
-      imageData = firstImage
-    } else if (firstImage?.image_url?.url) {
-      imageData = firstImage.image_url.url
-    } else if (firstImage?.url) {
-      imageData = firstImage.url
-    } else if (firstImage?.b64_json) {
-      imageData = firstImage.b64_json
-    }
-    
-    if (imageData) {
-      if (imageData.startsWith('data:image')) {
-        return imageData.split(',')[1]
+  
+  const sourceBuffer = Buffer.from(await response.arrayBuffer())
+  
+  // Layer 1 (Background): Blurred and darkened version to fill the canvas
+  const blurredBackground = await sharp(sourceBuffer)
+    .resize(targetWidth, targetHeight, {
+      fit: 'cover',  // Fill entire canvas
+      position: 'attention',  // Smart crop
+      kernel: sharp.kernel.lanczos3,
+    })
+    .blur(50)  // Heavy blur for artistic background
+    .modulate({ brightness: 0.7 })  // Darken slightly
+    .toBuffer()
+  
+  // Layer 2 (Foreground): Clear pet image fitted inside
+  const clearPet = await sharp(sourceBuffer)
+    .resize(targetWidth, targetHeight, {
+      fit: 'inside',  // Fit entire pet without cropping
+      kernel: sharp.kernel.lanczos3,
+    })
+    .toBuffer()
+  
+  // Get dimensions of fitted pet for centering
+  const metadata = await sharp(clearPet).metadata()
+  const offsetX = Math.round((targetWidth - (metadata.width || targetWidth)) / 2)
+  const offsetY = Math.round((targetHeight - (metadata.height || targetHeight)) / 2)
+  
+  // Composite clear pet over blurred background
+  const finalBuffer = await sharp(blurredBackground)
+    .composite([
+      {
+        input: clearPet,
+        left: offsetX,
+        top: offsetY,
       }
-      if (imageData.startsWith('http')) {
-        return null
-      }
-      return imageData
-    }
+    ])
+    .png({ quality: 100 })
+    .toBuffer()
+  
+  // Upload to Supabase
+  const supabase = createAdminClient()
+  const timestamp = Date.now()
+  const filePath = `${userId}/preprocessed/${timestamp}-${generationId}.png`
+  
+  const { data, error } = await supabase.storage
+    .from('generated-results')
+    .upload(filePath, finalBuffer, {
+      contentType: 'image/png',
+      cacheControl: '3600',
+      upsert: false,
+    })
+  
+  if (error) {
+    throw new Error(`Upload failed: ${error.message}`)
   }
+  
+  const { data: urlData } = supabase.storage
+    .from('generated-results')
+    .getPublicUrl(data.path)
+  
+  console.log(`✅ Image preprocessed: ${targetWidth}x${targetHeight}`)
+  
+  return urlData.publicUrl
+}
 
-  // Strategy 3: choices[0].message.content (chat format)
-  if (data.choices?.[0]?.message?.content) {
-    const content = data.choices[0].message.content
+/**
+ * Analyze pet features using SiliconFlow Qwen2-VL-72B
+ * Qwen2-VL is one of the best open-source vision models, excellent at identifying:
+ * - Pet breeds
+ * - Heterochromia (different eye colors)
+ * - Unique markings and patterns
+ * - Fur colors and textures
+ */
+async function analyzePetFeatures(imageUrl: string): Promise<string> {
+  const apiKey = process.env.SILICONFLOW_API_KEY
+  
+  if (!apiKey) {
+    console.warn('⚠️ SILICONFLOW_API_KEY not configured, skipping vision analysis')
+    return ''
+  }
+  
+  try {
+    const response = await fetch('https://api.siliconflow.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'Qwen/Qwen2.5-VL-72B-Instruct',  // 🔑 Updated to correct model name
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: { url: imageUrl }
+              },
+              {
+                type: 'text',
+                text: 'You are a professional pet breed identification expert. Analyze this pet photo and describe ONLY the physical features in one concise sentence. Include: 1) EXACT BREED NAME (e.g., Samoyed, Border Collie), 2) Eye color (if heterochromia, specify BOTH colors like "left eye blue, right eye brown"), 3) Fur color and pattern, 4) Distinctive markings. Do NOT describe pose, background, or accessories.'
+              }
+            ]
+          }
+        ],
+        max_tokens: 150,
+        temperature: 0.2,  // Lower temperature for more consistent breed identification
+      }),
+    })
     
-    if (content.startsWith('data:image')) {
-      return content.split(',')[1]
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('SiliconFlow Vision API error:', response.status, errorText.substring(0, 200))
+      return ''
     }
     
-    if (content.length > 1000 && !content.startsWith('http')) {
-      return content
-    }
+    const data = await response.json()
+    const description = data.choices?.[0]?.message?.content?.trim() || ''
+    
+    console.log('🔍 Qwen2-VL Analysis Result:', description)
+    
+    return description
+  } catch (error: any) {
+    console.error('❌ Vision analysis failed:', error.message)
+    return ''
   }
-
-  // Strategy 4: data.output (Replicate format)
-  if (data.output && typeof data.output === 'string') {
-    if (data.output.startsWith('data:image')) {
-      return data.output.split(',')[1]
-    }
-    if (data.output.length > 1000 && !data.output.startsWith('http')) {
-      return data.output
-    }
-  }
-
-  // Strategy 5: Top-level b64_json
-  if (data.b64_json && typeof data.b64_json === 'string') {
-    return data.b64_json
-  }
-
-  return null
 }
 
 /**
@@ -125,193 +204,108 @@ async function uploadBase64ToStorage(
   }
 }
 
-/**
- * 🎯 ASPECT RATIO FIX: Map aspect ratio to SiliconFlow image_size format
- * SiliconFlow uses "WIDTHxHEIGHT" string format (e.g., "768x1024")
- * All dimensions are multiples of 32 for FLUX.1-schnell compatibility
- */
-function aspectRatioToImageSize(aspectRatio: string): string {
-  switch (aspectRatio) {
-    case "3:4":
-      return "768x1024"   // Portrait
-    case "4:3":
-      return "1024x768"   // Landscape
-    case "16:9":
-      return "1024x576"   // Wide
-    case "9:16":
-      return "576x1024"   // Tall
-    default: // "1:1"
-      return "1024x1024"  // Square
-  }
-}
+
 
 /**
- * 🎨 Smart Canvas Expansion with Blurred Background (iOS-Wallpaper Style)
- * Preserves pet completely by fitting it inside target dimensions
- * Uses blurred/darkened version of source as artistic background fill
- * 
- * @param sourceBuffer - Original uploaded image buffer
- * @param targetSize - Target dimensions in "WIDTHxHEIGHT" format (e.g., "768x1024")
- * @returns Processed image buffer ready for AI generation
- */
-async function createSmartCanvas(
-  sourceBuffer: Buffer,
-  targetSize: string
-): Promise<Buffer> {
-  // Parse target dimensions
-  const [targetWidth, targetHeight] = targetSize.split('x').map(Number)
-  
-  // Get source image metadata
-  const sourceImage = sharp(sourceBuffer)
-  const metadata = await sourceImage.metadata()
-  const sourceWidth = metadata.width!
-  const sourceHeight = metadata.height!
-  
-  // Calculate scale to fit source inside target (preserving aspect ratio & pet)
-  const scaleX = targetWidth / sourceWidth
-  const scaleY = targetHeight / sourceHeight
-  const scale = Math.min(scaleX, scaleY) // Fit inside (no cropping)
-  
-  const scaledWidth = Math.round(sourceWidth * scale)
-  const scaledHeight = Math.round(sourceHeight * scale)
-  
-  // Calculate positioning (center pet in canvas)
-  const offsetX = Math.round((targetWidth - scaledWidth) / 2)
-  const offsetY = Math.round((targetHeight - scaledHeight) / 2)
-  
-  // Step 1: Create blurred background (enlarge source and blur heavily)
-  const blurredBackground = await sharp(sourceBuffer)
-    .resize(targetWidth, targetHeight, { fit: 'cover' }) // Fill entire canvas
-    .blur(50) // Heavy blur for artistic effect
-    .modulate({ brightness: 0.7 }) // Slightly darken to make pet stand out
-    .toBuffer()
-  
-  // Step 2: Resize clear source image (pet stays sharp)
-  const clearPet = await sharp(sourceBuffer)
-    .resize(scaledWidth, scaledHeight, { fit: 'inside' })
-    .toBuffer()
-  
-  // Step 3: Composite clear pet onto blurred background
-  const finalCanvas = await sharp(blurredBackground)
-    .composite([
-      {
-        input: clearPet,
-        left: offsetX,
-        top: offsetY,
-      }
-    ])
-    .png() // Ensure PNG format for quality
-    .toBuffer()
-  
-  return finalCanvas
-}
-
-/**
- * Generate image using SiliconFlow API with FLUX.1-Kontext-dev model
- * Uses image-to-image endpoint for true breed/feature preservation
- * Base64 processing happens ONLY in server memory (never cached locally)
+ * Generate image using Replicate API with FLUX.1-dev model
+ * Uses image-to-image for true breed/feature preservation
  * Returns the public Supabase Storage URL and storage path
  */
-async function generateWithSiliconFlow(
+async function generateWithReplicate(
   finalPrompt: string,
   userId: string,
   generationId: string,
-  imageSize: string = "1024x1024",
-  imageUrl?: string  // Optional: source image URL (will be converted to Base64 in memory)
+  imageUrl?: string,  // Pre-processed image URL (already correct size)
+  promptStrength: number = 0.82  // Higher strength for better style application
 ): Promise<{ publicUrl: string; storagePath: string }> {
-  const apiKey = process.env.SILICONFLOW_API_KEY
+  const apiKey = process.env.REPLICATE_API_TOKEN
 
   if (!apiKey) {
-    throw new Error('SILICONFLOW_API_KEY is not configured')
+    throw new Error('REPLICATE_API_TOKEN is not configured')
   }
 
-  // Build request body following SiliconFlow's API format
-  const requestBody: any = {
-    model: "black-forest-labs/FLUX.1-Kontext-dev",  // Image-to-image専用モデル
-    prompt: finalPrompt,
-    image_size: imageSize,  // 🎯 User-selected aspect ratio
-    num_inference_steps: 30,  // Max allowed by SiliconFlow for Kontext-dev
-    batch_size: 1,
-    seed: Math.floor(Math.random() * 2147483647),
-    prompt_enhancement: false  // Keep prompt as-is
-  }
-
-  // 🎨 Smart Canvas Processing: Adapt source image to target aspect ratio
-  if (imageUrl) {
-    // Step 1: Download source image from Supabase
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to fetch source image: ${imageResponse.status}`)
-    }
-    
-    // Step 2: Convert to buffer
-    const sourceBuffer = Buffer.from(await imageResponse.arrayBuffer())
-    
-    // Step 3: 🎨 Apply smart canvas expansion (blurred background fill)
-    // This preserves the pet completely while adapting to user's selected aspect ratio
-    const processedBuffer = await createSmartCanvas(sourceBuffer, imageSize)
-    
-    // Step 4: Convert processed image to Base64
-    const base64Image = processedBuffer.toString('base64')
-    
-    // Step 5: Add to request body (will be released after API call)
-    requestBody.image = `data:image/png;base64,${base64Image}`
-    
-    console.log('✅ Smart canvas applied:', { 
-      targetSize: imageSize,
-      originalSize: `${sourceBuffer.length} bytes`,
-      processedSize: `${processedBuffer.length} bytes`
-    })
-    
-    // Note: All processing happens in server memory only, never cached locally
-  }
-
-  const response = await fetch('https://api.siliconflow.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
+  // Initialize Replicate client
+  const replicate = new Replicate({
+    auth: apiKey,
   })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    console.error('SiliconFlow API error:', response.status, errorBody.substring(0, 200))
-    throw new Error(`SiliconFlow API failed: ${response.status} ${response.statusText}`)
+  // Build input for FLUX-dev
+  const input: any = {
+    prompt: finalPrompt,
+    num_outputs: 1,
+    output_format: "png",
+    output_quality: 100,
+    disable_safety_checker: true,
+    num_inference_steps: 50,
+    guidance: 3.5,
   }
 
-  const data = await response.json()
-
-  // Check for errors in response
-  if (data.error) {
-    console.error('❌ SiliconFlow error:', data.error)
-    throw new Error(data.error.message || JSON.stringify(data.error))
+  // 🎨 Image-to-image mode
+  if (imageUrl) {
+    // CRITICAL: Image is already pre-processed to correct dimensions
+    // DO NOT send width/height - let Replicate match the input image size
+    input.image = imageUrl  // Pre-processed image URL
+    input.prompt_strength = promptStrength  // Higher strength = stronger style and feature correction
+    
+    console.log('✅ Image-to-image mode:', { 
+      promptStrength: input.prompt_strength,
+      strategy: 'Pre-processed image (already correct size)',
+      imageUrl: imageUrl.substring(0, 60) + '...'
+    })
+  } else {
+    // Text-to-image mode
+    input.aspect_ratio = "1:1"  // Default for text-to-image
   }
 
-  // SiliconFlow returns URL format: images[0].url or data[0].url
-  const generatedImageUrl = data.images?.[0]?.url || data.data?.[0]?.url
+  console.log('🚀 Calling Replicate FLUX-dev with params:', {
+    model: 'black-forest-labs/flux-dev',
+    mode: imageUrl ? 'image-to-image' : 'text-to-image',
+    aspectRatio: input.aspect_ratio,
+    promptStrength: input.prompt_strength,
+    guidance: input.guidance,
+    hasImage: !!input.image,
+    prompt: finalPrompt.substring(0, 80) + '...'
+  })
 
-  if (!generatedImageUrl) {
-    throw new Error('No image URL found in SiliconFlow response')
+  try {
+    // Run FLUX-dev model
+    const output = await replicate.run(
+      "black-forest-labs/flux-dev" as `${string}/${string}`,
+      { input }
+    )
+
+    console.log('✅ Replicate generation complete')
+
+    // FLUX-dev returns an array of image URLs
+    let generatedImageUrl: string
+    if (Array.isArray(output) && output.length > 0) {
+      generatedImageUrl = output[0] as string
+    } else if (typeof output === 'string') {
+      generatedImageUrl = output
+    } else {
+      throw new Error('Unexpected output format from Replicate')
+    }
+
+    // Download image from Replicate URL
+    const imageResponse = await fetch(generatedImageUrl)
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to download image: ${imageResponse.status}`)
+    }
+
+    // Convert to Buffer
+    const arrayBuffer = await imageResponse.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Convert to Base64 for storage
+    const base64Data = buffer.toString('base64')
+    
+    // Upload to Supabase Storage and return public URL + storage path
+    const result = await uploadBase64ToStorage(base64Data, userId, generationId)
+    return result
+  } catch (error: any) {
+    console.error('❌ Replicate API error:', error)
+    throw new Error(`Replicate generation failed: ${error.message}`)
   }
-
-  // Download image from SiliconFlow URL
-  const imageResponse = await fetch(generatedImageUrl)
-  if (!imageResponse.ok) {
-    throw new Error(`Failed to download image: ${imageResponse.status}`)
-  }
-
-  // Convert to Buffer
-  const arrayBuffer = await imageResponse.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
-  // Convert to Base64 for storage
-  const base64Data = buffer.toString('base64')
-  
-  // Upload to Supabase Storage and return public URL + storage path
-  const result = await uploadBase64ToStorage(base64Data, userId, generationId)
-  return result
 }
 
 export async function POST(request: NextRequest) {
@@ -345,8 +339,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 🎯 ASPECT RATIO FIX: Convert aspect ratio to SiliconFlow image_size format
-    const imageSize = aspectRatioToImageSize(aspectRatio)
+    // STEP A: Determine target dimensions based on aspect ratio
+    let targetWidth = 1024
+    let targetHeight = 1024
+    
+    switch (aspectRatio) {
+      case "3:4":
+        targetWidth = 768
+        targetHeight = 1024
+        break
+      case "4:3":
+        targetWidth = 1024
+        targetHeight = 768
+        break
+      case "16:9":
+        targetWidth = 1024
+        targetHeight = 576
+        break
+      case "9:16":
+        targetWidth = 576
+        targetHeight = 1024
+        break
+      default: // "1:1"
+        targetWidth = 1024
+        targetHeight = 1024
+    }
 
     // 3. Get style configuration
     const styleConfig = getStyleById(style)
@@ -357,18 +374,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Construct final prompt with image-to-image optimization
+    // STEP B: VISION ANALYSIS - Analyze pet features before generation
+    let visionDescription = ''
+    if (imageUrl) {
+      try {
+        console.log('🔍 Starting vision analysis...')
+        visionDescription = await analyzePetFeatures(imageUrl)
+        if (visionDescription) {
+          console.log('✅ Vision analysis:', visionDescription)
+        }
+      } catch (error: any) {
+        console.error('⚠️ Vision analysis failed, continuing without it:', error.message)
+        // Continue without vision - not critical
+      }
+    }
+
+    // STEP C: PRE-PROCESS IMAGE - Pad with blurred background to exact dimensions
+    let processedImageUrl = imageUrl
+    if (imageUrl) {
+      try {
+        console.log(`🎨 Pre-processing image to ${targetWidth}x${targetHeight}...`)
+        processedImageUrl = await padImageWithBlur(
+          imageUrl,
+          targetWidth,
+          targetHeight,
+          user.id,
+          crypto.randomUUID()  // Generate temp ID for preprocessing
+        )
+        console.log('✅ Image pre-processed successfully')
+      } catch (error: any) {
+        console.error('⚠️ Pre-processing failed, using original:', error.message)
+        processedImageUrl = imageUrl  // Fallback to original
+      }
+    }
+
+    // STEP D: CONSTRUCT STRONG PROMPT - BREED FIRST, then details, then style
     let finalPrompt = ''
     
-    if (imageUrl) {
-      // Image-to-image: Let the image be the PRIMARY reference
-      // Prompt should be minimal and only describe the STYLE, not the subject
-      // The subject (animal type, breed, features) comes from the IMAGE
-      finalPrompt = `The EXACT SAME animal from the reference image, preserving ALL physical features, colors, and characteristics${styleConfig.promptSuffix}. Keep the subject identical to the reference photo.`
+    if (imageUrl && visionDescription) {
+      // 🎯 VISION-ENHANCED PROMPT (BREED PRIORITY)
+      // Structure: [BREED + PHYSICAL FEATURES] first → [User Details] → [Style Last]
+      // This ensures the AI prioritizes preserving the exact breed and unique features
+      finalPrompt = `A ${visionDescription}, ${userPrompt}${styleConfig.promptSuffix}. Maintain the exact breed characteristics, preserve all unique physical features including eye colors and fur patterns. Professional portrait, high detail.`
+    } else if (imageUrl) {
+      // FALLBACK: No vision analysis available
+      finalPrompt = `The exact same pet from the reference image, ${userPrompt}${styleConfig.promptSuffix}. Preserve all unique features including breed, eye colors, fur patterns, and markings. Professional quality, high detail.`
     } else {
       // Text-to-image: Standard prompt
-      finalPrompt = `${userPrompt}, ${styleConfig.promptSuffix}`
+      finalPrompt = `${userPrompt}${styleConfig.promptSuffix}`
     }
+    
+    console.log('📝 Final Prompt:', finalPrompt.substring(0, 150) + '...')
 
     // 5. Check user credits
     const { data: profile, error: profileError } = await supabase
@@ -409,10 +465,9 @@ export async function POST(request: NextRequest) {
           userPrompt,
           stylePromptSuffix: styleConfig.promptSuffix,
           requestedAt: new Date().toISOString(),
-          provider: 'siliconflow',
-          model: 'black-forest-labs/FLUX.1-Kontext-dev',
+          provider: 'replicate',
+          model: 'black-forest-labs/flux-dev',
           aspectRatio,
-          imageSize,
         },
       })
       .select()
@@ -443,14 +498,13 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // 8. Call SiliconFlow API and upload to storage
-      // Base64 conversion happens in server memory only (never cached locally)
-      const { publicUrl: publicImageUrl, storagePath } = await generateWithSiliconFlow(
+      // STEP E: Call Replicate API with pre-processed image and strong prompt
+      const { publicUrl: publicImageUrl, storagePath } = await generateWithReplicate(
         finalPrompt, 
         user.id, 
         generation.id,
-        imageSize,
-        imageUrl  // URL will be converted to Base64 in server memory
+        processedImageUrl,  // Pre-processed image (already correct dimensions)
+        strength || 0.82  // Higher strength for better style application
       )
 
       // 9. Update generation record (status: succeeded)
@@ -462,11 +516,13 @@ export async function POST(request: NextRequest) {
           status: 'succeeded',
           output_url: publicImageUrl,
           output_storage_path: storagePath, // ✅ Save storage path for reliable deletion
-          input_url: imageUrl || '',
+          input_url: imageUrl || '',  // Original image URL (not pre-processed)
           metadata: {
             ...generation.metadata,
             completedAt: new Date().toISOString(),
             storageUrl: publicImageUrl,
+            preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
+            visionAnalysis: visionDescription || undefined,
           },
         })
         .eq('id', generation.id)
