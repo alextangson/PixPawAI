@@ -64,8 +64,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [showQualityWarning, setShowQualityWarning] = useState(false)
   const [isCheckingQuality, setIsCheckingQuality] = useState(false)
   
-  // Style rotation for "换一批"
+  // Style rotation for "Shuffle"
   const [styleRotationIndex, setStyleRotationIndex] = useState(0)
+  
+  // Rate limiting & anti-spam states
+  const [lastUploadTime, setLastUploadTime] = useState<number>(0)
+  const [isUploadBlocked, setIsUploadBlocked] = useState(false)
+  const [uploadCooldown, setUploadCooldown] = useState<number>(0)
 
   // Check user authentication
   useEffect(() => {
@@ -80,6 +85,19 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
   }, [isOpen])
 
+  // Cooldown timer effect
+  useEffect(() => {
+    if (uploadCooldown > 0) {
+      const timer = setTimeout(() => {
+        setUploadCooldown(uploadCooldown - 1)
+        if (uploadCooldown === 1) {
+          setIsUploadBlocked(false)
+        }
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [uploadCooldown])
+  
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -98,6 +116,9 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setStrength(0.92) // Default to 92% for optimal quality
         setShowAdvanced(false)
         setAspectRatio('1:1')
+        setLastUploadTime(0)
+        setIsUploadBlocked(false)
+        setUploadCooldown(0)
         setGenerationId('')
         setPetName('')
         setQualityCheckResult(null)
@@ -207,6 +228,31 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     const file = e.target.files?.[0]
     if (!file) return
 
+    // 🛡️ Rate limiting: Prevent rapid uploads (5 seconds cooldown)
+    const now = Date.now()
+    const timeSinceLastUpload = now - lastUploadTime
+    const COOLDOWN_MS = 5000 // 5 seconds
+    
+    if (timeSinceLastUpload < COOLDOWN_MS && lastUploadTime > 0) {
+      const remainingSeconds = Math.ceil((COOLDOWN_MS - timeSinceLastUpload) / 1000)
+      setError(`Please wait ${remainingSeconds} seconds before uploading again`)
+      setErrorType('general')
+      setIsUploadBlocked(true)
+      setUploadCooldown(remainingSeconds)
+      
+      // Reset file input
+      e.target.value = ''
+      return
+    }
+
+    // 🛡️ Prevent duplicate uploads
+    if (isCheckingQuality) {
+      setError('Upload in progress, please wait')
+      setErrorType('general')
+      e.target.value = ''
+      return
+    }
+
     // Validate file
     if (!file.type.startsWith('image/')) {
       setError('Please upload an image file')
@@ -218,10 +264,15 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       return
     }
 
+    // Update last upload time
+    setLastUploadTime(now)
+    
     setUploadedFile(file)
     const objectUrl = URL.createObjectURL(file)
     setPreviewUrl(objectUrl)
     setError('')
+    setIsUploadBlocked(false)
+    setUploadCooldown(0)
     
     // Get image dimensions (use window.Image to avoid conflict with Next.js Image component)
     const img = new window.Image()
@@ -639,16 +690,37 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           {/* STEP A: UPLOAD */}
           {step === 'upload' && (
             <div className="space-y-6">
+              {/* Rate Limit Warning */}
+              {isUploadBlocked && uploadCooldown > 0 && (
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-amber-900">
+                      Please wait {uploadCooldown} second{uploadCooldown > 1 ? 's' : ''} before uploading again
+                    </p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      This helps us prevent spam and keeps the service fast for everyone
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <div
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
-                className="relative border-2 border-dashed border-gray-300 rounded-2xl p-12 hover:border-coral hover:bg-coral/5 transition-all cursor-pointer group"
+                className={cn(
+                  "relative border-2 border-dashed rounded-2xl p-12 transition-all",
+                  isUploadBlocked || isCheckingQuality
+                    ? "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                    : "border-gray-300 hover:border-coral hover:bg-coral/5 cursor-pointer group"
+                )}
               >
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  disabled={isUploadBlocked || isCheckingQuality}
+                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div className="text-center">
                   <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-coral transition-colors" />
