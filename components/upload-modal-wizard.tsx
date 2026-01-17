@@ -210,8 +210,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setImageDimensions({ width: img.width, height: img.height })
       // Advance to quality-check step instead of configure
       setStep('quality-check')
-      // Trigger quality check
-      performQualityCheck(objectUrl)
+      // Trigger quality check - pass file directly
+      performQualityCheck(objectUrl, file)
     }
     img.onerror = () => {
       setError('Failed to load image')
@@ -220,7 +220,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   }
   
   // Quality check function
-  const performQualityCheck = async (imageUrl: string) => {
+  const performQualityCheck = async (imageUrl: string, file: File) => {
     setIsCheckingQuality(true)
     setShowQualityWarning(false)
     
@@ -234,7 +234,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         return
       }
       
-      const uploadResult = await uploadUserImage(uploadedFile!, user.id)
+      const uploadResult = await uploadUserImage(file, user.id)
       
       if ('error' in uploadResult) {
         throw new Error('Failed to upload image for analysis')
@@ -387,7 +387,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // ============================================
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col max-w-3xl rounded-3xl p-4">
+      <div className="bg-white shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col max-w-7xl rounded-3xl p-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -707,7 +707,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
           {/* STEP B: CONFIGURE - Double Column Layout */}
           {step === 'configure' && (
-            <div className="flex flex-col lg:flex-row h-full min-h-[600px] -m-6">
+            <div className="flex flex-col lg:flex-row h-full min-h-[700px] -m-6">
               
               {/* LEFT PANEL: Image Preview + Pet Name (50%) */}
               <div className="lg:w-1/2 bg-gradient-to-br from-gray-50 to-gray-100 p-6 lg:p-8 flex flex-col items-center justify-center">
@@ -777,7 +777,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               </div>
               
               {/* RIGHT PANEL: Style + Configuration (50%) */}
-              <div className="lg:w-1/2 bg-white p-6 lg:p-8 overflow-y-auto max-h-[600px]">
+              <div className="lg:w-1/2 bg-white p-6 lg:p-8 overflow-y-auto max-h-[700px]">
                 
                 {/* Style Selector */}
                 <div className="mb-6">
