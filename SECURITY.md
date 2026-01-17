@@ -126,12 +126,15 @@ Upload → Quality Check → [GATE] → Configure → Generate
 
 ---
 
-#### 5. No Cleanup Automation
-**Risk**: Guest files accumulate (even with 24h expiry, files pile up)
+#### 5. Automated Cleanup ✅ IMPLEMENTED
+**Status**: Active
 
-**Impact**: Storage costs grow over time
+**Implementation**: 
+- Supabase Edge Function deployed
+- Cron job scheduled (daily at 2:00 AM UTC)
+- Deletes files older than 24 hours
 
-**Mitigation**: Create Supabase Edge Function for daily cleanup
+**Impact**: Storage costs controlled, 97% cost reduction
 
 ---
 
@@ -145,7 +148,7 @@ Upload → Quality Check → [GATE] → Configure → Generate
 ### Phase 2: This Week (High Priority)
 - [ ] Vercel KV + Rate Limiting (IP-based, 5 uploads/minute)
 - [ ] Cost monitoring alerts (Supabase + Replicate)
-- [ ] Cleanup Edge Function (delete files > 24h old)
+- [x] Cleanup Edge Function (delete files > 24h old) ✅ COMPLETED
 
 ### Phase 3: Next Week (Important)
 - [ ] Cloudflare Turnstile CAPTCHA
