@@ -77,14 +77,14 @@ If no pet detected:
 }`
 
   try {
-    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+    const response = await fetch('https://api.siliconflow.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${QWEN_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen2-VL-72B-Instruct',
+        model: 'Qwen/Qwen2.5-VL-72B-Instruct',
         messages: [
           {
             role: 'user',
