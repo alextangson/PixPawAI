@@ -50,10 +50,10 @@ export function Footer({ dict, lang }: FooterProps) {
             <Link href={`/${lang}`} className="flex items-center gap-2 mb-4 group">
               <div className="relative w-40 h-12 group-hover:opacity-90 transition-opacity">
                 <Image 
-                  src="/brand/logo-orange.svg" 
+                  src="/brand/logo-white.svg" 
                   alt="PixPaw AI Logo" 
                   fill
-                  className="object-contain brightness-0 invert"
+                  className="object-contain"
                 />
               </div>
             </Link>

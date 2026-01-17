@@ -21,6 +21,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
+    // Fetch image and convert to base64 (to handle signed URLs)
+    console.log('📥 Fetching image from:', imageUrl.substring(0, 100) + '...')
+    
+    const imageResponse = await fetch(imageUrl, {
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    })
+    
+    if (!imageResponse.ok) {
+      console.error('❌ Failed to fetch image:', imageResponse.status, imageResponse.statusText)
+      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer()
+    
+    // Check image size (max 10MB)
+    if (imageBuffer.byteLength > 10 * 1024 * 1024) {
+      throw new Error('Image too large (max 10MB)')
+    }
+    
+    const base64Image = Buffer.from(imageBuffer).toString('base64')
+    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+    const base64DataUrl = `data:${mimeType};base64,${base64Image}`
+    
+    console.log('✅ Image converted to base64, size:', (imageBuffer.byteLength / 1024).toFixed(2), 'KB')
+
     const prompt = `Quick image check (answer in 3 seconds):
 1. Is this a pet (dog/cat/animal)? YES/NO
 2. Is the image clear and not blurry? YES/NO
@@ -33,6 +58,12 @@ Output ONLY this JSON (no explanations):
   "petType": "dog"/"cat"/"other",
   "quality": "good"/"poor"
 }`
+
+    console.log('⚡ Quick Quality Check Request:', {
+      imageSize: imageBuffer.byteLength,
+      model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+      endpoint: 'https://api.siliconflow.com/v1/chat/completions'
+    })
 
     const response = await fetch('https://api.siliconflow.com/v1/chat/completions', {
       method: 'POST',
@@ -49,7 +80,7 @@ Output ONLY this JSON (no explanations):
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageUrl
+                  url: base64DataUrl
                 }
               },
               {
@@ -61,11 +92,14 @@ Output ONLY this JSON (no explanations):
         ],
         max_tokens: 100,
         temperature: 0.5
-      })
+      }),
+      signal: AbortSignal.timeout(15000) // 15 second timeout for AI processing
     })
 
     if (!response.ok) {
-      throw new Error(`Qwen API error: ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('❌ Qwen API Error Response:', errorText)
+      throw new Error(`Qwen API error: ${response.statusText} - ${errorText}`)
     }
 
     const data = await response.json()

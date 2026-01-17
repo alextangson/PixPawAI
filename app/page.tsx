@@ -1,9 +1,6 @@
-import { HeroSection } from '@/components/hero-section'
+import { redirect } from 'next/navigation'
 
-export default function Home() {
-  return (
-    <main className="min-h-screen">
-      <HeroSection />
-    </main>
-  )
+export default function RootPage() {
+  // Redirect to default language
+  redirect('/en')
 }

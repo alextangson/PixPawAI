@@ -71,37 +71,6 @@ export function SettingsTab({ user, profile }: SettingsTabProps) {
           </div>
         </div>
       </div>
-
-      {/* Danger Zone */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-red-200">
-        <h3 className="text-xl font-bold text-red-900 mb-4">Danger Zone</h3>
-        
-        <div className="space-y-4">
-          <Button
-            variant="outline"
-            className="w-full border-red-300 text-red-700 hover:bg-red-50"
-            onClick={async () => {
-              if (confirm('Are you sure you want to sign out?')) {
-                await signOut()
-              }
-            }}
-          >
-            Sign Out
-          </Button>
-
-          <Button
-            variant="outline"
-            className="w-full border-red-300 text-red-700 hover:bg-red-50"
-            onClick={() => {
-              if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                alert('Account deletion feature coming soon. Please contact support.')
-              }
-            }}
-          >
-            Delete Account
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

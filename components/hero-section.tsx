@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button'
 import { BeforeAfterSlider } from '@/components/before-after-slider'
 import { InfiniteMarquee } from '@/components/infinite-marquee'
 import { TrustBadgeGroup } from '@/components/trust-badges'
-import { Sparkles, ArrowRight, PawPrint } from 'lucide-react'
+import { PawIcon } from '@/components/ui/paw-icon'
+import { Sparkles, ArrowRight } from 'lucide-react'
 
 interface HeroSectionProps {
   dict: {
@@ -37,11 +38,13 @@ interface HeroSectionProps {
 export function HeroSection({ dict, onOpenUpload }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden pt-16">
-      {/* Background Pattern - Subtle paw prints */}
+      {/* Background Pattern - Brand paw prints */}
       <div 
         className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23FF8C42' fill-opacity='1'%3E%3Cpath d='M30 20c-3 0-5 2-5 5s2 5 5 5 5-2 5-5-2-5-5-5zm-10 5c-2 0-3 1-3 3s1 3 3 3 3-1 3-3-1-3-3-3zm20 0c-2 0-3 1-3 3s1 3 3 3 3-1 3-3-1-3-3-3zm-15-5c-2 0-3 1-3 3s1 3 3 3 3-1 3-3-1-3-3-3zm10 0c-2 0-3 1-3 3s1 3 3 3 3-1 3-3-1-3-3-3z'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url('/brand/paw-orange.svg')`,
+          backgroundSize: '60px 60px',
+          backgroundRepeat: 'repeat',
         }}
       />
 
@@ -110,7 +113,7 @@ export function HeroSection({ dict, onOpenUpload }: HeroSectionProps) {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button size="xl" variant="outline" className="group">
-                  <PawPrint className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <PawIcon size={20} className="group-hover:scale-110 transition-transform" />
                   {dict.hero.cta.secondary}
                 </Button>
               </div>

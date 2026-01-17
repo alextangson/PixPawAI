@@ -176,7 +176,7 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
               },
               {
                 type: 'text',
-                text: '🔍 CRITICAL TASK: Detect heterochromia (different colored eyes)\n\nYou are a pet eye color specialist. Your PRIMARY job is to examine EACH eye separately and compare their colors.\n\nSTEP 1: Look at the LEFT eye - what color is it? (blue, brown, green, amber, etc.)\nSTEP 2: Look at the RIGHT eye - what color is it?\nSTEP 3: Are they DIFFERENT colors? If yes, this is HETEROCHROMIA.\n\nCommon heterochromia in Huskies:\n- One eye BLUE, one eye BROWN/AMBER\n- One eye ICE BLUE, one eye DARK BROWN\n\nAlso check:\n- Breed: Husky, Corgi, Dalmatian, Persian, Siamese\n- Complex patterns: spots/stripes\n- Multiple pets: count them\n\nOutput ONLY this JSON (no markdown, no explanation):\n{\n  "hasHeterochromia": true,\n  "heterochromiaDetails": "left eye blue, right eye brown",\n  "complexPattern": false,\n  "patternDetails": "",\n  "multiplePets": 1,\n  "breed": "Siberian Husky",\n  "keyFeatures": "heterochromia detected"\n}\n\nIf NO heterochromia:\n{"hasHeterochromia": false, "heterochromiaDetails": "", "complexPattern": false, "patternDetails": "", "multiplePets": 1, "breed": "Siberian Husky", "keyFeatures": "standard Husky"}'
+                text: '🔍 CRITICAL TASK: Analyze pet characteristics accurately\n\nYou are a pet analysis specialist. Your job is to:\n\n1. HETEROCHROMIA DETECTION (STRICT):\n   ⚠️ ONLY mark as TRUE if you can CLEARLY SEE both eyes AND they are VISIBLY DIFFERENT colors\n   - Look at LEFT eye color (blue, brown, green, amber, etc.)\n   - Look at RIGHT eye color\n   - Are they CLEARLY DIFFERENT? Only then = heterochromia\n   - Example: "left eye blue, right eye brown"\n   - If you can\'t see both eyes clearly: hasHeterochromia = false\n   - If both eyes look the same color: hasHeterochromia = false\n   - Do NOT assume or guess - only report what you can clearly see\n\n2. BREED IDENTIFICATION:\n   - Identify the actual breed of the pet in the photo\n   - Be accurate - do not assume or force a specific breed\n   - Common dog breeds: Golden Retriever, Border Collie, Corgi, Poodle, Labrador, German Shepherd\n   - Common cat breeds: Persian, British Shorthair, Siamese, Maine Coon\n   - If unsure, output "unknown"\n\n3. OTHER CHECKS:\n   - Complex patterns: spots, stripes, unique markings (be specific)\n   - Multiple pets: count how many animals are in the photo\n\nOutput ONLY this JSON (no markdown, no explanation):\n{\n  "hasHeterochromia": true,\n  "heterochromiaDetails": "left eye blue, right eye brown",\n  "complexPattern": false,\n  "patternDetails": "",\n  "multiplePets": 1,\n  "breed": "Border Collie",\n  "keyFeatures": "heterochromia clearly visible"\n}\n\nIf NO heterochromia (most common):\n{"hasHeterochromia": false, "heterochromiaDetails": "", "complexPattern": false, "patternDetails": "", "multiplePets": 1, "breed": "Golden Retriever", "keyFeatures": "standard appearance"}'
               }
             ]
           }
@@ -593,15 +593,30 @@ export async function POST(request: NextRequest) {
       
       // Tier-specific prompt strategy
       if (tierConfig.tier <= 2) {
-        // Tier 1-2: 写实/轻艺术 - 强调特征保留
-        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${styleConfig.promptSuffix}. Keep original appearance, only apply ${styleName} artistic style.`
+        // Tier 1-2: 写实/轻艺术 - 强调特征保留，但也需要清理颜色强制
+        const cleanSuffix = styleConfig.promptSuffix
+          .replace(/soft white fur/gi, 'fur')
+          .replace(/white and pink/gi, 'colorful')
+          .replace(/pink and white/gi, 'colorful')
+          .replace(/yellow and pink/gi, 'colorful')
+          .replace(/orange turtleneck/gi, 'turtleneck')
+          .replace(/olive green background/gi, 'solid background')
+        
+        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}. Keep original appearance, only apply ${styleName} artistic style.`
       } else {
         // Tier 3-4: 强艺术 - 平衡风格和特征
-        // 清理可能冲突的颜色描述
+        // 清理可能冲突的颜色/特征描述，保留艺术风格
         const cleanSuffix = styleConfig.promptSuffix
           .replace(/warm/gi, '')
           .replace(/bright/gi, '')
           .replace(/soft white fur/gi, 'fur')
+          .replace(/white and pink/gi, 'colorful')
+          .replace(/pink and white/gi, 'colorful')
+          .replace(/pastel pink and white/gi, 'pastel')
+          .replace(/yellow and pink/gi, 'colorful')
+          .replace(/blue and yellow/gi, 'colorful')
+          .replace(/orange turtleneck/gi, 'turtleneck')
+          .replace(/olive green background/gi, 'solid background')
         
         finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}. Based on reference image, maintain core breed characteristics and distinctive features.`
       }

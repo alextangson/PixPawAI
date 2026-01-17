@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, Sparkles, Bell } from 'lucide-react'
+import { ShoppingBag, Sparkles, Bell, Frame, Armchair, Coffee } from 'lucide-react'
+import { BRANDING } from '@/lib/constants/branding'
 
 interface ShopFakeDoorDialogProps {
   isOpen: boolean
@@ -30,26 +31,39 @@ export function ShopFakeDoorDialog({
 
     setIsSubmitting(true)
 
-    // Log the fake door interaction for analytics
-    console.log('🚪 FakeDoor_Shop_Clicked', {
-      generationId,
-      petName,
-      email,
-      timestamp: new Date().toISOString()
-    })
+    try {
+      // Call API to store email in Supabase
+      const response = await fetch('/api/merch-waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          generation_id: generationId,
+          pet_name: petName
+        })
+      })
 
-    // Simulate API call (2 second delay)
-    await new Promise(resolve => setTimeout(resolve, 2000))
+      if (!response.ok) {
+        throw new Error('Failed to join waitlist')
+      }
 
-    setSubmitted(true)
-    setIsSubmitting(false)
+      const data = await response.json()
+      console.log('✅ Successfully added to merch waitlist:', data)
 
-    // Auto-close after 3 seconds
-    setTimeout(() => {
-      onClose()
-      setSubmitted(false)
-      setEmail('')
-    }, 3000)
+      setSubmitted(true)
+      
+      // Auto-close after 3 seconds
+      setTimeout(() => {
+        onClose()
+        setSubmitted(false)
+        setEmail('')
+      }, 3000)
+    } catch (error) {
+      console.error('Failed to join waitlist:', error)
+      alert('Failed to join waitlist. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -58,10 +72,12 @@ export function ShopFakeDoorDialog({
         {!submitted ? (
           <>
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-coral to-orange-600 p-6 text-center">
-              <div className="w-16 h-16 bg-white rounded-full mx-auto mb-3 flex items-center justify-center">
+            <div className="bg-gradient-to-r from-coral to-orange-600 p-6 text-center space-y-3">
+              {/* Shopping Icon */}
+              <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center">
                 <ShoppingBag className="w-8 h-8 text-coral" />
               </div>
+              
               <h3 className="text-2xl font-bold text-white">Store Opening Soon!</h3>
             </div>
 
@@ -75,20 +91,20 @@ export function ShopFakeDoorDialog({
               {/* Product Icons - Simple */}
               <div className="flex justify-center gap-6 py-4">
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center text-2xl">
-                    🖼️
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <Frame className="w-6 h-6 text-gray-600" />
                   </div>
                   <p className="text-xs text-gray-600">Canvas</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center text-2xl">
-                    🛋️
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <Armchair className="w-6 h-6 text-gray-600" />
                   </div>
                   <p className="text-xs text-gray-600">Pillows</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center text-2xl">
-                    ☕
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <Coffee className="w-6 h-6 text-gray-600" />
                   </div>
                   <p className="text-xs text-gray-600">Mugs</p>
                 </div>
@@ -120,15 +136,24 @@ export function ShopFakeDoorDialog({
                 onClick={onClose}
                 disabled={isSubmitting}
                 variant="ghost"
-                className="w-full h-10 text-sm text-gray-600"
+                className="w-full h-10 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200"
               >
                 Close
               </Button>
 
               {/* Trust Message */}
               <p className="text-xs text-gray-500 text-center">
-                We'll email you as soon as the store opens. No spam, we promise! 🐾
+                We'll email you as soon as the store opens. No spam, we promise!
               </p>
+
+              {/* Logo at Bottom */}
+              <div className="flex justify-center pt-4">
+                <img 
+                  src={BRANDING.logos.svg.color} 
+                  alt="PixPaw AI"
+                  className="h-12 opacity-80"
+                />
+              </div>
             </div>
           </>
         ) : (

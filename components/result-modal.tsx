@@ -5,6 +5,7 @@ import { X, Download, Sparkles, ShoppingBag, CheckCircle, ChevronDown, AlertCirc
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { BRANDING } from '@/lib/constants/branding'
 import { ArtCardModal } from '@/components/art-card-modal'
 import { ShareSuccessModal } from '@/components/share-success-modal'
 import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
@@ -55,7 +56,9 @@ interface ResultModalProps {
   generationId: string
   remainingCredits: number | null
   isRewarded?: boolean
+  isRefunded?: boolean // Whether user has already been refunded for this generation
   onShareSuccess?: () => void
+  onReupload?: (targetStep?: 'upload' | 'configure') => void // Callback to reopen upload step
   petName?: string
   generationMetadata?: {
     hasHeterochromia?: boolean
@@ -75,7 +78,9 @@ export function ResultModal({
   generationId,
   remainingCredits,
   isRewarded = false,
+  isRefunded: initialIsRefunded = false,
   onShareSuccess,
+  onReupload,
   petName,
   generationMetadata
 }: ResultModalProps) {
@@ -102,10 +107,11 @@ export function ResultModal({
   // Not satisfied feedback
   const [notSatisfiedReasons, setNotSatisfiedReasons] = useState<string[]>([])
   const [otherReasonText, setOtherReasonText] = useState('')
-  const [hasRefunded, setHasRefunded] = useState(false)
+  const [hasRefunded, setHasRefunded] = useState(initialIsRefunded)
 
   // Image loading state
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // ✨ Random placeholder for naming (stable per render)
   const randomPlaceholder = useMemo(() => {
@@ -182,6 +188,91 @@ export function ResultModal({
     }
   }
 
+  const addWatermarkAndDownload = async (imageUrl: string, filename: string) => {
+    try {
+      setIsDownloading(true)
+      
+      // Check if user is paid (currently all users are considered unpaid)
+      const isPaidUser = false // TODO: Check user subscription status
+      
+      if (isPaidUser) {
+        // Paid users download without watermark
+        window.open(imageUrl, '_blank')
+        return
+      }
+      
+      // For unpaid users, add watermark using Canvas API
+      const img = new Image()
+      img.crossOrigin = 'anonymous' // Enable CORS
+      
+      // Wait for image to load
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = reject
+        img.src = imageUrl
+      })
+      
+      // Create canvas
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas context')
+      }
+      
+      canvas.width = img.width
+      canvas.height = img.height
+      
+      // Draw original image
+      ctx.drawImage(img, 0, 0)
+      
+      // Load and draw watermark logo
+      const logo = new Image()
+      logo.crossOrigin = 'anonymous'
+      
+      await new Promise((resolve, reject) => {
+        logo.onload = resolve
+        logo.onerror = reject
+        logo.src = '/brand/png/logo-orange-256.png'
+      })
+      
+      // Calculate watermark size and position
+      const watermarkWidth = 160
+      const watermarkHeight = (logo.height / logo.width) * watermarkWidth
+      const margin = 20
+      const x = canvas.width - watermarkWidth - margin
+      const y = canvas.height - watermarkHeight - margin
+      
+      // Draw watermark with opacity
+      ctx.globalAlpha = 0.7
+      ctx.drawImage(logo, x, y, watermarkWidth, watermarkHeight)
+      ctx.globalAlpha = 1.0
+      
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          throw new Error('Failed to create blob')
+        }
+        
+        const blobUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(blobUrl)
+      }, 'image/png', 1.0)
+      
+    } catch (error) {
+      console.error('Watermark failed, downloading without watermark:', error)
+      // Fallback to direct download if watermark fails
+      window.open(imageUrl, '_blank')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   const handleDownloadOriginal = async () => {
     // If original high-quality image path is available in metadata, fetch it
     const originalImagePath = generationMetadata?.originalImagePath
@@ -197,7 +288,7 @@ export function ResultModal({
           .createSignedUrl(originalImagePath, 60) // 1 minute expiry
         
         if (data?.signedUrl) {
-          window.open(data.signedUrl, '_blank')
+          await addWatermarkAndDownload(data.signedUrl, `pixpaw-${generationId}-hq.png`)
           return
         }
       } catch (error) {
@@ -206,7 +297,7 @@ export function ResultModal({
     }
     
     // Fallback to compressed image if original is not available
-    window.open(generatedImageUrl, '_blank')
+    await addWatermarkAndDownload(generatedImageUrl, `pixpaw-${generationId}.png`)
   }
 
   const handleCreateArtCard = () => {
@@ -284,32 +375,26 @@ export function ResultModal({
   // Try different style
   const handleTryDifferentStyle = async () => {
     await logFeedback('try_different_style')
-    onClose()
-    // TODO: Implement style recommender modal
-    alert('Style recommender feature coming soon!')
+    
+    // Don't delete - let user keep the original in gallery
+    if (onReupload) {
+      onReupload('configure') // Open at style selection
+    } else {
+      onClose()
+    }
   }
 
-  // Adjust strength
-  const handleAdjustStrength = async () => {
-    await logFeedback('adjust_strength')
-    onClose()
-    // TODO: Reopen upload modal with strength highlighted
-    alert('This will reopen the upload modal with strength slider highlighted')
-  }
-
-  // Upload new photo
-  const handleUploadNewPhoto = async () => {
-    await logFeedback('upload_new_photo')
-    onClose()
-    // TODO: Reopen upload modal at upload step
-    alert('This will reopen the upload modal')
-  }
 
   // Regenerate
   const handleRegenerate = async () => {
     await logFeedback('regenerate')
-    // TODO: Implement regeneration
-    alert('Regeneration feature coming soon!')
+    
+    // Return to configure step (keep current style, allow user to adjust settings)
+    if (onReupload) {
+      onReupload('configure')
+    } else {
+      onClose()
+    }
   }
 
   if (!isOpen) return null
@@ -319,7 +404,7 @@ export function ResultModal({
       {/* Main Result Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
         <div className="bg-white w-full h-full lg:h-[90vh] lg:max-w-7xl lg:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
-          
+
           {/* Close Button (Top Right) */}
           <button
             onClick={onClose}
@@ -703,50 +788,43 @@ export function ResultModal({
                 <div className="space-y-2">
                   <Button
                     onClick={handleTryDifferentStyle}
-                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-600"
+                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral shadow-lg transition-all hover:scale-[1.02]"
                     disabled={notSatisfiedReasons.length === 0}
                   >
                     Try Different Style
                   </Button>
                   
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      onClick={handleAdjustStrength}
-                      variant="outline"
-                      className="h-10 text-sm"
-                    >
-                      Adjust Realism
-                    </Button>
-                    <Button
-                      onClick={handleUploadNewPhoto}
-                      variant="outline"
-                      className="h-10 text-sm"
-                    >
-                      Better Photo
-                    </Button>
-                  </div>
-                  
                   <Button
                     onClick={handleRegenerate}
-                    variant="ghost"
-                    className="w-full h-10 text-sm"
+                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-blue-600 hover:to-purple-600 shadow-md transition-all hover:scale-[1.01]"
                   >
-                    Regenerate Same Style
+                    Regenerate
                   </Button>
                 </div>
                 </div>
                 
                 {/* Refund Message - Bottom Fixed */}
-                {!hasRefunded && (
-                  <div className="bg-green-100 border border-green-300 rounded-lg p-3 text-center mt-6">
-                    <p className="text-sm font-semibold text-green-800">
-                      Don't worry - we'll refund your credit!
-                    </p>
-                    <p className="text-xs text-green-700 mt-1">
-                      Try again on us, no charge for this one
-                    </p>
-                  </div>
-                )}
+                <div className={`${hasRefunded ? 'bg-blue-50 border-blue-300' : 'bg-green-100 border-green-300'} border rounded-lg p-3 text-center mt-6`}>
+                  {!hasRefunded ? (
+                    <>
+                      <p className="text-sm font-semibold text-green-800">
+                        Don't worry - we'll refund your credit!
+                      </p>
+                      <p className="text-xs text-green-700 mt-1">
+                        Try again on us, no charge for this one
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold text-blue-800">
+                        Let's try again to get it perfect!
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Each generation uses 1 credit
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>

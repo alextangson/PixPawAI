@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
 
     // Try to get storage path from column or metadata
     const outputStoragePath = generation.output_storage_path || generation.metadata?.storagePath
+    console.log('📂 Output storage path:', outputStoragePath)
+    console.log('📂 Output URL:', generation.output_url)
 
     // Delete output image (generated result)
     if (outputStoragePath) {
@@ -66,15 +68,26 @@ export async function POST(request: NextRequest) {
         .remove([outputStoragePath])
       
       if (outputDeleteError) {
-        console.warn('⚠️  Failed to delete output file:', outputDeleteError)
+        console.error('❌ Failed to delete output file:', outputDeleteError)
       } else {
         console.log('✅ Deleted output file from storage')
         deletedCount++
       }
     } else if (generation.output_url) {
       // Fallback: Parse path from URL (less reliable)
-      console.log('⚠️  No storage_path, trying to parse from URL')
-      const outputPath = generation.output_url.split('/generated-results/').pop()
+      console.log('⚠️  No storage_path column, trying to parse from URL:', generation.output_url)
+      
+      // Try different URL patterns
+      let outputPath = null
+      if (generation.output_url.includes('/generated-results/')) {
+        outputPath = generation.output_url.split('/generated-results/').pop()
+      } else if (generation.output_url.includes('generated-results%2F')) {
+        // URL encoded format
+        outputPath = decodeURIComponent(generation.output_url.split('generated-results%2F').pop()?.split('?')[0] || '')
+      }
+      
+      console.log('📝 Parsed path:', outputPath)
+      
       if (outputPath) {
         const { error: outputDeleteError } = await adminSupabase
           .storage
@@ -82,11 +95,13 @@ export async function POST(request: NextRequest) {
           .remove([outputPath])
         
         if (outputDeleteError) {
-          console.warn('⚠️  Failed to delete output file:', outputDeleteError)
+          console.error('❌ Failed to delete output file:', outputDeleteError)
         } else {
           console.log('✅ Deleted output file (via URL parsing)')
           deletedCount++
         }
+      } else {
+        console.warn('⚠️  Could not parse storage path from URL')
       }
     }
 

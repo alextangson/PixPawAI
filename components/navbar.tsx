@@ -128,12 +128,13 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                       Log In
                     </Button>
                   </LoginButton>
-                  {/* CTA Button */}
-                  <LoginButton redirectTo={`/${lang}#upload`}>
-                    <Button className="bg-coral hover:bg-orange-600 text-white font-semibold px-6">
-                      {dict.nav.cta}
-                    </Button>
-                  </LoginButton>
+                  {/* CTA Button - Guest can directly create */}
+                  <Button 
+                    className="bg-coral hover:bg-orange-600 text-white font-semibold px-6"
+                    onClick={handleCreateClick}
+                  >
+                    {dict.nav.cta}
+                  </Button>
                 </>
               )}
             </div>
@@ -202,17 +203,21 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
               ) : (
                 <>
                   {/* Mobile Login */}
-                  <LoginButton redirectTo={`/${lang}#upload`}>
+                  <LoginButton>
                     <Button variant="outline" className="w-full border-2 border-coral text-coral hover:bg-coral hover:text-white font-semibold">
                       Log In
                     </Button>
                   </LoginButton>
-                  {/* Mobile CTA */}
-                  <LoginButton redirectTo={`/${lang}#upload`}>
-                    <Button className="w-full bg-coral hover:bg-orange-600 text-white font-semibold">
-                      {dict.nav.cta}
-                    </Button>
-                  </LoginButton>
+                  {/* Mobile CTA - Guest can directly create */}
+                  <Button 
+                    className="w-full bg-coral hover:bg-orange-600 text-white font-semibold"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleCreateClick();
+                    }}
+                  >
+                    {dict.nav.cta}
+                  </Button>
                 </>
               )}
             </div>

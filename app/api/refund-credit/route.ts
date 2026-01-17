@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const { generationId } = await request.json()
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -15,11 +15,11 @@ export async function POST(request: NextRequest) {
     // Check if already refunded
     const { data: generation } = await supabase
       .from('generations')
-      .select('metadata')
+      .select('is_refunded')
       .eq('id', generationId)
       .single()
     
-    if (generation?.metadata?.creditRefunded) {
+    if (generation?.is_refunded) {
       return NextResponse.json({ 
         error: 'Credit already refunded for this generation' 
       }, { status: 400 })
@@ -37,11 +37,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('generations')
       .update({
-        metadata: {
-          ...generation?.metadata,
-          creditRefunded: true,
-          refundedAt: new Date().toISOString()
-        }
+        is_refunded: true
       })
       .eq('id', generationId)
     

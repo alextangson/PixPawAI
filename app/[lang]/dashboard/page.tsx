@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  // Fetch user's generations
+  // Fetch user's generations (initial batch of 50)
   const { data: generations } = await supabase
     .from('generations')
     .select('*')
@@ -29,11 +29,18 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(50)
 
+  // Get total count for pagination
+  const { count: totalCount } = await supabase
+    .from('generations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
   return (
     <DashboardClient
       user={user}
       profile={profile}
       generations={generations || []}
+      totalGenerationsCount={totalCount || 0}
     />
   )
 }

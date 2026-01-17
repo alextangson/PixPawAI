@@ -12,12 +12,16 @@ interface DashboardClientProps {
   user: User
   profile: any
   generations: any[]
+  totalGenerationsCount: number
 }
 
-export function DashboardClient({ user, profile, generations: initialGenerations }: DashboardClientProps) {
+export function DashboardClient({ user, profile, generations: initialGenerations, totalGenerationsCount }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState('gallery')
   const [generations, setGenerations] = useState(initialGenerations)
   const router = useRouter()
+
+  // Calculate succeeded generations count (real-time)
+  const succeededCount = generations.filter(g => g.status === 'succeeded').length
 
   // Update local state when server data changes
   useEffect(() => {
@@ -51,7 +55,7 @@ export function DashboardClient({ user, profile, generations: initialGenerations
             </div>
             <div className="text-right">
               <p className="text-white/80 text-sm mb-1">Total Generations</p>
-              <p className="text-2xl font-bold">{profile?.total_generations || 0}</p>
+              <p className="text-2xl font-bold">{succeededCount}</p>
             </div>
           </div>
         </div>
@@ -69,6 +73,7 @@ export function DashboardClient({ user, profile, generations: initialGenerations
               generations={generations} 
               onGenerationsUpdate={handleGenerationsUpdate}
               onLocalUpdate={setGenerations}
+              totalCount={totalGenerationsCount}
             />
           </TabsContent>
 

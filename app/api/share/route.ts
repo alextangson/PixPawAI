@@ -35,7 +35,50 @@ export async function POST(request: NextRequest) {
 
     console.log('Share request:', { userId: user.id, generation_id, hasTitle: !!title })
 
-    // 3. Fetch the generation to verify ownership and check if already rewarded
+    // 3. Fetch user profile to check share reward limit
+    let { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('share_rewards_earned, credits')
+      .eq('id', user.id)
+      .single()
+
+    // Handle missing profile or missing share_rewards_earned column
+    if (profileError || !profile) {
+      console.error('Profile fetch error:', profileError)
+      
+      // If share_rewards_earned column doesn't exist, use default value
+      if (profileError?.code === 'PGRST116' || profileError?.message?.includes('column')) {
+        console.warn('⚠️  share_rewards_earned column might not exist, using default value 0')
+        
+        // Try to get at least the credits
+        const { data: basicProfile } = await supabase
+          .from('profiles')
+          .select('credits')
+          .eq('id', user.id)
+          .single()
+        
+        if (basicProfile) {
+          // Use default share_rewards_earned = 0
+          profile = { share_rewards_earned: 0, credits: basicProfile.credits } as any
+        } else {
+          return NextResponse.json(
+            { error: 'Profile not found', details: 'User profile does not exist' },
+            { status: 404 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Profile not found', details: profileError?.message },
+          { status: 404 }
+        )
+      }
+    }
+
+    // Global share reward limit (MVP: 5 rewards for all users)
+    const MAX_SHARE_REWARDS = 5
+    const hasReachedLimit = profile.share_rewards_earned >= MAX_SHARE_REWARDS
+
+    // 4. Fetch the generation to verify ownership and check if already rewarded
     const { data: generation, error: fetchError } = await supabase
       .from('generations')
       .select('*')
@@ -51,12 +94,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Check reward eligibility (for credit increment)
-    const isEligibleForReward = !generation.is_rewarded
+    // 5. Check reward eligibility (for credit increment)
+    const isEligibleForReward = !generation.is_rewarded && !hasReachedLimit
     
     console.log('Share eligibility check:', {
       generation_id,
       is_rewarded: generation.is_rewarded,
+      share_rewards_earned: profile.share_rewards_earned,
+      max_share_rewards: MAX_SHARE_REWARDS,
+      has_reached_limit: hasReachedLimit,
       eligible_for_credit: isEligibleForReward
     })
 
@@ -143,7 +189,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ Generation shared successfully:', generation_id)
     console.log('✅ Set is_public=true, is_rewarded=true, share_card_url saved')
 
-    // 9. Increment user's credits ONLY if this is the first time sharing (one-time reward)
+    // 9. Increment user's credits ONLY if eligible (first time sharing + under limit)
     let updatedCredits = null
     
     if (isEligibleForReward) {
@@ -157,31 +203,59 @@ export async function POST(request: NextRequest) {
         // Note: Generation is already shared, but credit increment failed
         // This is a recoverable error - we still return success but log the issue
       } else {
+        // Increment share_rewards_earned counter (if column exists)
+        const { error: counterError } = await adminSupabase
+          .from('profiles')
+          .update({ share_rewards_earned: profile.share_rewards_earned + 1 })
+          .eq('id', user.id)
+        
+        if (counterError) {
+          console.error('⚠️ Failed to update share_rewards_earned:', counterError)
+          // Non-critical error - continue anyway
+        }
+        
         updatedCredits = creditData
         console.log('💰 Credits incremented (+1), new balance:', updatedCredits)
+        console.log('📊 Share rewards earned:', profile.share_rewards_earned + 1, '/', MAX_SHARE_REWARDS)
       }
     } else {
-      console.log('ℹ️  No credit granted - already rewarded for this generation')
+      if (hasReachedLimit) {
+        console.log('⚠️  No credit granted - share reward limit reached (', profile.share_rewards_earned, '/', MAX_SHARE_REWARDS, ')')
+      } else {
+        console.log('ℹ️  No credit granted - already rewarded for this generation')
+      }
       // Fetch current credits without incrementing
-      const { data: profile } = await adminSupabase
+      const { data: currentProfile } = await adminSupabase
         .from('profiles')
         .select('credits')
         .eq('id', user.id)
         .single()
       
-      updatedCredits = profile?.credits || null
+      updatedCredits = currentProfile?.credits || null
     }
 
     // 10. Return success with share card data
-    const successMessage = isEligibleForReward
-      ? 'Generation shared successfully! +1 credit earned'
-      : 'Generation shared successfully!'
+    const remainingRewards = MAX_SHARE_REWARDS - (profile.share_rewards_earned + (isEligibleForReward ? 1 : 0))
+    
+    let successMessage = ''
+    if (isEligibleForReward) {
+      successMessage = remainingRewards > 0
+        ? `Generation shared successfully! +1 credit earned (${remainingRewards}/${MAX_SHARE_REWARDS} rewards remaining)`
+        : 'Generation shared successfully! +1 credit earned (limit reached)'
+    } else if (hasReachedLimit) {
+      successMessage = `Generation shared! You've reached your share reward limit (${MAX_SHARE_REWARDS}/${MAX_SHARE_REWARDS})`
+    } else {
+      successMessage = 'Generation shared successfully!'
+    }
     
     return NextResponse.json({
       success: true,
       message: successMessage,
       credits: updatedCredits,
       credited: isEligibleForReward,
+      has_reached_limit: hasReachedLimit,
+      remaining_rewards: remainingRewards,
+      max_rewards: MAX_SHARE_REWARDS,
       generation_id,
       is_public: true,
       share_card_url: shareCardUrl,

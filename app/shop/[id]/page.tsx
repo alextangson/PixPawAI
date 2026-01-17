@@ -4,7 +4,8 @@ import { ArrowLeft, ShoppingCart, Heart, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
-export default async function ShopPage({ params }: { params: { id: string } }) {
+export default async function ShopPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   
   const {
@@ -20,7 +21,7 @@ export default async function ShopPage({ params }: { params: { id: string } }) {
   const { data: generation } = await supabase
     .from('generations')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .single()
 

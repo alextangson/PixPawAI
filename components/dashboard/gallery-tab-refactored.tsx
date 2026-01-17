@@ -15,15 +15,17 @@ import {
 import { ShareSuccessModal } from '@/components/share-success-modal'
 import { ArtCardModal } from '@/components/art-card-modal'
 import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
+import { createClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
 
 interface GalleryTabProps {
   generations: any[]
   onGenerationsUpdate?: () => void
   onLocalUpdate?: (updater: (prevGenerations: any[]) => any[]) => void
+  totalCount?: number
 }
 
-export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocalUpdate }: GalleryTabProps) {
+export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocalUpdate, totalCount = 0 }: GalleryTabProps) {
   const succeededGenerations = generations.filter(g => g.status === 'succeeded')
   
   // Share Dialog States
@@ -36,6 +38,8 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
   // Success Modal States
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successGenerationId, setSuccessGenerationId] = useState('')
+  const [successShareCardUrl, setSuccessShareCardUrl] = useState('')
+  const [successSlogan, setSuccessSlogan] = useState('')
   
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -53,6 +57,10 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
   // Shop Fake Door
   const [shopFakeDoorOpen, setShopFakeDoorOpen] = useState(false)
   const [selectedGenerationForShop, setSelectedGenerationForShop] = useState<any>(null)
+
+  // Load More Pagination
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const hasMore = generations.length < totalCount
 
   const handleShareClick = (generation: any) => {
     setSelectedGeneration(generation)
@@ -105,8 +113,12 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
       // Close input dialog
       setShareDialogOpen(false)
 
-      // Show Success Modal
+      // Show Success Modal with share card data
       setSuccessGenerationId(selectedGeneration.id)
+      if (result.share_card_url && result.slogan) {
+        setSuccessShareCardUrl(result.share_card_url)
+        setSuccessSlogan(result.slogan)
+      }
       setShowSuccessModal(true)
 
       // Update local state immediately (instant UI feedback)
@@ -177,6 +189,8 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
     if (!generationToDelete) return
     
     setIsDeleting(true)
+    console.log('🗑️  Deleting generation:', generationToDelete.id)
+    
     try {
       const response = await fetch('/api/delete-generation', {
         method: 'POST',
@@ -184,13 +198,15 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
         body: JSON.stringify({ generation_id: generationToDelete.id }),
       })
 
+      console.log('📡 Delete API response status:', response.status)
       const result = await response.json()
+      console.log('📡 Delete API result:', result)
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to delete')
       }
 
-      console.log('✅ Deleted successfully')
+      console.log('✅ Deleted successfully from server')
       
       const deletedId = generationToDelete.id
       setDeleteDialogOpen(false)
@@ -198,20 +214,64 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
       
       // Update local state immediately (instant UI feedback)
       if (onLocalUpdate) {
-        onLocalUpdate((prevGenerations) =>
-          prevGenerations.filter((gen) => gen.id !== deletedId)
-        )
+        console.log('🔄 Updating local state to remove:', deletedId)
+        onLocalUpdate((prevGenerations) => {
+          const filtered = prevGenerations.filter((gen) => gen.id !== deletedId)
+          console.log('📊 Before:', prevGenerations.length, 'After:', filtered.length)
+          return filtered
+        })
+      } else {
+        console.warn('⚠️  onLocalUpdate not available')
       }
       
       // Refresh data from server (background sync)
       if (onGenerationsUpdate) {
+        console.log('🔄 Triggering server refresh')
         onGenerationsUpdate()
+      } else {
+        console.warn('⚠️  onGenerationsUpdate not available')
       }
+      
+      console.log('✅ Delete operation completed')
     } catch (err: any) {
-      console.error('Delete error:', err)
+      console.error('❌ Delete error:', err)
       alert(`Failed to delete: ${err.message}`)
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) return
+
+      // Fetch next batch of generations
+      const { data: moreGenerations, error } = await supabase
+        .from('generations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(generations.length, generations.length + 49) // Load 50 more
+
+      if (error) {
+        console.error('Error loading more:', error)
+        return
+      }
+
+      if (moreGenerations && moreGenerations.length > 0) {
+        // Append new generations to existing list
+        if (onLocalUpdate) {
+          onLocalUpdate((prevGenerations) => [...prevGenerations, ...moreGenerations])
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load more:', err)
+    } finally {
+      setIsLoadingMore(false)
     }
   }
 
@@ -238,58 +298,70 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
         <ShareSuccessModal
           isOpen={showSuccessModal}
           onClose={() => setShowSuccessModal(false)}
+          shareCardUrl={successShareCardUrl}
+          slogan={successSlogan}
           generationId={successGenerationId}
           title={shareTitle}
+          onSloganRefresh={(newUrl, newSlogan) => {
+            setSuccessShareCardUrl(newUrl)
+            setSuccessSlogan(newSlogan)
+          }}
         />
       )}
 
-      {/* Share Input Dialog */}
+      {/* Share Input Dialog - Redesigned */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-lg bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-coral/30">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-coral/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-coral" />
+        <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl">
+          {/* Centered Icon and Title */}
+          <div className="flex flex-col items-center text-center pt-6 pb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-coral to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+              <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <div className="flex-1">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-gray-900">
-                  Share to Gallery
-                </DialogTitle>
-                <div className="text-sm font-semibold text-coral mt-1">Earn +1 Credit</div>
-                <DialogDescription className="text-gray-700 mt-2 text-base">
-                  🎉 Share your masterpiece and unlock a <strong>premium branded social media card</strong>!
-                </DialogDescription>
-              </DialogHeader>
-            </div>
+            
+            {/* Title & Description */}
+            <DialogHeader className="space-y-4 mb-6 text-center">
+              <DialogTitle className="text-3xl font-bold text-gray-900 text-center">
+                Share to Gallery
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 text-base leading-relaxed">
+                Get a premium branded card to share on social media
+              </DialogDescription>
+            </DialogHeader>
           </div>
           
-          <div className="space-y-5 mt-6">
-            <div className="bg-white rounded-xl p-4 border-2 border-coral/20 shadow-sm">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                📝 Add a title (optional)
+          {/* Input Section */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="flex items-center justify-between text-sm font-medium text-gray-700">
+                <span>Add a title</span>
+                <span className="text-xs text-coral font-semibold">(Recommended)</span>
               </label>
               <input
                 type="text"
                 value={shareTitle}
                 onChange={(e) => setShareTitle(e.target.value)}
-                placeholder="e.g., My Golden Retriever as a Pixar Star"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral text-gray-900 bg-white text-base"
+                placeholder="e.g., Luna the Corgi Superhero"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-coral focus:border-transparent text-gray-900 bg-white placeholder:text-gray-400"
                 maxLength={100}
                 disabled={isSharing}
               />
+              <p className="text-xs text-gray-500">
+                💡 Titles help your art get discovered in the gallery
+              </p>
             </div>
 
             {shareError && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <p className="text-sm text-red-700 font-medium">{shareError}</p>
               </div>
             )}
 
-            <div className="flex gap-3">
+            {/* Action Buttons */}
+            <div className="space-y-3 pt-2">
               <Button
                 onClick={handleShareConfirm}
                 disabled={isSharing}
-                className="flex-1 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-12 text-base shadow-lg"
+                className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-14 text-base shadow-lg rounded-xl"
               >
                 {isSharing ? (
                   <>
@@ -306,8 +378,8 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
               <Button
                 onClick={() => setShareDialogOpen(false)}
                 disabled={isSharing}
-                variant="outline"
-                className="px-8 h-12 border-2"
+                variant="ghost"
+                className="w-full h-12 text-gray-600 hover:bg-gray-100 rounded-xl"
               >
                 Cancel
               </Button>
@@ -488,7 +560,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                 <Button
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white hover:bg-red-50 shadow-lg transition-colors"
+                  className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-red-50 shadow-lg transition-colors"
                   onClick={() => {
                     setGenerationToDelete(generation)
                     setDeleteDialogOpen(true)
@@ -581,44 +653,30 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                       </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Button 2: Status (Toggle - Share or Shared Dropdown) */}
+                    {/* Button 2: Status (Toggle - Share or Download Card) */}
                     {!generation.is_public ? (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 border-coral/30 hover:bg-coral/10 text-coral"
+                        className="flex-1 border-coral/30 hover:bg-coral/10 text-coral font-semibold"
                         onClick={() => handleShareClick(generation)}
                       >
                         <Share2 className="w-4 h-4 mr-1" />
                         Share
                       </Button>
                     ) : (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Shared
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedGenerationForAnalytics(generation)
-                            setAnalyticsModalOpen(true)
-                          }}>
-                            <BarChart3 className="w-4 h-4 mr-2" />
-                            View Analytics
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleUnshare(generation.id)}>
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            Make Private
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 bg-coral/5 border-coral/30 text-coral hover:bg-coral/10 font-semibold"
+                        onClick={() => {
+                          setSelectedGenerationForCard(generation)
+                          setArtCardModalOpen(true)
+                        }}
+                      >
+                        <Sparkles className="w-4 h-4 mr-1" />
+                        Card
+                      </Button>
                     )}
 
                     {/* Button 3: Shop (COMMERCE - Always Active) */}
@@ -657,6 +715,34 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
           </div>
         ))}
       </div>
+
+      {/* Load More Section */}
+      {hasMore && (
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold text-gray-900">{generations.length}</span> of{' '}
+            <span className="font-semibold text-gray-900">{totalCount}</span> total generations
+          </div>
+          <Button
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            variant="outline"
+            className="px-8 py-6 text-base font-medium border-2 border-coral/30 hover:bg-coral/10 hover:border-coral text-coral"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5 mr-2" />
+                Load More
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Shop Fake Door Dialog */}
       {selectedGenerationForShop && (

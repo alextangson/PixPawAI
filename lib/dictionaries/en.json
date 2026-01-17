@@ -281,38 +281,115 @@
       "free": {
         "title": "Free Trial",
         "price": "$0",
+        "badge": "Get Started",
         "features": [
-          "2 Free Generations",
-          "Standard Resolution",
+          "1-2 Free Generations",
+          "Standard Resolution (1024px)",
           "Watermarked Results",
-          "Standard Queue Speed"
+          "2 Basic Aspect Ratios",
+          "3 Basic Styles"
+        ],
+        "limitations": [
+          "No image selection",
+          "Average 5+ retries needed",
+          "45% satisfaction rate"
         ],
         "button": "Try for Free"
       },
       "starter": {
         "title": "Starter Pack",
-        "price": "$4.90",
-        "badge": "One-time payment",
+        "price": "$4.99",
+        "originalPrice": "$4.99",
+        "badge": "For Social Sharing",
         "features": [
           "15 High-Res Generations",
-          "🚫 No Watermarks",
-          "Commercial Usage Rights",
-          "Priority Processing"
+          "No Watermarks",
+          "All 9 Aspect Ratios",
+          "8 Style Options",
+          "Personal Use License"
         ],
-        "button": "Get Starter"
+        "highlight": "Perfect for 15+ social posts",
+        "perImage": "$0.33 per image",
+        "button": "Get Starter Pack"
       },
       "pro": {
         "title": "Pro Bundle",
-        "price": "$9.90",
+        "price": "$19.99",
+        "originalPrice": "$19.99",
         "badge": "Best Value",
         "features": [
-          "50 4K Ultra-Res Generations",
-          "🎁 Bonus: $5 Merch Credit",
-          "Everything in Starter",
-          "Top Priority Queue"
+          "50 Generation Credits",
+          "✨ 3-Image Selection (Choose Best)",
+          "2K High Resolution (2048px)",
+          "15 Premium Styles",
+          "🔒 Partial Redraw (Coming Soon)",
+          "🔒 Image Refinement (1x per image)",
+          "Social Media Commercial License",
+          "10% Off Physical Products"
         ],
-        "button": "Get Pro Bundle"
+        "highlight": "85% satisfaction rate vs Free 45%",
+        "comparison": "Only 40% of Master price, all core features",
+        "button": "Upgrade to Pro"
+      },
+      "master": {
+        "title": "Master Plan",
+        "price": "$49.99",
+        "originalPrice": "$49.99",
+        "salePrice": "$39.99",
+        "badge": "For Creators",
+        "limitedOffer": "Limited Time: $39.99",
+        "features": [
+          "200 Ultra-HD Generations",
+          "✨ 5-Image Selection (Best Quality)",
+          "4K Resolution (4096px)",
+          "30+ Premium Styles",
+          "🔒 Unlimited Partial Redraw",
+          "🔒 Image Refinement (3x per image)",
+          "🔒 Style Mixing (Exclusive)",
+          "Priority Queue (2x Speed)",
+          "Full Commercial License",
+          "Batch Download (ZIP)",
+          "20% Off Physical Products",
+          "Priority Support (4h response)"
+        ],
+        "highlight": "Professional quality • Commercial use",
+        "exclusive": "Exclusive features not available in other tiers",
+        "button": "Get Master Plan"
       }
+    },
+    "comparisonTable": {
+      "title": "Detailed Feature Comparison",
+      "subtitle": "See exactly what you get with each plan",
+      "comingSoon": "Coming Soon",
+      "features": {
+        "generations": "Generation Credits",
+        "multiSelect": "Multi-Image Selection",
+        "resolution": "Image Resolution",
+        "aspectRatios": "Aspect Ratios",
+        "styles": "Available Styles",
+        "inpainting": "Partial Redraw",
+        "refinement": "Image Refinement",
+        "styleMixing": "Style Mixing",
+        "batchDownload": "Batch Download",
+        "processingSpeed": "Processing Speed",
+        "commercialLicense": "Commercial License",
+        "merchDiscount": "Physical Products Discount",
+        "support": "Customer Support"
+      }
+    },
+    "socialProof": {
+      "upgradeCount": "8,234+ users upgraded to Pro",
+      "satisfaction": "Pro user satisfaction rate",
+      "proChoice": "Choose Pro Bundle",
+      "testimonialTitle": "What Our Users Say"
+    },
+    "upgradeModal": {
+      "headlineA": "😕 Not satisfied? That's normal for free users!",
+      "headlineB": "⚠️ Free users need 5+ retries to be satisfied",
+      "headlineC": "⭐ 85% of active users upgraded to Pro",
+      "subheadlineA": "Pro users generate 3 images and pick the best one",
+      "subheadlineB": "Upgrade to Pro, only 1-2 tries needed",
+      "subheadlineC": "Join 8,234+ satisfied users with Pro benefits"
     },
     "referral": {
       "headline": "Want more credits for free?",
@@ -323,16 +400,24 @@
       "title": "Frequently Asked Questions",
       "items": [
         {
+          "question": "What's the difference between Pro and Master?",
+          "answer": "Pro gives you 3-image selection and 2K resolution, perfect for most users. Master offers 5-image selection, 4K resolution, style mixing, and priority processing - ideal for professional creators and commercial projects."
+        },
+        {
           "question": "Can I print these on t-shirts?",
-          "answer": "Yes! Starter and Pro plans give you full commercial rights and print-ready resolution."
+          "answer": "Yes! Starter gives personal use rights. Pro includes social media commercial license. Master includes full commercial rights for any business use."
         },
         {
           "question": "Is this a subscription?",
-          "answer": "No! These are one-time credit packs. No hidden monthly fees."
+          "answer": "No! These are one-time credit packs. No hidden monthly fees. Credits never expire."
         },
         {
-          "question": "What if I'm not happy?",
-          "answer": "We offer free regenerations if the AI glitches."
+          "question": "What if I'm not happy with the result?",
+          "answer": "We offer free regenerations if the AI glitches. Pro and Master users can use multi-image selection to pick the best result, reducing dissatisfaction by 85%."
+        },
+        {
+          "question": "When will Partial Redraw and Style Mixing be available?",
+          "answer": "These premium features are coming in Phase 2 (2-3 weeks). Early Pro and Master purchasers will get first access!"
         }
       ]
     }

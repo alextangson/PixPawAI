@@ -248,6 +248,77 @@ const loadingMessages = [
 
 ---
 
+### 💎 基于会员等级的分享奖励梯度（方案 D）
+
+**象限**: Q2  
+**优先级**: P1 (高 - 商业化)  
+**状态**: 🔴 待开始（等 Tier 系统稳定）  
+**预估工时**: 15 分钟  
+**负责领域**: 商业化 / 增长  
+**依赖项**: 会员等级系统稳定，tier 名称确定  
+**成功指标**: 不同 tier 用户有不同的分享奖励上限，鼓励升级  
+**创建时间**: 2026-01-17
+
+**描述**:  
+当前 MVP 使用全局上限（所有用户最多 5 次分享奖励），未来升级为基于会员等级的差异化奖励。
+
+**当前实施（MVP）：**
+```typescript
+// app/api/share/route.ts
+const MAX_SHARE_REWARDS = 5; // 所有用户统一上限
+```
+
+**未来升级（方案 D）：**
+```typescript
+// 配置表方式（推荐，避免硬编码）
+const SHARE_REWARD_LIMITS = {
+  free: 5,      // 免费用户
+  starter: 10,  // Starter 用户（2倍）
+  pro: 20       // Pro 用户（4倍）
+};
+```
+
+**为什么现在不做：**
+- ⚠️ **风险：** Tier 名称可能变化（如 'starter' 改为 'basic'），导致映射失效
+- ⚠️ **依赖：** 需要会员系统先稳定运行
+- ✅ **当前够用：** MVP 阶段全局上限 5 次已足够防止滥用
+
+**实施路径（当 Tier 系统稳定后）：**
+
+**步骤 1：创建配置表（推荐）**
+```sql
+CREATE TABLE tier_configs (
+  tier TEXT PRIMARY KEY,
+  share_reward_limit INTEGER NOT NULL
+);
+
+INSERT INTO tier_configs VALUES
+  ('free', 5), ('starter', 10), ('pro', 20);
+```
+
+**步骤 2：修改 API 逻辑**
+```typescript
+const { data: tierConfig } = await supabase
+  .from('tier_configs')
+  .select('share_reward_limit')
+  .eq('tier', profile.tier)
+  .single();
+
+const maxRewards = tierConfig?.share_reward_limit || 5;
+```
+
+**商业价值：**
+- ✅ 激励用户升级到付费会员
+- ✅ 提供清晰的升级理由（2x-4x 分享奖励）
+- ✅ 增加用户粘性
+
+**决策时间：** 会员系统上线 + 运行 2 周后（约 2026-02-01）
+
+**备注**:
+MVP v1.0 已实施方案 A（全局上限 5 次），数据库字段 `profiles.share_rewards_earned` 已预留，升级时无需迁移数据。
+
+---
+
 ### 📂 My Gallery 数据丢失问题（新发现）
 
 **象限**: Q2  
@@ -605,6 +676,45 @@ rm components/dashboard/gallery-tab.tsx
 
 **备注**:
 测试时需要确保不破坏现有功能。
+
+---
+
+### 🎨 Art Card 右侧内容垂直居中优化
+
+**象限**: Q3  
+**优先级**: P2 (中)  
+**状态**: 🔴 待开始  
+**预估工时**: 15 分钟  
+**负责领域**: UI/UX  
+**依赖项**: 无依赖  
+**成功指标**: Art Card Modal 右侧表单内容完美垂直居中  
+**创建时间**: 2026-01-17
+
+**描述**:  
+Art Card Modal 的右侧内容（表单部分）虽然已经添加了 `justify-center`，但实际显示时并未居中，内容显得割裂和不协调。
+
+**当前问题：**
+- 右侧表单元素（Artwork Title, Cinematic Slogan, Share Your Creation 等）整体靠上
+- 各个部分之间视觉割裂感强
+- 与左侧预览卡片的视觉平衡感不佳
+
+**已尝试方案：**
+- 添加 `md:justify-center` 到右侧容器 - 未生效
+- 重构 flex 布局为嵌套结构 - 效果不理想
+
+**计划优化方案：**
+1. 重新审视容器高度和 flex 配置
+2. 考虑使用 Grid 布局替代 Flex
+3. 确保内容区域有足够的 flex-grow 空间
+4. 测试不同内容长度下的居中效果
+
+**为什么延后到 v1.1**:
+- 当前功能可用，不影响核心流程
+- 需要更多时间测试不同设备和分辨率
+- 优先保证 v1.0 稳定发布
+
+**备注**:
+v1.0 已完成 logo 和网址位置调整（logo 在上，网址在下，右对齐）。
 
 ---
 
@@ -1564,6 +1674,7 @@ Sentry 有免费额度，足够初期使用。
 **完成日期：** 2026-01-16 上午
 
 - ✅ **Share-to-Earn 系统** - 分享作品到公共画廊获得 +1 积分奖励
+- ✅ **分享奖励上限（方案 A）** - 防止刷积分，全局上限 5 次（未来升级为 tier 梯度）
 - ✅ **Art Card 艺术卡片生成** - 带标题和标语的精美分享卡片，可下载和自定义
 - ✅ **分享功能** - 支持自定义标题、alt 文本、公开/私密切换
 - ✅ **取消分享功能** - "变为私密"一键操作，从公共画廊移除
@@ -1655,6 +1766,7 @@ Sentry 有免费额度，足够初期使用。
 - ✅ **按钮布局对比文档** - Gallery 3 按钮布局的设计决策
 - ✅ **Result Modal 前后对比** - 重构前后的视觉和功能对比
 - ✅ **Aspect Ratio 修复文档** - Dual-Force Fix 技术细节
+- ✅ **设计决策：取消自动删除** - 用户反馈后移除 "not quite" 自动删除功能
 
 ---
 

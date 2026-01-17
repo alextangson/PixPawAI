@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { RotateCw, Download, Sparkles, Loader2 } from 'lucide-react'
+import { RotateCw, Download, Sparkles, Loader2, Facebook, Share2, Copy, Check, Twitter } from 'lucide-react'
 import { PREMIUM_SLOGANS } from '@/lib/constants/slogans'
+import { BRANDING } from '@/lib/constants/branding'
 
 interface ArtCardModalProps {
   isOpen: boolean
@@ -30,8 +31,13 @@ export function ArtCardModal({
   artCardTitle
 }: ArtCardModalProps) {
   const [customTitle, setCustomTitle] = useState(originalTitle || '')
-  const [selectedSlogan, setSelectedSlogan] = useState(currentSlogan || PREMIUM_SLOGANS[0])
+  const [selectedSlogan, setSelectedSlogan] = useState(() => {
+    if (currentSlogan) return currentSlogan
+    const randomIndex = Math.floor(Math.random() * PREMIUM_SLOGANS.length)
+    return PREMIUM_SLOGANS[randomIndex]
+  })
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
   const [previewDate] = useState(new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -50,6 +56,44 @@ export function ArtCardModal({
     const availableSlogans = PREMIUM_SLOGANS.filter(s => s !== selectedSlogan)
     const randomIndex = Math.floor(Math.random() * availableSlogans.length)
     setSelectedSlogan(availableSlogans[randomIndex])
+  }
+
+  // Social sharing handlers
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/gallery/${generationId}` : ''
+  const shareText = `Check out my pet's PixPaw portrait: ${customTitle}`
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+    }
+  }
+
+  const handleShareFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'width=600,height=400'
+    )
+  }
+
+  const handleShareX = () => {
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'width=600,height=400'
+    )
+  }
+
+  const handleSharePinterest = () => {
+    window.open(
+      `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&media=${encodeURIComponent(imageUrl)}&description=${encodeURIComponent(shareText)}`,
+      '_blank',
+      'width=750,height=550'
+    )
   }
 
   const handleDownload = async () => {
@@ -117,12 +161,12 @@ export function ArtCardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] !p-0 overflow-hidden !block">
+      <DialogContent className="sm:max-w-6xl h-[70vh] !p-0 overflow-hidden !block">
         {/* Hidden title for screen readers */}
         <DialogTitle className="sr-only">Customize Your Art Card</DialogTitle>
         
         {/* Modal Layout: Vertical on Mobile, Side-by-Side on Desktop */}
-        <div className="flex flex-col md:flex-row min-h-[80vh] md:h-[90vh] w-full">
+        <div className="flex flex-col md:flex-row h-full w-full">
           
           {/* Left Panel: Preview Area (60% on desktop) */}
           <div className="md:w-[60%] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6 relative min-h-[40vh] md:min-h-full">
@@ -138,37 +182,39 @@ export function ArtCardModal({
                   />
                 </div>
 
-                {/* Footer - 3 Sections */}
-                <div className="space-y-2 text-xs">
+                {/* Footer - Redesigned Layout */}
+                <div className="space-y-3">
                   {/* Title & Date */}
                   <div>
-                    <div className="font-bold text-gray-800 truncate" style={{ color: '#333333' }}>
+                    <div className="font-bold text-gray-900 truncate text-sm">
                       {customTitle || 'Untitled'}
                     </div>
-                    <div className="text-gray-500 text-[10px]">
+                    <div className="text-gray-500 text-[10px] mt-0.5">
                       {previewDate}
                     </div>
                   </div>
 
                   {/* Separator */}
-                  <div className="border-t border-gray-200 pt-2">
-                    <div className="text-gray-600 text-[10px] font-medium">
-                      PixPawAI.com
-                    </div>
-                  </div>
+                  <div className="border-t border-gray-200"></div>
 
-                  {/* Slogan */}
-                  <div className="text-gray-600 italic text-[11px] line-clamp-2 font-serif" style={{ 
-                    color: '#666666'
-                  }}>
+                  {/* Slogan - Larger and More Artistic */}
+                  <div className="text-gray-700 italic text-lg leading-relaxed font-serif min-h-[3rem] flex items-center">
                     "{selectedSlogan}"
                   </div>
 
-                  {/* Logo */}
-                  <div className="flex justify-end">
-                    <div className="text-coral font-bold text-[10px] tracking-wider">
-                      PIXPAW AI
-                    </div>
+                  {/* Separator */}
+                  <div className="border-t border-gray-200"></div>
+
+                  {/* Logo + URL in Bottom Right (Stacked) */}
+                  <div className="flex flex-col items-end gap-1">
+                    <img 
+                      src={BRANDING.logos.svg.color} 
+                      alt="PixPaw AI"
+                      className="h-12 opacity-90"
+                    />
+                    <span className="text-gray-600 text-xs font-medium">
+                      PixPawAI.com
+                    </span>
                   </div>
                 </div>
               </div>
@@ -176,17 +222,18 @@ export function ArtCardModal({
           </div>
 
           {/* Right Panel: Controls & Actions (40% on desktop) */}
-          <div className="md:w-[40%] flex flex-col p-6 bg-white overflow-y-auto max-h-[50vh] md:max-h-full">
-            
-            {/* Header - Compressed */}
-            <div className="mb-3">
-              <h2 className="text-lg font-bold text-gray-900 mb-1">
-                Customize Your Art Card
-              </h2>
-              <p className="text-xs text-gray-600">
-                Personalize before downloading
-              </p>
-            </div>
+          <div className="md:w-[40%] flex flex-col bg-white overflow-y-auto h-full">
+            <div className="flex-1 flex flex-col justify-center p-6">
+              
+              {/* Header - Compressed */}
+              <div className="mb-3">
+                <h2 className="text-lg font-bold text-gray-900 mb-1">
+                  Customize Your Art Card
+                </h2>
+                <p className="text-xs text-gray-600">
+                  Personalize before downloading
+                </p>
+              </div>
 
             {/* Title Input - Compressed */}
             <div className="mb-3">
@@ -213,7 +260,7 @@ export function ArtCardModal({
               </label>
               <div className="relative">
                 <div className="p-3 bg-gray-50 border-2 border-gray-200 rounded-lg min-h-[50px] flex items-center">
-                  <p className="text-xs text-gray-700 italic font-serif">
+                  <p className="text-sm text-gray-700 italic font-serif">
                     "{selectedSlogan}"
                   </p>
                 </div>
@@ -231,11 +278,57 @@ export function ArtCardModal({
               </p>
             </div>
 
-            {/* Info Alert - Compressed */}
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-2 rounded mb-4">
-              <p className="text-xs text-blue-900 font-medium">
-                💡 Title updates will sync to Dashboard & Gallery
-              </p>
+            {/* Social Share Icons */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                Share Your Creation
+              </label>
+              <div className="flex items-center gap-3">
+                {/* Copy Link */}
+                <button
+                  onClick={handleCopyLink}
+                  className="group p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  title="Copy Link"
+                >
+                  {isCopied ? (
+                    <Check className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Copy className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                  )}
+                </button>
+
+                {/* Facebook */}
+                <button
+                  onClick={handleShareFacebook}
+                  className="group p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  title="Share on Facebook"
+                >
+                  <Facebook className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+                </button>
+
+                {/* X (Twitter) */}
+                <button
+                  onClick={handleShareX}
+                  className="group p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  title="Share on X"
+                >
+                  <Twitter className="w-5 h-5 text-gray-600 group-hover:text-sky-600" />
+                </button>
+
+                {/* Pinterest */}
+                <button
+                  onClick={handleSharePinterest}
+                  className="group p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  title="Share on Pinterest"
+                >
+                  <Share2 className="w-5 h-5 text-gray-600 group-hover:text-red-600" />
+                </button>
+              </div>
+              {isCopied && (
+                <p className="text-xs text-green-600 mt-1.5 animate-in fade-in">
+                  Link copied to clipboard!
+                </p>
+              )}
             </div>
 
             {/* Spacer - Pushes buttons to bottom */}
@@ -269,7 +362,9 @@ export function ArtCardModal({
                 Cancel
               </Button>
             </div>
-          </div>
+            
+            </div> {/* Close inner centering container */}
+          </div> {/* Close outer right panel container */}
         </div>
       </DialogContent>
     </Dialog>

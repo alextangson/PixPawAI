@@ -15,6 +15,7 @@ import type { User } from '@supabase/supabase-js'
 import NextImage from 'next/image'
 import { ResultModal } from '@/components/result-modal'
 import { LoginButton } from '@/components/auth/login-button'
+import { GuestLoginModal } from '@/components/guest-login-modal'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -44,6 +45,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [step, setStep] = useState<Step>('upload')
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('') // Supabase URL after upload
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null)
   const [userPrompt, setUserPrompt] = useState('')
   const [selectedStyle, setSelectedStyle] = useState<string>(initialStyle || '')
@@ -52,12 +54,14 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [errorType, setErrorType] = useState<'credits' | 'storage' | 'api' | 'general' | 'auth'>('general')
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
+  const [showGuestLoginModal, setShowGuestLoginModal] = useState(false)
   const [progress, setProgress] = useState<number>(0)
   const [messageIndex, setMessageIndex] = useState<number>(0)
   const [strength, setStrength] = useState<number>(0.92) // Image preservation strength (0.1-1.0) - Very high to preserve exact animal features
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
   const [generationId, setGenerationId] = useState<string>('')
+  const [isRefunded, setIsRefunded] = useState<boolean>(false)
   
   // New states for quality check and pet name
   const [petName, setPetName] = useState<string>('')
@@ -79,6 +83,35 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+      
+      // If user just logged in, restore saved configuration
+      if (user) {
+        const savedConfig = localStorage.getItem('pixpaw_pending_generation')
+        if (savedConfig) {
+          try {
+            const config = JSON.parse(savedConfig)
+            // Only restore if saved within last 10 minutes
+            if (Date.now() - config.timestamp < 10 * 60 * 1000) {
+              console.log('✅ Restoring saved configuration after login')
+              setUploadedImageUrl(config.uploadedImageUrl || '')
+              setPreviewUrl(config.uploadedImageUrl || config.previewUrl || '') // Use Supabase URL as preview
+              setSelectedStyle(config.selectedStyle || '')
+              setAspectRatio(config.aspectRatio || '1:1')
+              setStrength(config.strength || 0.92)
+              setUserPrompt(config.userPrompt || '')
+              setPetName(config.petName || '')
+              setStep('configure') // Go directly to configure step
+              
+              // Show success message
+              console.log('🎉 Welcome back! Your configuration has been restored.')
+            }
+            // Clear saved config
+            localStorage.removeItem('pixpaw_pending_generation')
+          } catch (error) {
+            console.error('Failed to restore configuration:', error)
+          }
+        }
+      }
     }
     
     if (isOpen) {
@@ -322,7 +355,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         throw new Error('Failed to upload image for analysis')
       }
       
+      // Save the uploaded image URL for later use
+      setUploadedImageUrl(uploadResult.url)
+      
       // STEP 1: Quick quality check (1-2 seconds)
+      console.log('⚡ Starting quick quality check with URL:', uploadResult.url)
+      
       const quickResponse = await fetch('/api/quick-quality-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -330,10 +368,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       })
       
       if (!quickResponse.ok) {
-        throw new Error('Quick quality check failed')
+        const errorText = await quickResponse.text()
+        console.error('❌ Quick quality check API error:', quickResponse.status, errorText)
+        throw new Error(`Quick quality check failed: ${quickResponse.status} ${errorText.substring(0, 100)}`)
       }
       
       const quickResult = await quickResponse.json()
+      console.log('✅ Quick quality check response:', quickResult)
       
       console.log('⚡ Quick Check Result:', quickResult)
       
@@ -365,12 +406,19 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       performDetailedAnalysis(uploadResult.url, quickResult.petType)
       
     } catch (error) {
-      console.error('Quality check error:', error)
+      console.error('❌ Quality check error:', error)
+      console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+      
       setIsCheckingQuality(false)
-      // On error, proceed anyway
+      
+      // Show a user-friendly error message
+      setError('Quality check temporarily unavailable. Proceeding with upload...')
+      
+      // On error, proceed anyway after a brief delay
       setTimeout(() => {
+        setError('')
         setStep('configure')
-      }, 1000)
+      }, 2000)
     }
   }
   
@@ -410,8 +458,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   }
   
   // Handle reupload
-  const handleReupload = () => {
-    setStep('upload')
+  const handleReupload = (targetStep: Step = 'upload') => {
+    setStep(targetStep)
     setUploadedFile(null)
     setPreviewUrl('')
     setQualityCheckResult(null)
@@ -439,9 +487,21 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
 
     if (!user) {
-      // Guest user - show error prompting to log in
-      setError('You need to log in to create your AI pet portrait. Your uploaded photo will be saved!')
-      setErrorType('auth')
+      // Save current configuration to localStorage before login
+      const configState = {
+        uploadedImageUrl, // Supabase URL (still valid after login)
+        previewUrl, // Local preview (for UI)
+        selectedStyle,
+        aspectRatio,
+        strength,
+        userPrompt,
+        petName,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('pixpaw_pending_generation', JSON.stringify(configState))
+      
+      // Show beautiful login modal
+      setShowGuestLoginModal(true)
       return
     }
     
@@ -452,43 +512,88 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     setError('')
 
     try {
-      // 1. Upload image to Supabase Storage
-      const uploadResult = await uploadUserImage(uploadedFile, user.id)
+      // 1. Upload image to Supabase Storage (or use existing upload)
+      let imageUrl = uploadedImageUrl
+      
+      if (!imageUrl && uploadedFile) {
+        console.log('📤 Uploading file...')
+        const uploadResult = await uploadUserImage(uploadedFile, user.id)
 
-      if ('error' in uploadResult) {
-        throw new Error(uploadResult.error)
+        if ('error' in uploadResult) {
+          throw new Error(uploadResult.error)
+        }
+        
+        imageUrl = uploadResult.url
+      } else if (imageUrl) {
+        console.log('✅ Using pre-uploaded image')
+      } else {
+        throw new Error('No image available')
       }
 
       // 2. Call generation API (prompt construction happens on server)
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageUrl: uploadResult.url,
-          style: selectedStyle,
-          prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
-          petType: 'pet',
-          aspectRatio: aspectRatio,
-          strength: strength,
-          petName: petName.trim(), // Pet name for Art Card title
-        }),
+      console.log('🎨 Starting image generation...', {
+        style: selectedStyle,
+        aspectRatio: aspectRatio,
+        strength: strength,
+        petName: petName
       })
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minutes timeout
+      
+      let result
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageUrl: imageUrl,
+            style: selectedStyle,
+            prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
+            petType: 'pet',
+            aspectRatio: aspectRatio,
+            strength: strength,
+            petName: petName.trim(), // Pet name for Art Card title
+          }),
+          signal: controller.signal
+        })
 
-      const result = await response.json()
+        clearTimeout(timeoutId)
 
-      if (!response.ok) {
-        if (response.status === 402) {
-          setErrorType('credits')
-          throw new Error('Insufficient credits')
+        result = await response.json()
+        
+        console.log('✅ Generation API response:', {
+          status: response.status,
+          ok: response.ok,
+          hasResult: !!result
+        })
+
+        if (!response.ok) {
+          if (response.status === 402) {
+            setErrorType('credits')
+            throw new Error('Insufficient credits')
+          }
+          if (result.error?.includes('storage') || result.error?.includes('upload')) {
+            setErrorType('storage')
+          } else if (result.error?.includes('API') || result.error?.includes('Replicate')) {
+            setErrorType('api')
+          }
+          throw new Error(result.error || result.message || 'Generation failed')
         }
-        if (result.error?.includes('storage') || result.error?.includes('upload')) {
-          setErrorType('storage')
-        } else if (result.error?.includes('API') || result.error?.includes('Replicate')) {
-          setErrorType('api')
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        
+        if (fetchError instanceof Error) {
+          if (fetchError.name === 'AbortError') {
+            console.error('❌ Generation timeout after 3 minutes')
+            throw new Error('Generation took too long. Please try again with a simpler style.')
+          }
+          console.error('❌ Generation fetch error:', fetchError.message)
         }
-        throw new Error(result.error || result.message || 'Generation failed')
+        throw fetchError
       }
 
       // 5. Success - jump progress to 100%
@@ -496,6 +601,24 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setGeneratedImageUrl(result.outputUrl)
       setRemainingCredits(result.remainingCredits)
       setGenerationId(result.generationId || '')
+      
+      // Fetch is_refunded status from database
+      if (result.generationId) {
+        try {
+          const supabase = createClient()
+          const { data: genData } = await supabase
+            .from('generations')
+            .select('is_refunded')
+            .eq('id', result.generationId)
+            .single()
+          
+          if (genData) {
+            setIsRefunded(genData.is_refunded || false)
+          }
+        } catch (error) {
+          console.error('Failed to fetch is_refunded status:', error)
+        }
+      }
       // Success: ResultModal will be shown based on generatedImageUrl and generationId
 
     } catch (err: any) {
@@ -884,7 +1007,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   {/* Actions */}
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button 
-                      onClick={handleReupload} 
+                      onClick={() => handleReupload('upload')} 
                       className="flex-1 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
                     >
                       <Upload className="w-5 h-5 mr-2" />
@@ -1223,6 +1346,15 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
               {/* RIGHT PANEL: Progress + Fun Facts */}
               <div className="lg:w-1/2 flex flex-col justify-center space-y-6 px-4">
+                {/* Logo */}
+                <div className="flex justify-center mb-4">
+                  <img 
+                    src="/brand/logo-orange.svg" 
+                    alt="PixPaw AI"
+                    className="h-10 opacity-90"
+                  />
+                </div>
+                
                 {/* Progress Bar */}
                 <div className="space-y-4">
                   <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
@@ -1308,10 +1440,17 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               generationId={generationId}
               remainingCredits={remainingCredits}
               isRewarded={false}
+              isRefunded={isRefunded}
               petName={petName}
               onShareSuccess={() => {
                 // Refresh credits or update UI if needed
                 console.log('✅ Share successful')
+              }}
+              onReupload={() => {
+                // Reset to upload step
+                setStep('upload')
+                setGeneratedImageUrl('')
+                setGenerationId('')
               }}
               generationMetadata={{
                 hasHeterochromia: qualityCheckResult?.hasHeterochromia,
@@ -1351,6 +1490,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           </div>
         )}
       </div>
+
+      {/* Guest Login Modal */}
+      <GuestLoginModal
+        isOpen={showGuestLoginModal}
+        onClose={() => setShowGuestLoginModal(false)}
+      />
     </div>
   )
 }
