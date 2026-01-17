@@ -727,78 +727,100 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </div>
               )}
 
-              {/* Quality Check Failed/Warning - Redesigned */}
+              {/* Quality Check Failed/Warning - Redesigned V2 */}
               {!isCheckingQuality && showQualityWarning && qualityCheckResult && (
-                <div className="max-w-2xl mx-auto">
-                  {/* Header */}
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-4">
-                      <AlertCircle className="w-8 h-8 text-amber-600" />
+                <div className="max-w-3xl mx-auto">
+                  {/* Alert Banner */}
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="text-lg font-bold text-amber-900 mb-1">
+                          Photo Quality Issue Detected
+                        </h3>
+                        <p className="text-sm text-amber-800">
+                          Your photo may not produce optimal results. Consider uploading a better one.
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      Photo Quality Check
-                    </h3>
-                    <p className="text-gray-600">
-                      We detected some issues that may affect your results
-                    </p>
                   </div>
 
-                  {/* Content Grid: Image + Issues */}
-                  <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    {/* Left: Image Preview */}
-                    <div className="relative">
-                      <div className="aspect-square rounded-xl overflow-hidden border-2 border-amber-200 bg-gray-100">
-                        <img 
-                          src={previewUrl} 
-                          className="w-full h-full object-cover opacity-75" 
-                          alt="Uploaded photo" 
-                        />
+                  {/* Main Content */}
+                  <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden mb-6">
+                    <div className="grid md:grid-cols-[300px_1fr] divide-x divide-gray-200">
+                      {/* Left: Image Preview */}
+                      <div className="relative bg-gray-50 p-4">
+                        <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-100 relative">
+                          <img 
+                            src={previewUrl} 
+                            className="w-full h-full object-cover" 
+                            alt="Uploaded photo" 
+                          />
+                          <div className="absolute inset-0 bg-black/10"></div>
+                        </div>
+                        <div className="mt-3 text-center">
+                          <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">
+                            <X className="w-3 h-3" />
+                            Not Recommended
+                          </span>
+                        </div>
                       </div>
-                      <div className="absolute top-3 right-3 bg-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
-                        Needs Improvement
-                      </div>
-                    </div>
 
-                    {/* Right: Issues & Tips */}
-                    <div className="flex flex-col justify-center space-y-4">
-                      {/* Issues */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                          <X className="w-4 h-4 text-red-500" />
-                          Detected Issues
-                        </h4>
-                        <ul className="space-y-2">
-                          {qualityCheckResult.issues.map((issue, idx) => (
-                            <li key={idx} className="text-sm text-gray-700 pl-6 relative before:content-['•'] before:absolute before:left-2 before:text-red-500">
-                              {issue === 'blurry' && 'Photo is blurry or out of focus'}
-                              {issue === 'too_small' && 'Pet is too small in frame'}
-                              {issue === 'poor_lighting' && 'Lighting is poor'}
-                              {issue === 'obstructed' && 'Pet face is obstructed'}
-                              {issue === 'no_pet' && 'No pet detected'}
+                      {/* Right: Issues & Tips */}
+                      <div className="p-6 space-y-5">
+                        {/* Detected Issues */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                              <X className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h4 className="font-bold text-gray-900">Detected Issues</h4>
+                          </div>
+                          <ul className="space-y-2">
+                            {qualityCheckResult.issues.map((issue, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></span>
+                                <span>
+                                  {issue === 'blurry' && 'Photo is blurry or out of focus'}
+                                  {issue === 'too_small' && 'Pet is too small in the frame'}
+                                  {issue === 'poor_lighting' && 'Poor lighting conditions'}
+                                  {issue === 'obstructed' && 'Pet face is partially obstructed'}
+                                  {issue === 'no_pet' && 'No pet detected in this photo'}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Tips */}
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 rounded-md bg-blue-500 flex items-center justify-center">
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            </div>
+                            <h4 className="font-semibold text-blue-900 text-sm">
+                              Tips for Better Results
+                            </h4>
+                          </div>
+                          <ul className="text-xs text-blue-800 space-y-1.5">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                              Good lighting (natural light works best)
                             </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Tips */}
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <h4 className="font-semibold text-blue-900 text-sm mb-2">
-                          Tips for Better Results
-                        </h4>
-                        <ul className="text-xs text-blue-800 space-y-1">
-                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
-                            Good lighting (natural light)
-                          </li>
-                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
-                            Pet takes up 50%+ of frame
-                          </li>
-                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
-                            Eyes clearly visible
-                          </li>
-                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
-                            Sharp focus, not blurry
-                          </li>
-                        </ul>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                              Pet takes up 50%+ of the frame
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                              Eyes are clearly visible
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                              Sharp focus, not blurry
+                            </li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -807,7 +829,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button 
                       onClick={handleReupload} 
-                      className="flex-1 h-12 text-base font-semibold"
+                      className="flex-1 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
                     >
                       <Upload className="w-5 h-5 mr-2" />
                       Upload Better Photo
@@ -824,7 +846,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   {/* Warning Footer */}
                   <div className="mt-4 text-center">
                     <p className="text-xs text-gray-500">
-                      Continuing will use 1 credit, but generation quality may be affected
+                      Continuing will use 1 credit, but generation quality may be significantly affected
                     </p>
                   </div>
                 </div>
