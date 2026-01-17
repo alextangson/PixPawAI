@@ -81,6 +81,40 @@ export const STYLES: Style[] = [
     src: 'iShot_2026-01-16_15.14.43.png',
     promptSuffix: ', ultra-detailed charcoal and graphite pencil sketch, high contrast black and white art, meticulous line work, realistic fur texture, clean white background, artistic hand-drawn masterpiece, fine art gallery style.',
     description: 'Highly detailed black and white pencil drawing'
+  },
+  
+  // ============================================
+  // MVP Test Styles (Added 2026-01-17)
+  // Each Tier has one representative style
+  // ============================================
+  
+  {
+    id: 'Spring-Vibes',
+    label: 'Spring Vibes',
+    src: 'spring-vibes.png',
+    promptSuffix: ', surrounded by soft pink cherry blossom petals gently falling in the air, dreamy spring atmosphere, pastel pink and white color palette, soft bokeh background with blurred flowers, natural soft lighting, professional pet photography, clean and fresh aesthetic, sharp focus on face, warm and cheerful spring mood, high-quality 8k resolution',
+    description: 'Dreamy spring atmosphere with cherry blossoms'
+  },
+  {
+    id: 'Retro-Pop-Art',
+    label: 'Retro Pop Art',
+    src: 'retro-pop-art.png',
+    promptSuffix: ', bold geometric shapes and flat color blocks, mid-century modern illustration style, vibrant contrasting colors (yellow, orange, blue, red), simplified features, clean outlines, playful and energetic composition, vintage poster aesthetic with subtle paper texture, trendy and eye-catching design',
+    description: 'Bold retro poster with geometric shapes'
+  },
+  {
+    id: 'Watercolor-Dream',
+    label: 'Watercolor Dream',
+    src: 'watercolor-dream.png',
+    promptSuffix: ', soft transparent watercolor painting, flowing brush strokes with visible water stains, delicate color bleeding and gradients, loose expressive style, textured watercolor paper background, gentle pastel colors, artistic and dreamy atmosphere, hand-painted illustration feel, elegant and serene mood',
+    description: 'Soft watercolor painting with flowing strokes'
+  },
+  {
+    id: 'Pixel-Mosaic',
+    label: 'Pixel Mosaic',
+    src: 'pixel-mosaic.png',
+    promptSuffix: ', 8-bit pixel art style, retro video game aesthetic, square pixel grid pattern, limited color palette with solid blocks, nostalgic 90s game character design, sharp edges and geometric pixelation, bright vibrant colors, cute and playful vibe, classic arcade game art',
+    description: 'Retro 8-bit pixel art style'
   }
 ]
 

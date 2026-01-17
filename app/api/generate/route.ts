@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
+import { getStyleTierConfig, getDefaultTierConfig, adjustStrengthForComplexity } from '@/lib/style-tiers'
 import Replicate from 'replicate'
 import sharp from 'sharp'
 
@@ -97,19 +98,36 @@ async function padImageWithBlur(
 }
 
 /**
- * Analyze pet features using SiliconFlow Qwen2-VL-72B
- * Qwen2-VL is one of the best open-source vision models, excellent at identifying:
- * - Pet breeds
- * - Heterochromia (different eye colors)
- * - Unique markings and patterns
- * - Fur colors and textures
+ * Pet complexity analysis result
  */
-async function analyzePetFeatures(imageUrl: string): Promise<string> {
+interface PetComplexity {
+  hasHeterochromia: boolean
+  heterochromiaDetails: string
+  complexPattern: boolean
+  patternDetails: string
+  multiplePets: number
+  breed: string
+  keyFeatures: string
+}
+
+/**
+ * Analyze pet features using SiliconFlow Qwen2-VL-72B
+ * Returns structured data for dynamic strength adjustment
+ */
+async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
   const apiKey = process.env.SILICONFLOW_API_KEY
   
   if (!apiKey) {
     console.warn('⚠️ SILICONFLOW_API_KEY not configured, skipping vision analysis')
-    return ''
+    return {
+      hasHeterochromia: false,
+      heterochromiaDetails: '',
+      complexPattern: false,
+      patternDetails: '',
+      multiplePets: 1,
+      breed: 'unknown',
+      keyFeatures: 'standard pet'
+    }
   }
   
   try {
@@ -131,7 +149,7 @@ async function analyzePetFeatures(imageUrl: string): Promise<string> {
               },
               {
                 type: 'text',
-                text: 'You are a professional pet breed identification expert. Analyze this pet photo and describe ONLY the physical features in one concise sentence. Include: 1) EXACT BREED NAME (e.g., Samoyed, Border Collie), 2) Eye color (if heterochromia, specify BOTH colors like "left eye blue, right eye brown"), 3) Fur color and pattern, 4) Distinctive markings. Do NOT describe pose, background, or accessories.'
+                text: '🔍 CRITICAL TASK: Detect heterochromia (different colored eyes)\n\nYou are a pet eye color specialist. Your PRIMARY job is to examine EACH eye separately and compare their colors.\n\nSTEP 1: Look at the LEFT eye - what color is it? (blue, brown, green, amber, etc.)\nSTEP 2: Look at the RIGHT eye - what color is it?\nSTEP 3: Are they DIFFERENT colors? If yes, this is HETEROCHROMIA.\n\nCommon heterochromia in Huskies:\n- One eye BLUE, one eye BROWN/AMBER\n- One eye ICE BLUE, one eye DARK BROWN\n\nAlso check:\n- Breed: Husky, Corgi, Dalmatian, Persian, Siamese\n- Complex patterns: spots/stripes\n- Multiple pets: count them\n\nOutput ONLY this JSON (no markdown, no explanation):\n{\n  "hasHeterochromia": true,\n  "heterochromiaDetails": "left eye blue, right eye brown",\n  "complexPattern": false,\n  "patternDetails": "",\n  "multiplePets": 1,\n  "breed": "Siberian Husky",\n  "keyFeatures": "heterochromia detected"\n}\n\nIf NO heterochromia:\n{"hasHeterochromia": false, "heterochromiaDetails": "", "complexPattern": false, "patternDetails": "", "multiplePets": 1, "breed": "Siberian Husky", "keyFeatures": "standard Husky"}'
               }
             ]
           }
@@ -144,18 +162,88 @@ async function analyzePetFeatures(imageUrl: string): Promise<string> {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('SiliconFlow Vision API error:', response.status, errorText.substring(0, 200))
-      return ''
+      return {
+        hasHeterochromia: false,
+        heterochromiaDetails: '',
+        complexPattern: false,
+        patternDetails: '',
+        multiplePets: 1,
+        breed: 'unknown',
+        keyFeatures: 'analysis failed'
+      }
     }
     
     const data = await response.json()
-    const description = data.choices?.[0]?.message?.content?.trim() || ''
+    const content = data.choices?.[0]?.message?.content?.trim() || ''
     
-    console.log('🔍 Qwen2-VL Analysis Result:', description)
+    console.log('🔍 Qwen2-VL Raw Response:', content)
     
-    return description
+    // Parse JSON response
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/)
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content
+      
+      const parsed = JSON.parse(jsonStr) as PetComplexity
+      console.log('✅ Parsed Pet Complexity:', parsed)
+      return parsed
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON from Qwen:', content)
+      console.log('🔄 Attempting text-based fallback detection...')
+      
+      // Fallback: Enhanced text-based detection
+      const lowerContent = content.toLowerCase()
+      
+      // Enhanced heterochromia detection
+      const hasHeteroKeyword = lowerContent.includes('heterochromia') || 
+                                lowerContent.includes('different eye') ||
+                                lowerContent.includes('different colored eye')
+      
+      // Detect if mentions both blue and brown eyes (common heterochromia)
+      const mentionsBlueEye = lowerContent.includes('blue eye') || 
+                               lowerContent.includes('blue-eye') ||
+                               lowerContent.match(/eye.*blue|blue.*eye/)
+      const mentionsBrownEye = lowerContent.includes('brown eye') || 
+                                lowerContent.includes('amber eye') ||
+                                lowerContent.match(/eye.*(brown|amber)|(brown|amber).*eye/)
+      
+      const heterochromiaDetected = hasHeteroKeyword || (mentionsBlueEye && mentionsBrownEye)
+      
+      // Try to extract eye color details
+      let heterochromiaDetails = ''
+      if (heterochromiaDetected) {
+        const leftEyeMatch = content.match(/left eye[:\s]*(blue|brown|amber|green)/i)
+        const rightEyeMatch = content.match(/right eye[:\s]*(blue|brown|amber|green)/i)
+        if (leftEyeMatch && rightEyeMatch) {
+          heterochromiaDetails = `left ${leftEyeMatch[1]}, right ${rightEyeMatch[1]}`
+        } else {
+          heterochromiaDetails = 'detected but details unclear'
+        }
+      }
+      
+      console.log(`🔍 Fallback Detection - Heterochromia: ${heterochromiaDetected}, Details: ${heterochromiaDetails}`)
+      
+      return {
+        hasHeterochromia: heterochromiaDetected,
+        heterochromiaDetails: heterochromiaDetails,
+        complexPattern: lowerContent.includes('pattern') || lowerContent.includes('marking') || lowerContent.includes('spot'),
+        patternDetails: '',
+        multiplePets: (content.match(/\d+\s*pet/i)?.[0] || '1').match(/\d+/)?.[0] ? parseInt(content.match(/\d+/)?.[0] || '1') : 1,
+        breed: content.match(/(husky|corgi|dalmatian|persian|siamese)/i)?.[0] || 'unknown',
+        keyFeatures: heterochromiaDetected ? 'heterochromia detected (fallback)' : content.substring(0, 80)
+      }
+    }
   } catch (error: any) {
     console.error('❌ Vision analysis failed:', error.message)
-    return ''
+    return {
+      hasHeterochromia: false,
+      heterochromiaDetails: '',
+      complexPattern: false,
+      patternDetails: '',
+      multiplePets: 1,
+      breed: 'unknown',
+      keyFeatures: 'error'
+    }
   }
 }
 
@@ -216,7 +304,8 @@ async function generateWithReplicate(
   userId: string,
   generationId: string,
   imageUrl?: string,  // Pre-processed image URL (already correct size)
-  promptStrength: number = 0.82  // Higher strength for better style application
+  promptStrength: number = 0.35,  // Dynamic strength based on style tier
+  guidance: number = 2.5  // Dynamic guidance based on style tier
 ): Promise<{ publicUrl: string; storagePath: string }> {
   const apiKey = process.env.REPLICATE_API_TOKEN
 
@@ -237,7 +326,7 @@ async function generateWithReplicate(
     output_quality: 100,
     disable_safety_checker: true,
     num_inference_steps: 50,
-    guidance: 3.5,
+    guidance: guidance,  // Dynamic guidance based on style tier
   }
 
   // 🎨 Image-to-image mode
@@ -329,7 +418,7 @@ export async function POST(request: NextRequest) {
       prompt: userPrompt, 
       petType = 'pet', 
       aspectRatio = '1:1', // Default to square
-      strength = 0.85 // Image-to-image strength (0.1-1.0), default 0.85
+      strength // Accept from frontend but don't set default here
     } = body
 
     if (!style || !userPrompt) {
@@ -375,17 +464,29 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP B: VISION ANALYSIS - Analyze pet features before generation
-    let visionDescription = ''
+    let petComplexity: PetComplexity = {
+      hasHeterochromia: false,
+      heterochromiaDetails: '',
+      complexPattern: false,
+      patternDetails: '',
+      multiplePets: 1,
+      breed: 'unknown',
+      keyFeatures: 'standard pet'
+    }
+    
     if (imageUrl) {
       try {
         console.log('🔍 Starting vision analysis...')
-        visionDescription = await analyzePetFeatures(imageUrl)
-        if (visionDescription) {
-          console.log('✅ Vision analysis:', visionDescription)
-        }
+        petComplexity = await analyzePetFeatures(imageUrl)
+        console.log('✅ Pet Complexity Analysis:', {
+          heterochromia: petComplexity.hasHeterochromia,
+          complexPattern: petComplexity.complexPattern,
+          pets: petComplexity.multiplePets,
+          breed: petComplexity.breed
+        })
       } catch (error: any) {
         console.error('⚠️ Vision analysis failed, continuing without it:', error.message)
-        // Continue without vision - not critical
+        // Continue with default values
       }
     }
 
@@ -408,20 +509,63 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP D: CONSTRUCT STRONG PROMPT - BREED FIRST, then details, then style
-    let finalPrompt = ''
+    // STEP D: GET STYLE TIER CONFIG and ADJUST STRENGTH
+    const tierConfig = getStyleTierConfig(style) || getDefaultTierConfig()
+    const baseStrength = tierConfig.strength
+    const adjustedStrength = adjustStrengthForComplexity(baseStrength, {
+      hasHeterochromia: petComplexity.hasHeterochromia,
+      complexPattern: petComplexity.complexPattern,
+      multiplePets: petComplexity.multiplePets
+    })
     
-    if (imageUrl && visionDescription) {
-      // 🎯 VISION-ENHANCED PROMPT (BREED PRIORITY)
-      // Structure: [BREED + PHYSICAL FEATURES] first → [User Details] → [Style Last]
-      // This ensures the AI prioritizes preserving the exact breed and unique features
-      finalPrompt = `A ${visionDescription}, ${userPrompt}${styleConfig.promptSuffix}. Maintain the exact breed characteristics, preserve all unique physical features including eye colors and fur patterns. Professional portrait, high detail.`
-    } else if (imageUrl) {
-      // FALLBACK: No vision analysis available
-      finalPrompt = `The exact same pet from the reference image, ${userPrompt}${styleConfig.promptSuffix}. Preserve all unique features including breed, eye colors, fur patterns, and markings. Professional quality, high detail.`
+    console.log(`🎯 Style Tier ${tierConfig.tier}: ${style}`)
+    console.log(`   Base strength: ${baseStrength.toFixed(2)} → Adjusted: ${adjustedStrength.toFixed(2)}`)
+    console.log(`   Guidance: ${tierConfig.guidance}`)
+    console.log(`   Expected similarity: ${tierConfig.expectedSimilarity}`)
+    
+    // STEP E: CONSTRUCT TIER-APPROPRIATE PROMPT
+    let finalPrompt = ''
+    const styleName = styleConfig.label || '3D Pixar'
+    
+    if (imageUrl) {
+      // Build feature preservation prefix
+      let featurePrefix = ''
+      
+      // Add breed constraint if detected
+      if (petComplexity.breed !== 'unknown') {
+        featurePrefix += `${petComplexity.breed}, `
+      }
+      
+      // Add heterochromia constraint
+      if (petComplexity.hasHeterochromia && petComplexity.heterochromiaDetails) {
+        featurePrefix += `with heterochromia (${petComplexity.heterochromiaDetails}), `
+      }
+      
+      // Tier-specific prompt strategy
+      if (tierConfig.tier <= 2) {
+        // Tier 1-2: 写实/轻艺术 - 强调特征保留
+        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${styleConfig.promptSuffix}. Keep original appearance, only apply ${styleName} artistic style.`
+      } else {
+        // Tier 3-4: 强艺术 - 平衡风格和特征
+        // 清理可能冲突的颜色描述
+        const cleanSuffix = styleConfig.promptSuffix
+          .replace(/warm/gi, '')
+          .replace(/bright/gi, '')
+          .replace(/soft white fur/gi, 'fur')
+        
+        finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}. Based on reference image, maintain core breed characteristics and distinctive features.`
+      }
+      
+      // Add complexity-specific reminders
+      if (petComplexity.complexPattern) {
+        finalPrompt += ` Preserve intricate patterns and markings.`
+      }
+      if (petComplexity.multiplePets > 1) {
+        finalPrompt += ` Image contains ${petComplexity.multiplePets} pets, keep all visible.`
+      }
     } else {
-      // Text-to-image: Standard prompt
-      finalPrompt = `${userPrompt}${styleConfig.promptSuffix}`
+      // TEXT-TO-IMAGE MODE
+      finalPrompt = `${userPrompt}${styleConfig.promptSuffix}. Professional quality, highly detailed.`
     }
     
     console.log('📝 Final Prompt:', finalPrompt.substring(0, 150) + '...')
@@ -498,14 +642,20 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // STEP E: Call Replicate API with pre-processed image and strong prompt
-      const { publicUrl: publicImageUrl, storagePath } = await generateWithReplicate(
+      // STEP F: Call Replicate API with tier-optimized parameters
+      // Use frontend strength if provided, otherwise use tier-based calculation
+      const finalStrength = strength || adjustedStrength
+      
+      const { publicUrl: publicImageUrl, storagePath} = await generateWithReplicate(
         finalPrompt, 
         user.id, 
         generation.id,
         processedImageUrl,  // Pre-processed image (already correct dimensions)
-        strength || 0.82  // Higher strength for better style application
+        finalStrength,  // Use frontend or calculated strength
+        tierConfig.guidance  // Dynamic guidance based on tier
       )
+      
+      console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'calculated'}), guidance=${tierConfig.guidance}`)
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
@@ -522,7 +672,14 @@ export async function POST(request: NextRequest) {
             completedAt: new Date().toISOString(),
             storageUrl: publicImageUrl,
             preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
-            visionAnalysis: visionDescription || undefined,
+            visionAnalysis: petComplexity.keyFeatures || undefined,
+            petComplexity: petComplexity,
+            tierConfig: {
+              tier: tierConfig.tier,
+              baseStrength: baseStrength,
+              adjustedStrength: adjustedStrength,
+              guidance: tierConfig.guidance
+            },
           },
         })
         .eq('id', generation.id)
