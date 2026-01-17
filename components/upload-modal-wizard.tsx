@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3, LogIn } from 'lucide-react'
+import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3, LogIn, AlertCircle, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -19,7 +19,20 @@ interface UploadModalWizardProps {
   selectedStyle?: string | null
 }
 
-type Step = 'upload' | 'configure' | 'generating'
+type Step = 'upload' | 'quality-check' | 'configure' | 'generating'
+
+interface QualityCheckResult {
+  hasPet: boolean
+  petType: string // 'dog' | 'cat' | 'other'
+  quality: 'excellent' | 'good' | 'poor' | 'unusable'
+  issues: string[]
+  hasHeterochromia: boolean
+  heterochromiaDetails: string
+  breed: string
+  complexPattern: boolean
+  multiplePets: number
+  detectedColors: string
+}
 
 export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle }: UploadModalWizardProps) {
   const router = useRouter()
@@ -42,6 +55,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
   const [generationId, setGenerationId] = useState<string>('')
+  
+  // New states for quality check and pet name
+  const [petName, setPetName] = useState<string>('')
+  const [qualityCheckResult, setQualityCheckResult] = useState<QualityCheckResult | null>(null)
+  const [showQualityWarning, setShowQualityWarning] = useState(false)
+  const [isCheckingQuality, setIsCheckingQuality] = useState(false)
 
   // Check user authentication
   useEffect(() => {
@@ -75,6 +94,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setShowAdvanced(false)
         setAspectRatio('1:1')
         setGenerationId('')
+        setPetName('')
+        setQualityCheckResult(null)
+        setShowQualityWarning(false)
+        setIsCheckingQuality(false)
         // Note: Share-related states removed (now handled by ResultModal)
       }, 300)
     }
@@ -151,13 +174,78 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     const img = new window.Image()
     img.onload = () => {
       setImageDimensions({ width: img.width, height: img.height })
-      // Auto-advance to configure step
-      setStep('configure')
+      // Advance to quality-check step instead of configure
+      setStep('quality-check')
+      // Trigger quality check
+      performQualityCheck(objectUrl)
     }
     img.onerror = () => {
       setError('Failed to load image')
     }
     img.src = objectUrl
+  }
+  
+  // Quality check function
+  const performQualityCheck = async (imageUrl: string) => {
+    setIsCheckingQuality(true)
+    setShowQualityWarning(false)
+    
+    try {
+      // Upload image to get public URL for Qwen
+      const supabase = createClient()
+      const { data: uploadData, error: uploadError } = await uploadUserImage(supabase, uploadedFile!)
+      
+      if (uploadError || !uploadData) {
+        throw new Error('Failed to upload image for analysis')
+      }
+      
+      // Call Qwen quality check API
+      const response = await fetch('/api/check-quality', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: uploadData.url })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Quality check failed')
+      }
+      
+      const result: QualityCheckResult = await response.json()
+      setQualityCheckResult(result)
+      setIsCheckingQuality(false)
+      
+      // Auto-proceed if quality is good/excellent
+      if (result.quality === 'excellent' || result.quality === 'good') {
+        setTimeout(() => {
+          setStep('configure')
+        }, 1500) // Short delay to show success
+      } else {
+        // Show warning for poor/unusable quality
+        setShowQualityWarning(true)
+      }
+    } catch (error) {
+      console.error('Quality check error:', error)
+      setIsCheckingQuality(false)
+      // On error, proceed anyway
+      setTimeout(() => {
+        setStep('configure')
+      }, 1000)
+    }
+  }
+  
+  // Handle user decision to continue despite quality warning
+  const handleContinueAnyway = () => {
+    setShowQualityWarning(false)
+    setStep('configure')
+  }
+  
+  // Handle reupload
+  const handleReupload = () => {
+    setStep('upload')
+    setUploadedFile(null)
+    setPreviewUrl('')
+    setQualityCheckResult(null)
+    setShowQualityWarning(false)
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -272,11 +360,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             <div>
               <h2 className="text-2xl font-serif font-bold text-gray-900">
                 {step === 'upload' && 'Upload Your Photo'}
+                {step === 'quality-check' && 'Checking Photo Quality'}
                 {step === 'configure' && 'Configure Your Portrait'}
                 {step === 'generating' && 'Creating Your Portrait...'}
               </h2>
               <p className="text-sm text-gray-600 font-sans">
                 {step === 'upload' && 'Start by uploading a photo of your pet'}
+                {step === 'quality-check' && 'Making sure your photo is ready for the best results'}
                 {step === 'configure' && 'Customize the style and prompt'}
                 {step === 'generating' && 'This may take 10-30 seconds...'}
               </p>
@@ -486,6 +576,90 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <li>• Avoid blurry or dark images</li>
                 </ul>
               </div>
+            </div>
+          )}
+
+          {/* STEP A.5: QUALITY CHECK */}
+          {step === 'quality-check' && (
+            <div className="space-y-6">
+              {/* Checking State */}
+              {isCheckingQuality && (
+                <div className="flex flex-col items-center py-12">
+                  <Loader2 className="w-12 h-12 text-coral animate-spin mb-4" />
+                  <p className="text-lg font-medium text-gray-900">Analyzing your pet photo...</p>
+                  <p className="text-sm text-gray-500 mt-1">This takes just 3-5 seconds</p>
+                </div>
+              )}
+
+              {/* Quality Check Failed/Warning */}
+              {!isCheckingQuality && showQualityWarning && qualityCheckResult && (
+                <div className="max-w-md mx-auto p-6">
+                  <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+                    <div className="text-center mb-4">
+                      <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-3" />
+                      <h3 className="text-xl font-bold text-amber-900">
+                        Photo Quality Needs Improvement
+                      </h3>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <img src={previewUrl} className="rounded-lg opacity-60 w-full" alt="Preview" />
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <p className="font-semibold text-amber-900">Detected Issues:</p>
+                      {qualityCheckResult.issues.map((issue, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm">
+                          <X className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          <span>
+                            {issue === 'blurry' && 'Photo is blurry - hard to see details'}
+                            {issue === 'too_small' && 'Pet is too small in frame (less than 30%)'}
+                            {issue === 'poor_lighting' && 'Lighting is too dark or overexposed'}
+                            {issue === 'obstructed' && 'Pet face is blocked (sunglasses, hat, etc.)'}
+                            {issue === 'no_pet' && 'No pet detected in this photo'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                      <p className="font-semibold text-blue-900 mb-2">💡 Tips for Better Results:</p>
+                      <ul className="text-sm space-y-1 text-blue-800">
+                        <li>✓ Good lighting (natural light works best)</li>
+                        <li>✓ Pet takes up 50%+ of the frame</li>
+                        <li>✓ Eyes are clearly visible</li>
+                        <li>✓ Sharp focus (not blurry)</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button onClick={handleReupload} className="flex-1">
+                        📷 Upload Better Photo
+                      </Button>
+                      <Button 
+                        onClick={handleContinueAnyway} 
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        ⚠️ Continue Anyway
+                      </Button>
+                    </div>
+                    
+                    <p className="text-xs text-amber-700 mt-2 text-center">
+                      ⚠️ Continuing will use 1 credit, but results may be poor
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Quality Check Success (Auto-proceeding) */}
+              {!isCheckingQuality && !showQualityWarning && qualityCheckResult && (
+                <div className="flex flex-col items-center py-12">
+                  <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+                  <p className="text-lg font-medium text-gray-900">Photo looks great!</p>
+                  <p className="text-sm text-gray-500 mt-1">Proceeding to configuration...</p>
+                </div>
+              )}
             </div>
           )}
 
