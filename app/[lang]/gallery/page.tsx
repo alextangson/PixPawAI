@@ -19,7 +19,8 @@ interface GalleryImage {
 }
 
 // SEO Metadata
-export async function generateMetadata({ params }: { params: { lang: Locale } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ lang: Locale }> }): Promise<Metadata> {
+  const { lang } = await params;
   return {
     title: 'Pet Portrait Gallery | PixPaw AI',
     description: 'Discover stunning AI-generated pet portraits in Pixar style. Browse our community gallery of transformed pets and find inspiration for your own creation.',
@@ -31,8 +32,9 @@ export async function generateMetadata({ params }: { params: { lang: Locale } })
   };
 }
 
-export default async function GalleryPage({ params }: { params: { lang: Locale } }) {
-  const lang = params.lang || 'en';
+export default async function GalleryPage({ params }: { params: Promise<{ lang: Locale }> }) {
+  const { lang: paramLang } = await params;
+  const lang = paramLang || 'en';
   
   // Server-side data fetching - Better for SEO
   const supabase = await createClient();

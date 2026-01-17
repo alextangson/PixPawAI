@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // Global share reward limit (MVP: 5 rewards for all users)
     const MAX_SHARE_REWARDS = 5
-    const hasReachedLimit = profile.share_rewards_earned >= MAX_SHARE_REWARDS
+    const hasReachedLimit = profile!.share_rewards_earned >= MAX_SHARE_REWARDS
 
     // 4. Fetch the generation to verify ownership and check if already rewarded
     const { data: generation, error: fetchError } = await supabase
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     console.log('Share eligibility check:', {
       generation_id,
       is_rewarded: generation.is_rewarded,
-      share_rewards_earned: profile.share_rewards_earned,
+      share_rewards_earned: profile!.share_rewards_earned,
       max_share_rewards: MAX_SHARE_REWARDS,
       has_reached_limit: hasReachedLimit,
       eligible_for_credit: isEligibleForReward
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
         // Increment share_rewards_earned counter (if column exists)
         const { error: counterError } = await adminSupabase
           .from('profiles')
-          .update({ share_rewards_earned: profile.share_rewards_earned + 1 })
+          .update({ share_rewards_earned: profile!.share_rewards_earned + 1 })
           .eq('id', user.id)
         
         if (counterError) {
@@ -216,11 +216,11 @@ export async function POST(request: NextRequest) {
         
         updatedCredits = creditData
         console.log('💰 Credits incremented (+1), new balance:', updatedCredits)
-        console.log('📊 Share rewards earned:', profile.share_rewards_earned + 1, '/', MAX_SHARE_REWARDS)
+        console.log('📊 Share rewards earned:', profile!.share_rewards_earned + 1, '/', MAX_SHARE_REWARDS)
       }
     } else {
       if (hasReachedLimit) {
-        console.log('⚠️  No credit granted - share reward limit reached (', profile.share_rewards_earned, '/', MAX_SHARE_REWARDS, ')')
+        console.log('⚠️  No credit granted - share reward limit reached (', profile!.share_rewards_earned, '/', MAX_SHARE_REWARDS, ')')
       } else {
         console.log('ℹ️  No credit granted - already rewarded for this generation')
       }
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 10. Return success with share card data
-    const remainingRewards = MAX_SHARE_REWARDS - (profile.share_rewards_earned + (isEligibleForReward ? 1 : 0))
+    const remainingRewards = MAX_SHARE_REWARDS - (profile!.share_rewards_earned + (isEligibleForReward ? 1 : 0))
     
     let successMessage = ''
     if (isEligibleForReward) {
