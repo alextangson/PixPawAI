@@ -5,7 +5,9 @@ import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkle
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
+import { Input } from '@/components/ui/input'
 import { STYLES } from '@/lib/styles'
+import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { uploadUserImage } from '@/lib/supabase/storage'
 import type { User } from '@supabase/supabase-js'
@@ -111,6 +113,38 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     '🦴 Fetching the pixels...',
     '🖌️ Almost there, applying final touches...',
   ]
+  
+  // Aspect ratio options with visual icons
+  const aspectRatios = [
+    {
+      value: '1:1',
+      label: 'Square',
+      dimensions: '1024×1024',
+      icon: 'w-8 h-8',
+      style: { width: '32px', height: '32px' }
+    },
+    {
+      value: '9:16',
+      label: 'Portrait',
+      dimensions: '768×1344',
+      icon: 'w-6 h-9',
+      style: { width: '24px', height: '36px' }
+    },
+    {
+      value: '16:9',
+      label: 'Landscape',
+      dimensions: '1344×768',
+      icon: 'w-9 h-6',
+      style: { width: '36px', height: '24px' }
+    },
+    {
+      value: '4:5',
+      label: 'Instagram',
+      dimensions: '1024×1280',
+      icon: 'w-7 h-9',
+      style: { width: '28px', height: '35px' }
+    }
+  ]
 
   // Animate progress bar from 0% to 90% over 25 seconds
   useEffect(() => {
@@ -192,10 +226,17 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     
     try {
       // Upload image to get public URL for Qwen
-      const supabase = createClient()
-      const { data: uploadData, error: uploadError } = await uploadUserImage(supabase, uploadedFile!)
+      if (!user) {
+        // Skip quality check if not logged in, proceed to configure
+        setTimeout(() => {
+          setStep('configure')
+        }, 500)
+        return
+      }
       
-      if (uploadError || !uploadData) {
+      const uploadResult = await uploadUserImage(uploadedFile!, user.id)
+      
+      if ('error' in uploadResult) {
         throw new Error('Failed to upload image for analysis')
       }
       
@@ -203,7 +244,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       const response = await fetch('/api/check-quality', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: uploadData.url })
+        body: JSON.stringify({ imageUrl: uploadResult.url })
       })
       
       if (!response.ok) {
@@ -663,219 +704,229 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
           )}
 
-          {/* STEP B: CONFIGURE */}
+          {/* STEP B: CONFIGURE - Double Column Layout */}
           {step === 'configure' && (
-            <div className="space-y-6">
-              {/* Preview Thumbnail */}
-              <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{uploadedFile?.name}</p>
-                  <p className="text-sm text-gray-600">
-                    {uploadedFile && (uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                <button
-                  onClick={() => setStep('upload')}
-                  className="px-4 py-2 text-sm text-coral hover:bg-coral/10 rounded-lg transition-colors font-medium"
-                >
-                  Change
-                </button>
-              </div>
-
-              {/* User Prompt */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Describe your pet <span className="text-xs text-gray-500 font-normal">(Optional - AI will reference your photo)</span>
-                </label>
-                <textarea
-                  value={userPrompt}
-                  onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="e.g., my fluffy white dog, my orange cat, my pet rabbit... (Keep it simple - the AI will preserve your pet's exact appearance from the photo!)"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral transition-all resize-none"
-                  rows={3}
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Describe what you'd like to see in your portrait
-                </p>
-              </div>
-
-              {/* Style Selector */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Choose a Style
-                </label>
-                <div className="grid grid-cols-4 gap-3">
-                  {STYLES.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style.id)}
-                      className={`relative aspect-square rounded-xl overflow-hidden border-3 transition-all ${
-                        selectedStyle === style.id
-                          ? 'border-coral ring-2 ring-coral/50 scale-105'
-                          : 'border-gray-200 hover:border-coral/50'
-                      }`}
-                    >
-                      <img
-                        src={style.src}
-                        alt={style.label}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className={`absolute inset-0 flex items-end p-2 bg-gradient-to-t from-black/60 to-transparent ${
-                        selectedStyle === style.id ? 'from-coral/60' : ''
-                      }`}>
-                        <span className="text-xs font-semibold text-white">
-                          {style.label}
-                        </span>
-                      </div>
-                      {selectedStyle === style.id && (
-                        <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
-                          <CheckCircle className="w-4 h-4" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+            <div className="flex flex-col lg:flex-row h-full min-h-[600px] -m-6">
+              
+              {/* LEFT PANEL: Image Preview + Pet Name (50%) */}
+              <div className="lg:w-1/2 bg-gradient-to-br from-gray-50 to-gray-100 p-6 lg:p-8 flex flex-col items-center justify-center">
+                
+                {/* Image Preview */}
+                <div className="relative w-full max-w-md mb-6">
+                  <img 
+                    src={previewUrl} 
+                    className="rounded-2xl shadow-2xl w-full"
+                    alt="Your pet"
+                  />
                   
-                  {/* More Styles Button */}
-                  <button
-                    onClick={() => {
-                      onClose()
-                      router.push('/en/gallery')
-                    }}
-                    className="relative aspect-square rounded-xl overflow-hidden border-3 border-dashed border-gray-300 hover:border-coral/50 transition-all bg-gradient-to-br from-gray-50 to-gray-100 hover:from-coral/5 hover:to-coral/10"
-                  >
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                      <Grid3x3 className="w-6 h-6 text-gray-400" />
-                      <span className="text-xs font-semibold text-gray-600">
-                        More Styles
-                      </span>
+                  {/* Size Label */}
+                  {imageDimensions && (
+                    <div className="absolute top-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                      {imageDimensions.width} × {imageDimensions.height}
                     </div>
+                  )}
+                  
+                  {/* Change Photo Button */}
+                  <button
+                    onClick={() => setStep('upload')}
+                    className="absolute bottom-3 left-3 bg-white/90 hover:bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg"
+                  >
+                    Change Photo
                   </button>
                 </div>
-              </div>
-
-              {/* Aspect Ratio Selector */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Output Aspect Ratio
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { id: '1:1', label: 'Square', dimensions: '1024×1024', icon: '⬜' },
-                    { id: '3:4', label: 'Portrait', dimensions: '768×1024', badge: 'Best for Print', icon: '📄' },
-                    { id: '9:16', label: 'Vertical', dimensions: '576×1024', badge: 'Wallpaper', icon: '📱' },
-                    { id: '4:3', label: 'Landscape', dimensions: '1024×768', icon: '🖼️' },
-                    { id: '16:9', label: 'Cinematic', dimensions: '1024×576', icon: '🎬' },
-                  ].map((ratio) => (
-                    <button
-                      key={ratio.id}
-                      onClick={() => setAspectRatio(ratio.id)}
-                      className={`relative p-3 rounded-xl border-2 transition-all ${
-                        aspectRatio === ratio.id
-                          ? 'border-coral bg-coral/10 ring-2 ring-coral/30'
-                          : 'border-gray-200 hover:border-coral/50'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-2xl mb-1">{ratio.icon}</div>
-                        <div className="text-xs font-semibold text-gray-900">{ratio.label}</div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">{ratio.id}</div>
-                        {ratio.badge && (
-                          <div className="mt-1 text-[9px] font-bold text-coral bg-coral/10 rounded px-1 py-0.5">
-                            {ratio.badge}
-                          </div>
-                        )}
-                      </div>
-                      {aspectRatio === ratio.id && (
-                        <div className="absolute top-1 right-1 bg-coral text-white rounded-full p-0.5">
-                          <CheckCircle className="w-3 h-3" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Choose the aspect ratio that best fits your needs. Dimensions are optimized for AI generation.
-                </p>
-              </div>
-
-              {/* Advanced Settings */}
-              <div className="border-t border-gray-200 pt-4">
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="text-sm font-semibold text-gray-700">
-                    ⚙️ Advanced Settings
-                  </span>
-                  <span className="text-gray-400 text-sm">
-                    {showAdvanced ? '▼' : '▶'}
-                  </span>
-                </button>
                 
-                {showAdvanced && (
-                  <div className="mt-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 space-y-4 border border-gray-200">
-                    {/* Style Strength Slider */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-coral" />
-                          Style Strength
-                        </label>
-                        <span className="text-lg font-bold text-coral bg-white px-3 py-1 rounded-full shadow-sm">
-                          {Math.round(strength * 100)}%
-                        </span>
+                {/* Heterochromia Detection Alert (if detected) */}
+                {qualityCheckResult?.hasHeterochromia && (
+                  <div className="w-full max-w-md mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <Eye className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-blue-900 text-sm">
+                          AI Detected: Heterochromia
+                        </p>
+                        <p className="text-xs text-blue-700 mt-1">
+                          {qualityCheckResult.heterochromiaDetails}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          💡 Tip: Use 95% strength for best preservation
+                        </p>
                       </div>
-                      
-                      <Slider
-                        min={0.7}
-                        max={0.95}
-                        step={0.05}
-                        value={[strength]}
-                        onValueChange={(value) => setStrength(value[0])}
-                        className="w-full"
-                      />
-                      
-                      <div className="flex justify-between text-xs text-gray-600 mt-2 px-1">
-                        <span className="flex items-center gap-1">
-                          <span className="text-base">🎨</span>
-                          <span className="font-medium">More Creative</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="font-medium">More Realistic</span>
-                          <span className="text-base">📸</span>
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Recommendation based on strength */}
-                    <div className={`text-xs rounded-lg p-3 border ${
-                      strength >= 0.9 
-                        ? 'bg-green-50 border-green-200 text-green-800' 
-                        : strength >= 0.80 
-                        ? 'bg-blue-50 border-blue-200 text-blue-800'
-                        : 'bg-amber-50 border-amber-200 text-amber-800'
-                    }`}>
-                      {strength >= 0.9 ? (
-                        <>
-                          <strong>✅ Recommended for most pets:</strong> High accuracy preserves your pet's unique features (eyes, fur, markings).
-                        </>
-                      ) : strength >= 0.80 ? (
-                        <>
-                          <strong>⚖️ Balanced mode:</strong> Good mix of style and accuracy. May slightly alter some details.
-                        </>
-                      ) : (
-                        <>
-                          <strong>🎨 Creative mode:</strong> More artistic interpretation. Features like eye color or markings may change.
-                        </>
-                      )}
                     </div>
                   </div>
                 )}
+                
+                {/* Pet Name Input */}
+                <div className="w-full max-w-md">
+                  <label className="block mb-2">
+                    <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      🐾 Your Pet's Name
+                      <span className="text-xs font-normal text-gray-500">(Optional)</span>
+                    </span>
+                  </label>
+                  <Input
+                    value={petName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPetName(e.target.value)}
+                    placeholder="e.g., Max, Luna, Bella..."
+                    className="text-lg h-12"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 This name will appear on your art card
+                  </p>
+                </div>
+              </div>
+              
+              {/* RIGHT PANEL: Style + Configuration (50%) */}
+              <div className="lg:w-1/2 bg-white p-6 lg:p-8 overflow-y-auto max-h-[600px]">
+                
+                {/* Style Selector */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold mb-3">Choose a Style</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => setSelectedStyle(style.id)}
+                        className={cn(
+                          "relative rounded-xl overflow-hidden border-2 transition-all aspect-square",
+                          selectedStyle === style.id 
+                            ? "border-coral ring-2 ring-coral/20" 
+                            : "border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        <img src={style.src} className="w-full h-full object-cover" alt={style.label} />
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                          <p className="text-white text-xs font-medium truncate">{style.label}</p>
+                        </div>
+                        {selectedStyle === style.id && (
+                          <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
+                            <CheckCircle className="w-3 h-3" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Aspect Ratio Selector - New Visual Design */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold mb-3">Output Size</h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    {aspectRatios.map((ratio) => (
+                      <button
+                        key={ratio.value}
+                        onClick={() => setAspectRatio(ratio.value)}
+                        className={cn(
+                          "flex flex-col items-center p-3 rounded-xl border-2 transition-all",
+                          aspectRatio === ratio.value 
+                            ? "border-coral bg-coral/5" 
+                            : "border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        {/* Visual Rectangle Icon */}
+                        <div 
+                          className="border-2 border-gray-400 mb-2"
+                          style={ratio.style}
+                        />
+                        <span className="text-xs font-semibold">{ratio.label}</span>
+                        <span className="text-[10px] text-gray-500">{ratio.dimensions}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prompt Input */}
+                <div className="mb-6">
+                  <label className="block mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Your Prompt (Optional)
+                    </span>
+                  </label>
+                  <Input
+                    value={userPrompt}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
+                    placeholder="e.g., wearing sunglasses, at the beach..."
+                    className="h-11"
+                  />
+                </div>
+                
+                {/* Style Strength - Prominent (not hidden in Advanced) */}
+                <div className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-coral" />
+                      Style Strength
+                    </label>
+                    <span className="text-lg font-bold text-coral bg-white px-3 py-1 rounded-full shadow-sm">
+                      {Math.round(strength * 100)}%
+                    </span>
+                  </div>
+                  
+                  {/* Quick Preset Buttons */}
+                  <div className="flex gap-2 mb-3">
+                    {[0.85, 0.90, 0.92, 0.95].map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => setStrength(preset)}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
+                          strength === preset
+                            ? "bg-coral text-white"
+                            : "bg-white border border-gray-300 text-gray-700 hover:border-coral"
+                        )}
+                      >
+                        {Math.round(preset * 100)}%
+                        {preset === 0.92 && <span className="ml-1">⭐</span>}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <Slider
+                    min={0.7}
+                    max={0.95}
+                    step={0.01}  // Fine-grained control
+                    value={[strength]}
+                    onValueChange={(value) => setStrength(value[0])}
+                    className="w-full mb-2"
+                  />
+                  
+                  <div className="flex justify-between text-xs text-gray-600 px-1">
+                    <span className="flex items-center gap-1">
+                      <span>🎨</span>
+                      <span className="font-medium">More Creative</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="font-medium">More Realistic</span>
+                      <span>📸</span>
+                    </span>
+                  </div>
+                  
+                  {/* Dynamic Recommendation */}
+                  <div className={cn(
+                    "text-xs rounded-lg p-3 border mt-3",
+                    strength >= 0.9 
+                      ? "bg-green-50 border-green-200 text-green-800" 
+                      : strength >= 0.80 
+                      ? "bg-blue-50 border-blue-200 text-blue-800"
+                      : "bg-amber-50 border-amber-200 text-amber-800"
+                  )}>
+                    {strength >= 0.9 ? (
+                      <>✅ <strong>Recommended:</strong> High accuracy preserves unique features</>
+                    ) : strength >= 0.80 ? (
+                      <>⚖️ <strong>Balanced:</strong> Good mix of style and accuracy</>
+                    ) : (
+                      <>🎨 <strong>Creative:</strong> More artistic, features may change</>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Generate Button */}
+                <Button 
+                  onClick={handleGenerate}
+                  className="w-full h-12 text-lg"
+                  disabled={!selectedStyle}
+                >
+                  ✨ Generate Portrait
+                </Button>
               </div>
             </div>
           )}
