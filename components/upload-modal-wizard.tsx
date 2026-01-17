@@ -727,62 +727,104 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </div>
               )}
 
-              {/* Quality Check Failed/Warning */}
+              {/* Quality Check Failed/Warning - Redesigned */}
               {!isCheckingQuality && showQualityWarning && qualityCheckResult && (
-                <div className="max-w-md mx-auto p-6">
-                  <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
-                    <div className="text-center mb-4">
-                      <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-3" />
-                      <h3 className="text-xl font-bold text-amber-900">
-                        Photo Quality Needs Improvement
-                      </h3>
+                <div className="max-w-2xl mx-auto">
+                  {/* Header */}
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-4">
+                      <AlertCircle className="w-8 h-8 text-amber-600" />
                     </div>
-                    
-                    <div className="mb-4">
-                      <img src={previewUrl} className="rounded-lg opacity-60 w-full" alt="Preview" />
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      Photo Quality Check
+                    </h3>
+                    <p className="text-gray-600">
+                      We detected some issues that may affect your results
+                    </p>
+                  </div>
+
+                  {/* Content Grid: Image + Issues */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    {/* Left: Image Preview */}
+                    <div className="relative">
+                      <div className="aspect-square rounded-xl overflow-hidden border-2 border-amber-200 bg-gray-100">
+                        <img 
+                          src={previewUrl} 
+                          className="w-full h-full object-cover opacity-75" 
+                          alt="Uploaded photo" 
+                        />
+                      </div>
+                      <div className="absolute top-3 right-3 bg-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
+                        Needs Improvement
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <p className="font-semibold text-amber-900">Detected Issues:</p>
-                      {qualityCheckResult.issues.map((issue, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm">
-                          <X className="w-4 h-4 text-red-500 flex-shrink-0" />
-                          <span>
-                            {issue === 'blurry' && 'Photo is blurry - hard to see details'}
-                            {issue === 'too_small' && 'Pet is too small in frame (less than 30%)'}
-                            {issue === 'poor_lighting' && 'Lighting is too dark or overexposed'}
-                            {issue === 'obstructed' && 'Pet face is blocked (sunglasses, hat, etc.)'}
-                            {issue === 'no_pet' && 'No pet detected in this photo'}
-                          </span>
-                        </div>
-                      ))}
+
+                    {/* Right: Issues & Tips */}
+                    <div className="flex flex-col justify-center space-y-4">
+                      {/* Issues */}
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                          <X className="w-4 h-4 text-red-500" />
+                          Detected Issues
+                        </h4>
+                        <ul className="space-y-2">
+                          {qualityCheckResult.issues.map((issue, idx) => (
+                            <li key={idx} className="text-sm text-gray-700 pl-6 relative before:content-['•'] before:absolute before:left-2 before:text-red-500">
+                              {issue === 'blurry' && 'Photo is blurry or out of focus'}
+                              {issue === 'too_small' && 'Pet is too small in frame'}
+                              {issue === 'poor_lighting' && 'Lighting is poor'}
+                              {issue === 'obstructed' && 'Pet face is obstructed'}
+                              {issue === 'no_pet' && 'No pet detected'}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Tips */}
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <h4 className="font-semibold text-blue-900 text-sm mb-2">
+                          Tips for Better Results
+                        </h4>
+                        <ul className="text-xs text-blue-800 space-y-1">
+                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
+                            Good lighting (natural light)
+                          </li>
+                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
+                            Pet takes up 50%+ of frame
+                          </li>
+                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
+                            Eyes clearly visible
+                          </li>
+                          <li className="pl-4 relative before:content-['✓'] before:absolute before:left-0 before:text-blue-600">
+                            Sharp focus, not blurry
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                    
-                    <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                      <p className="font-semibold text-blue-900 mb-2">Tips for Better Results:</p>
-                      <ul className="text-sm space-y-1 text-blue-800">
-                        <li>• Good lighting (natural light works best)</li>
-                        <li>• Pet takes up 50%+ of the frame</li>
-                        <li>• Eyes are clearly visible</li>
-                        <li>• Sharp focus (not blurry)</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <Button onClick={handleReupload} className="flex-1">
-                        Upload Better Photo
-                      </Button>
-                      <Button 
-                        onClick={handleContinueAnyway} 
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Continue Anyway
-                      </Button>
-                    </div>
-                    
-                    <p className="text-xs text-amber-700 mt-2 text-center">
-                      Continuing will use 1 credit, but results may be poor
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={handleReupload} 
+                      className="flex-1 h-12 text-base font-semibold"
+                    >
+                      <Upload className="w-5 h-5 mr-2" />
+                      Upload Better Photo
+                    </Button>
+                    <Button 
+                      onClick={handleContinueAnyway} 
+                      variant="outline"
+                      className="flex-1 h-12 text-base border-2 hover:bg-gray-50"
+                    >
+                      Continue Anyway
+                    </Button>
+                  </div>
+
+                  {/* Warning Footer */}
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500">
+                      Continuing will use 1 credit, but generation quality may be affected
                     </p>
                   </div>
                 </div>

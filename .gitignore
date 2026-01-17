@@ -39,10 +39,10 @@ next-env.d.ts
 # editor files and caches
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
-.cursor/
 *.code-workspace
 
 # OS files
