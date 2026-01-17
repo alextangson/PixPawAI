@@ -282,7 +282,8 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
 async function uploadBase64ToStorage(
   base64Data: string,
   userId: string,
-  generationId: string
+  generationId: string,
+  format: 'png' | 'webp' = 'png'
 ): Promise<{ publicUrl: string; storagePath: string }> {
   // Use admin client to bypass RLS policies
   const supabase = createAdminClient()
@@ -290,15 +291,16 @@ async function uploadBase64ToStorage(
   // Convert Base64 to Buffer
   const buffer = Buffer.from(base64Data, 'base64')
 
-  // Generate file path
+  // Generate file path with correct extension
   const timestamp = Date.now()
-  const filePath = `${userId}/${timestamp}-${generationId}.png`
+  const extension = format === 'webp' ? 'webp' : 'png'
+  const filePath = `${userId}/${timestamp}-${generationId}.${extension}`
 
   // Upload to Supabase Storage (public bucket)
   const { data, error } = await supabase.storage
     .from('generated-results')
     .upload(filePath, buffer, {
-      contentType: 'image/png',
+      contentType: `image/${format}`,
       cacheControl: '31536000', // 1 year
       upsert: false,
     })
@@ -333,7 +335,7 @@ async function generateWithReplicate(
   imageUrl?: string,  // Pre-processed image URL (already correct size)
   promptStrength: number = 0.35,  // Dynamic strength based on style tier
   guidance: number = 2.5  // Dynamic guidance based on style tier
-): Promise<{ publicUrl: string; storagePath: string }> {
+): Promise<{ publicUrl: string; storagePath: string; originalPath?: string }> {
   const apiKey = process.env.REPLICATE_API_TOKEN
 
   if (!apiKey) {
@@ -410,14 +412,34 @@ async function generateWithReplicate(
 
     // Convert to Buffer
     const arrayBuffer = await imageResponse.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const originalBuffer = Buffer.from(arrayBuffer)
 
-    // Convert to Base64 for storage
-    const base64Data = buffer.toString('base64')
+    // Use sharp to compress image for fast loading (WebP format, 80% quality)
+    const sharp = require('sharp')
+    const compressedBuffer = await sharp(originalBuffer)
+      .webp({ quality: 80 })
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .toBuffer()
+
+    // Convert compressed image to Base64 for storage
+    const compressedBase64 = compressedBuffer.toString('base64')
     
-    // Upload to Supabase Storage and return public URL + storage path
-    const result = await uploadBase64ToStorage(base64Data, userId, generationId)
-    return result
+    // Upload compressed image to Supabase Storage for quick preview
+    const compressedResult = await uploadBase64ToStorage(compressedBase64, userId, generationId, 'webp')
+    
+    // Also save original image info in metadata for high-quality download
+    // Store original buffer reference for later download if needed
+    const originalBase64 = originalBuffer.toString('base64')
+    const originalResult = await uploadBase64ToStorage(originalBase64, userId, `${generationId}_original`, 'png')
+    
+    console.log(`✅ Image compression: Original=${(originalBuffer.length / 1024 / 1024).toFixed(2)}MB, Compressed=${(compressedBuffer.length / 1024 / 1024).toFixed(2)}MB`)
+    
+    // Return compressed URL for fast display, but include original path in metadata
+    return { 
+      publicUrl: compressedResult.publicUrl, 
+      storagePath: compressedResult.storagePath,
+      originalPath: originalResult.storagePath
+    }
   } catch (error: any) {
     console.error('❌ Replicate API error:', error)
     throw new Error(`Replicate generation failed: ${error.message}`)
@@ -679,7 +701,7 @@ export async function POST(request: NextRequest) {
       // Use frontend strength if provided, otherwise use tier-based calculation
       const finalStrength = strength || adjustedStrength
       
-      const { publicUrl: publicImageUrl, storagePath} = await generateWithReplicate(
+      const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
         finalPrompt, 
         user.id, 
         generation.id,
@@ -697,13 +719,14 @@ export async function POST(request: NextRequest) {
         .from('generations')
         .update({
           status: 'succeeded',
-          output_url: publicImageUrl,
+          output_url: publicImageUrl, // Compressed WebP for fast preview
           output_storage_path: storagePath, // ✅ Save storage path for reliable deletion
           input_url: imageUrl || '',  // Original image URL (not pre-processed)
           metadata: {
             ...generation.metadata,
             completedAt: new Date().toISOString(),
             storageUrl: publicImageUrl,
+            originalImagePath: originalPath, // High-quality PNG for download
             preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
             visionAnalysis: petComplexity.keyFeatures || undefined,
             petComplexity: petComplexity,
@@ -729,6 +752,40 @@ export async function POST(request: NextRequest) {
           },
           { status: 500 }
         )
+      }
+
+      // 9.5. Pre-generate default Art Card for faster UX (non-blocking)
+      try {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const defaultCardResponse = await fetch(`${siteUrl}/api/create-share-card`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            generation_id: generation.id,
+            custom_title: artCardTitle,
+            custom_slogan: 'Every paw has a story to tell'
+          })
+        })
+        
+        if (defaultCardResponse.ok) {
+          const { share_card_url } = await defaultCardResponse.json()
+          
+          // Update generation with pre-generated card URL
+          await adminSupabase
+            .from('generations')
+            .update({
+              metadata: {
+                ...generation.metadata,
+                preGeneratedCardUrl: share_card_url
+              }
+            })
+            .eq('id', generation.id)
+          
+          console.log('✅ Pre-generated Art Card:', share_card_url)
+        }
+      } catch (cardError) {
+        // Non-critical, log and continue
+        console.error('⚠️ Failed to pre-generate Art Card (non-critical):', cardError)
       }
 
       // 10. Return success result

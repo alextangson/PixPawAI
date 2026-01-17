@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Heart, PawPrint } from 'lucide-react';
+import Image from 'next/image';
+import { Heart } from 'lucide-react';
 
 interface FooterProps {
   dict: {
@@ -47,10 +48,14 @@ export function Footer({ dict, lang }: FooterProps) {
           {/* Column 1: Brand & Mission */}
           <div className="md:col-span-1">
             <Link href={`/${lang}`} className="flex items-center gap-2 mb-4 group">
-              <div className="w-8 h-8 bg-gradient-to-br from-coral to-orange-600 rounded-full flex items-center justify-center">
-                <PawPrint className="w-5 h-5 text-white" />
+              <div className="relative w-40 h-12 group-hover:opacity-90 transition-opacity">
+                <Image 
+                  src="/brand/logo-orange.svg" 
+                  alt="PixPaw AI Logo" 
+                  fill
+                  className="object-contain brightness-0 invert"
+                />
               </div>
-              <h3 className="text-xl font-bold text-white">{dict.footer.brand.name}</h3>
             </Link>
             
             <p className="text-gray-400 text-sm mb-4 leading-relaxed">

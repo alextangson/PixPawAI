@@ -14,6 +14,8 @@ interface ArtCardModalProps {
   originalTitle: string
   currentSlogan?: string
   onTitleUpdate?: (newTitle: string) => void
+  petName?: string
+  artCardTitle?: string
 }
 
 export function ArtCardModal({
@@ -23,7 +25,9 @@ export function ArtCardModal({
   imageUrl,
   originalTitle,
   currentSlogan,
-  onTitleUpdate
+  onTitleUpdate,
+  petName,
+  artCardTitle
 }: ArtCardModalProps) {
   const [customTitle, setCustomTitle] = useState(originalTitle || '')
   const [selectedSlogan, setSelectedSlogan] = useState(currentSlogan || PREMIUM_SLOGANS[0])
@@ -36,9 +40,10 @@ export function ArtCardModal({
 
   // Initialize title and slogan from props
   useEffect(() => {
-    setCustomTitle(originalTitle || 'Untitled Portrait')
+    const title = artCardTitle || (petName ? `${petName} - Portrait` : originalTitle || 'My Pet Portrait')
+    setCustomTitle(title)
     setSelectedSlogan(currentSlogan || PREMIUM_SLOGANS[0])
-  }, [originalTitle, currentSlogan])
+  }, [petName, artCardTitle, originalTitle, currentSlogan])
 
   const handleRefreshSlogan = () => {
     // Pick a random slogan different from current
@@ -167,30 +172,25 @@ export function ArtCardModal({
                   </div>
                 </div>
               </div>
-              
-              {/* Preview Note */}
-              <p className="text-xs text-gray-500 text-center mt-3">
-                Low-res preview. Final card will be high-resolution (2000px+).
-              </p>
             </div>
           </div>
 
           {/* Right Panel: Controls & Actions (40% on desktop) */}
           <div className="md:w-[40%] flex flex-col p-6 bg-white overflow-y-auto max-h-[50vh] md:max-h-full">
             
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">
-                Customize Your<br />Art Card
+            {/* Header - Compressed */}
+            <div className="mb-3">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">
+                Customize Your Art Card
               </h2>
-              <p className="text-base text-gray-600 font-sans">
+              <p className="text-xs text-gray-600">
                 Personalize before downloading
               </p>
             </div>
 
-            {/* Title Input */}
-            <div className="mb-5">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+            {/* Title Input - Compressed */}
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Artwork Title
               </label>
               <input
@@ -199,21 +199,21 @@ export function ArtCardModal({
                 onChange={(e) => setCustomTitle(e.target.value)}
                 placeholder="e.g., Coco's Adventure"
                 maxLength={50}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral text-gray-900 bg-white transition-all"
+                className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral text-gray-900 bg-white transition-all"
               />
               <p className="text-xs text-gray-500 mt-1">
                 {customTitle.length}/50 characters
               </p>
             </div>
 
-            {/* Slogan Selector */}
-            <div className="mb-5">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+            {/* Slogan Selector - Compressed */}
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Cinematic Slogan
               </label>
               <div className="relative">
-                <div className="p-4 bg-gray-50 border-2 border-gray-200 rounded-lg min-h-[60px] flex items-center">
-                  <p className="text-sm text-gray-700 italic font-serif">
+                <div className="p-3 bg-gray-50 border-2 border-gray-200 rounded-lg min-h-[50px] flex items-center">
+                  <p className="text-xs text-gray-700 italic font-serif">
                     "{selectedSlogan}"
                   </p>
                 </div>
@@ -221,9 +221,9 @@ export function ArtCardModal({
                   onClick={handleRefreshSlogan}
                   size="sm"
                   variant="outline"
-                  className="absolute -top-3 -right-3 h-10 w-10 p-0 rounded-full bg-white border-2 border-coral hover:bg-coral/10 shadow-lg transition-all hover:scale-110"
+                  className="absolute -top-2 -right-2 h-8 w-8 p-0 rounded-full bg-white border-2 border-coral hover:bg-coral/10 shadow-lg transition-all hover:scale-110"
                 >
-                  <RotateCw className="w-5 h-5 text-coral" />
+                  <RotateCw className="w-4 h-4 text-coral" />
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
@@ -231,31 +231,31 @@ export function ArtCardModal({
               </p>
             </div>
 
-            {/* Info Alert */}
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded mb-5">
+            {/* Info Alert - Compressed */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-2 rounded mb-4">
               <p className="text-xs text-blue-900 font-medium">
                 💡 Title updates will sync to Dashboard & Gallery
               </p>
             </div>
 
             {/* Spacer - Pushes buttons to bottom */}
-            <div className="flex-1 min-h-4"></div>
+            <div className="flex-1 min-h-2"></div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3 mt-6">
+            {/* Action Buttons - Compressed */}
+            <div className="space-y-2 mt-4">
               <Button
                 onClick={handleDownload}
                 disabled={isDownloading || !customTitle.trim()}
-                className="w-full h-12 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold rounded-lg shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="w-full h-10 text-sm bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold rounded-lg shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isDownloading ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Generating Card...
                   </>
                 ) : (
                   <>
-                    <Download className="w-5 h-5 mr-2" />
+                    <Download className="w-4 h-4 mr-2" />
                     Download Social Card
                   </>
                 )}
@@ -264,7 +264,7 @@ export function ArtCardModal({
                 onClick={onClose}
                 disabled={isDownloading}
                 variant="outline"
-                className="w-full h-11 border-2 hover:bg-gray-50"
+                className="w-full h-9 text-sm border-2 hover:bg-gray-50 font-medium"
               >
                 Cancel
               </Button>

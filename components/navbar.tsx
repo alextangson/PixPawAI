@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Heart, PawPrint } from 'lucide-react';
+import { Menu, X, Heart } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { LoginButton } from '@/components/auth/login-button';
@@ -58,12 +59,15 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo - Left */}
           <Link href={`/${lang}`} className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-gradient-to-br from-coral to-orange-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <PawPrint className="w-5 h-5 text-white" />
+            <div className="relative w-40 h-14 sm:w-48 sm:h-16 group-hover:scale-105 transition-transform">
+              <Image 
+                src="/brand/logo-orange.svg" 
+                alt="PixPaw AI Logo" 
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
-            <span className="text-xl font-serif font-bold text-gray-900">
-              {dict.nav.logo}
-            </span>
           </Link>
 
           {/* Desktop Menu - Center */}

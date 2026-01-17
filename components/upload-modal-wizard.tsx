@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, CheckCircle, ArrowLeft, Image as ImageIcon, Sparkles, Grid3x3, LogIn, AlertCircle, Eye } from 'lucide-react'
+import { X, Upload, Loader2, CheckCircle, ArrowLeft, ArrowRight, Image as ImageIcon, Sparkles, Grid3x3, LogIn, AlertCircle, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { STYLES } from '@/lib/styles'
+import { FUN_FACTS } from '@/lib/constants/fun-facts'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { uploadUserImage } from '@/lib/supabase/storage'
@@ -129,13 +130,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
   }, [isOpen, initialStyle])
 
-  // Fun messages to rotate during generation
+  // Fun messages to rotate during generation - dynamic based on pet type
+  const petTypeLabel = qualityCheckResult?.petType === 'cat' ? 'cat' : 
+                       qualityCheckResult?.petType === 'dog' ? 'dog' : 'pet'
+  
   const funMessages = [
-    '🎨 AI is mixing the colors...',
-    '🐶 Teaching the dog to pose...',
-    '✨ Adding some Pixar magic...',
-    '🦴 Fetching the pixels...',
-    '🖌️ Almost there, applying final touches...',
+    `Analyzing your ${petTypeLabel}'s unique features...`,
+    `Capturing ${petTypeLabel === 'cat' ? 'whiskers and grace' : petTypeLabel === 'dog' ? 'playful spirit' : 'adorable charm'}...`,
+    `Preserving those adorable ${petTypeLabel} eyes...`,
+    'Applying artistic magic...',
+    'Almost there! Adding final touches...',
   ]
   
   // Aspect ratio options with visual icons
@@ -148,18 +152,18 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       style: { width: '32px', height: '32px' }
     },
     {
-      value: '9:16',
-      label: 'Portrait',
-      dimensions: '768×1344',
-      icon: 'w-6 h-9',
-      style: { width: '24px', height: '36px' }
+      value: '3:4',
+      label: 'Photo Portrait',
+      dimensions: '768×1024',
+      icon: 'w-6 h-8',
+      style: { width: '24px', height: '32px' }
     },
     {
-      value: '16:9',
-      label: 'Landscape',
-      dimensions: '1344×768',
-      icon: 'w-9 h-6',
-      style: { width: '36px', height: '24px' }
+      value: '4:3',
+      label: 'Photo Landscape',
+      dimensions: '1024×768',
+      icon: 'w-8 h-6',
+      style: { width: '32px', height: '24px' }
     },
     {
       value: '4:5',
@@ -167,6 +171,20 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       dimensions: '1024×1280',
       icon: 'w-7 h-9',
       style: { width: '28px', height: '35px' }
+    },
+    {
+      value: '9:16',
+      label: 'Story',
+      dimensions: '768×1344',
+      icon: 'w-5 h-9',
+      style: { width: '20px', height: '36px' }
+    },
+    {
+      value: '16:9',
+      label: 'Widescreen',
+      dimensions: '1344×768',
+      icon: 'w-9 h-5',
+      style: { width: '36px', height: '20px' }
     }
   ]
   
@@ -206,10 +224,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       })
     }, 100) // Update every 100ms for smooth animation
 
-    // Rotate messages every 3.5 seconds
+    // Rotate messages every 5 seconds
     const messageInterval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % funMessages.length)
-    }, 3500)
+    }, 5000)
 
     return () => {
       clearInterval(progressInterval)
@@ -289,7 +307,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     img.src = objectUrl
   }
   
-  // Quality check function
+  // Quality check function - Fast check first, then detailed analysis in background
   const performQualityCheck = async (imageUrl: string, file: File) => {
     setIsCheckingQuality(true)
     setShowQualityWarning(false)
@@ -304,39 +322,48 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         throw new Error('Failed to upload image for analysis')
       }
       
-      // Call Qwen quality check API
-      const response = await fetch('/api/check-quality', {
+      // STEP 1: Quick quality check (1-2 seconds)
+      const quickResponse = await fetch('/api/quick-quality-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: uploadResult.url })
       })
       
-      if (!response.ok) {
-        throw new Error('Quality check failed')
+      if (!quickResponse.ok) {
+        throw new Error('Quick quality check failed')
       }
       
-      const result: QualityCheckResult = await response.json()
+      const quickResult = await quickResponse.json()
       
-      setQualityCheckResult(result)
-      setIsCheckingQuality(false)
+      console.log('⚡ Quick Check Result:', quickResult)
       
-      console.log('🔍 Quality Check Result:', result)
-      
-      // Check if no pet detected or quality is unusable
-      if (!result.hasPet || result.quality === 'unusable') {
+      // Check if no pet detected or quality is poor
+      if (!quickResult.hasPet || quickResult.quality === 'poor') {
+        setIsCheckingQuality(false)
         setShowQualityWarning(true)
+        // Store basic result for now
+        setQualityCheckResult({
+          hasPet: quickResult.hasPet,
+          petType: quickResult.petType,
+          quality: quickResult.quality,
+          issues: quickResult.hasPet ? ['low_resolution'] : ['no_pet_detected'],
+          hasHeterochromia: false,
+          heterochromiaDetails: '',
+          breed: 'unknown',
+          complexPattern: false,
+          multiplePets: 0,
+          detectedColors: ''
+        })
         return
       }
       
-      // Auto-proceed if quality is good/excellent
-      if (result.quality === 'excellent' || result.quality === 'good') {
-        setTimeout(() => {
-          setStep('configure')
-        }, 1500) // Short delay to show success
-      } else if (result.quality === 'poor') {
-        // Show warning for poor quality
-        setShowQualityWarning(true)
-      }
+      // STEP 2: Quick check passed - proceed to configure immediately
+      setIsCheckingQuality(false)
+      setStep('configure')
+      
+      // STEP 3: Detailed analysis in background (doesn't block UI)
+      performDetailedAnalysis(uploadResult.url, quickResult.petType)
+      
     } catch (error) {
       console.error('Quality check error:', error)
       setIsCheckingQuality(false)
@@ -344,6 +371,35 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setTimeout(() => {
         setStep('configure')
       }, 1000)
+    }
+  }
+  
+  // Detailed analysis function - runs in background
+  const performDetailedAnalysis = async (imageUrl: string, petType: string) => {
+    try {
+      console.log('🔍 Starting detailed analysis in background...')
+      
+      const response = await fetch('/api/check-quality', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl })
+      })
+      
+      if (!response.ok) {
+        console.warn('Detailed quality check failed, using basic info')
+        return
+      }
+      
+      const result: QualityCheckResult = await response.json()
+      
+      console.log('✅ Detailed Analysis Complete:', result)
+      
+      // Update with detailed result (will trigger re-render in configure step)
+      setQualityCheckResult(result)
+      
+    } catch (error) {
+      console.error('Detailed analysis error:', error)
+      // Not critical - user can still proceed
     }
   }
   
@@ -894,26 +950,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   </button>
                 </div>
                 
-                {/* Heterochromia Detection Alert (if detected) */}
-                {qualityCheckResult?.hasHeterochromia && (
-                  <div className="w-full max-w-md mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <Eye className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-blue-900 text-sm">
-                          AI Detected: Heterochromia
-                        </p>
-                        <p className="text-xs text-blue-700 mt-1">
-                          {qualityCheckResult.heterochromiaDetails}
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Tip: Use 95% strength for best preservation
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 {/* Pet Name Input */}
                 <div className="w-full max-w-md">
                   <label className="block mb-2">
@@ -941,13 +977,31 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-bold">Choose a Style</h3>
-                    <button
-                      onClick={() => setStyleRotationIndex(prev => prev + 1)}
-                      className="text-xs text-coral hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Shuffle
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* Shuffle button */}
+                      <button
+                        onClick={() => setStyleRotationIndex(prev => prev + 1)}
+                        className="text-xs text-coral hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Shuffle
+                      </button>
+                      
+                      {/* Divider */}
+                      <span className="text-gray-300">|</span>
+                      
+                      {/* More Styles button */}
+                      <button
+                        onClick={() => {
+                          onClose()
+                          router.push('/en/gallery')
+                        }}
+                        className="text-xs text-gray-600 hover:text-coral font-medium flex items-center gap-1 transition-colors"
+                      >
+                        More Styles
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {displayedStyles.map((style) => (
@@ -972,48 +1026,40 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                         )}
                       </button>
                     ))}
-                    
-                    {/* More Styles Card */}
-                    <button
-                      onClick={() => {
-                        onClose()
-                        router.push('/en/gallery')
-                      }}
-                      className="relative aspect-[4/3] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-coral transition-all bg-gradient-to-br from-gray-50 to-gray-100 hover:from-coral/5 hover:to-coral/10 flex flex-col items-center justify-center gap-2"
-                    >
-                      <Grid3x3 className="w-8 h-8 text-gray-400" />
-                      <span className="text-sm font-semibold text-gray-600">
-                        More Styles
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        Browse Gallery
-                      </span>
-                    </button>
                   </div>
                 </div>
 
-                {/* Aspect Ratio Selector - New Visual Design */}
+                {/* Aspect Ratio Selector - 3x2 Grid */}
                 <div className="mb-6">
                   <h3 className="text-lg font-bold mb-3">Output Size</h3>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     {aspectRatios.map((ratio) => (
                       <button
                         key={ratio.value}
                         onClick={() => setAspectRatio(ratio.value)}
                         className={cn(
-                          "flex flex-col items-center p-3 rounded-xl border-2 transition-all",
+                          "flex flex-col items-center p-3 rounded-xl border-2 transition-all hover:scale-105",
                           aspectRatio === ratio.value 
                             ? "border-coral bg-coral/5" 
                             : "border-gray-200 hover:border-gray-300"
                         )}
                       >
-                        {/* Visual Rectangle Icon */}
-                        <div 
-                          className="border-2 border-gray-400 mb-2"
+                        <div
+                          className={cn(
+                            "bg-gray-200 rounded mb-2",
+                            ratio.icon
+                          )}
                           style={ratio.style}
                         />
-                        <span className="text-xs font-semibold">{ratio.label}</span>
-                        <span className="text-[10px] text-gray-500">{ratio.dimensions}</span>
+                        <span className={cn(
+                          "text-xs font-medium text-center",
+                          aspectRatio === ratio.value ? "text-coral" : "text-gray-700"
+                        )}>
+                          {ratio.label}
+                        </span>
+                        <span className="text-[10px] text-gray-500 mt-0.5">
+                          {ratio.dimensions}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1102,103 +1148,155 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     )}
                   </div>
                 </div>
+
+                {/* AI Detected Features - Below Style Strength */}
+                {qualityCheckResult?.hasHeterochromia && (
+                  <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                    <div className="flex items-start gap-2">
+                      <Eye className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-blue-900">AI Detected: Heterochromia</p>
+                        <p className="text-xs text-blue-700 mt-1">
+                          {qualityCheckResult.heterochromiaDetails}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1 italic">
+                          Tip: Use 95% strength for best preservation
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* STEP C: GENERATING */}
           {step === 'generating' && (
-            <div className="flex flex-col items-center justify-center py-8 space-y-6">
-              {/* Progress Bar */}
-              <div className="w-full max-w-md space-y-4">
-                <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-coral to-orange-600 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
-                  <p className="text-lg text-gray-700 mt-2 min-h-[28px] font-sans">
-                    {funMessages[messageIndex]}
-                  </p>
-                  {/* Show selected aspect ratio */}
-                  <div className="mt-3 inline-flex items-center gap-2 bg-coral/10 text-coral px-3 py-1.5 rounded-full text-sm font-medium">
-                    <span>Creating in {aspectRatio} format</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Original Image with Magic Effect */}
-              <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
-                <div 
-                  className="relative overflow-hidden"
-                  style={{
-                    aspectRatio: aspectRatio === '1:1' ? '1/1' : 
-                                aspectRatio === '3:4' ? '3/4' : 
-                                aspectRatio === '9:16' ? '9/16' : 
-                                aspectRatio === '4:3' ? '4/3' : 
-                                aspectRatio === '16:9' ? '16/9' : '1/1'
-                  }}
-                >
-                  {/* User's Original Photo */}
-                  <img 
-                    src={previewUrl} 
-                    alt="Your pet" 
-                    className="w-full h-full object-cover opacity-70"
-                  />
-                  
-                  {/* Magic Overlay Effect - Animated Scan */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-coral/30 to-transparent animate-shimmer" 
-                       style={{
-                         backgroundSize: '200% 100%',
-                         animation: 'shimmer 2s infinite'
-                       }}
-                  />
-                  
-                  {/* Sparkle Particles */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-ping" />
-                    <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-                    <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-coral rounded-full animate-ping" style={{ animationDelay: '0.6s' }} />
-                    <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }} />
-                  </div>
-                  
-                  {/* Center Icon with Glow */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-coral rounded-full blur-xl opacity-60 animate-pulse" />
-                      <Sparkles className="w-16 h-16 text-white relative z-10 animate-bounce" />
+            <>
+            <div className="flex flex-col lg:flex-row gap-8 py-8">
+              {/* LEFT PANEL: Original Image with Magic Effect */}
+              <div className="lg:w-1/2 flex items-center justify-center">
+                <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
+                  <div 
+                    className="relative overflow-hidden"
+                    style={{
+                      aspectRatio: aspectRatio === '1:1' ? '1/1' : 
+                                  aspectRatio === '3:4' ? '3/4' : 
+                                  aspectRatio === '9:16' ? '9/16' : 
+                                  aspectRatio === '4:3' ? '4/3' : 
+                                  aspectRatio === '16:9' ? '16/9' : '1/1'
+                    }}
+                  >
+                    {/* User's Original Photo */}
+                    <img 
+                      src={previewUrl} 
+                      alt="Your pet" 
+                      className="w-full h-full object-cover opacity-70"
+                    />
+                    
+                    {/* Magic Overlay Effect - Animated Scan */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-coral/30 to-transparent animate-shimmer" 
+                         style={{
+                           backgroundSize: '200% 100%',
+                           animation: 'shimmer 2s infinite'
+                         }}
+                    />
+                    
+                    {/* Sparkle Particles */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-ping" />
+                      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                      <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-coral rounded-full animate-ping" style={{ animationDelay: '0.6s' }} />
+                      <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }} />
+                    </div>
+                    
+                    {/* Center Icon with Glow */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-coral rounded-full blur-xl opacity-60 animate-pulse" />
+                        <Sparkles className="w-16 h-16 text-white relative z-10 animate-bounce" />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              
-              {/* Add keyframe animation for shimmer */}
-              <style jsx>{`
-                @keyframes shimmer {
-                  0% { background-position: -200% 0; }
-                  100% { background-position: 200% 0; }
-                }
-                .animate-shimmer {
-                  animation: shimmer 2s infinite;
-                  background: linear-gradient(
-                    90deg,
-                    transparent 0%,
-                    rgba(255, 140, 66, 0.3) 50%,
-                    transparent 100%
-                  );
-                  background-size: 200% 100%;
-                }
-              `}</style>
 
-              {/* Warning Text */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-md">
-                <p className="text-sm text-amber-800 text-center">
-                  ⚠️ <strong>Please keep this tab open.</strong> Good art takes time!
-                </p>
+              {/* RIGHT PANEL: Progress + Fun Facts */}
+              <div className="lg:w-1/2 flex flex-col justify-center space-y-6 px-4">
+                {/* Progress Bar */}
+                <div className="space-y-4">
+                  <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-coral to-orange-600 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
+                    <p className="text-lg text-gray-700 mt-2 min-h-[28px] font-sans">
+                      {funMessages[messageIndex]}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Fun Facts Section */}
+                <div className="bg-gradient-to-br from-coral/10 to-orange-100/50 rounded-xl p-6 border-2 border-coral/20">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-coral rounded-full flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 mb-2">Did you know?</h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {FUN_FACTS[messageIndex % FUN_FACTS.length]}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configuration Summary */}
+                <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Style</span>
+                    <span className="font-medium text-gray-900">{STYLES.find(s => s.id === selectedStyle)?.label || selectedStyle}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Format</span>
+                    <span className="font-medium text-gray-900">{aspectRatio}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Realism</span>
+                    <span className="font-medium text-gray-900">{Math.round(strength * 100)}%</span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Warning Text */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-md mx-auto mt-6">
+              <p className="text-sm text-amber-800 text-center">
+                ⚠️ <strong>Please keep this tab open.</strong> Good art takes time!
+              </p>
+            </div>
+            
+            {/* Add keyframe animation for shimmer */}
+            <style jsx>{`
+              @keyframes shimmer {
+                0% { background-position: -200% 0; }
+                100% { background-position: 200% 0; }
+              }
+              .animate-shimmer {
+                animation: shimmer 2s infinite;
+                background: linear-gradient(
+                  90deg,
+                  transparent 0%,
+                  rgba(255, 140, 66, 0.3) 50%,
+                  transparent 100%
+                );
+                background-size: 200% 100%;
+              }
+            `}</style>
+            </>
           )}
 
           {/* SUCCESS: Show Result Modal when generation is complete */}
@@ -1210,9 +1308,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               generationId={generationId}
               remainingCredits={remainingCredits}
               isRewarded={false}
+              petName={petName}
               onShareSuccess={() => {
                 // Refresh credits or update UI if needed
                 console.log('✅ Share successful')
+              }}
+              generationMetadata={{
+                hasHeterochromia: qualityCheckResult?.hasHeterochromia,
+                heterochromiaDetails: qualityCheckResult?.heterochromiaDetails,
+                style: selectedStyle,
+                strength: strength
               }}
             />
           )}
