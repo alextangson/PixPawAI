@@ -343,6 +343,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           petType: 'pet',
           aspectRatio: aspectRatio,
           strength: strength,
+          petName: petName.trim(), // Pet name for Art Card title
         }),
       })
 

@@ -16,6 +16,33 @@ import sharp from 'sharp'
 // Logging disabled for performance - large objects cause 100% CPU usage
 
 /**
+ * Generate Art Card title from pet name and style
+ */
+function generateArtCardTitle(petName: string, styleName: string): string {
+  const styleKeywords: Record<string, string[]> = {
+    'Johannes Vermeer': ['Renaissance Portrait', 'Timeless Masterpiece', 'Classical Beauty'],
+    'Victorian-Royal': ['Royal Majesty', 'Regal Portrait', 'Noble Heritage'],
+    'Christmas-Vibe': ['Holiday Magic', 'Christmas Star', 'Festive Joy'],
+    'Flower-Crown': ['Blooming Beauty', 'Floral Princess', 'Garden Dream'],
+    'Birthday-Party': ['Birthday Star', 'Celebration Joy', 'Party Pup'],
+    'Embroidery-Art': ['Stitched Masterpiece', 'Textile Art', 'Embroidered Beauty'],
+    'Watercolor-Dream': ['Watercolor Wonder', 'Painted Dream', 'Artistic Vision'],
+    'Pixel-Mosaic': ['Pixel Perfect', 'Digital Mosaic', 'Retro Art'],
+    'Retro-Pop-Art': ['Pop Art Star', 'Retro Icon', 'Bold & Bright'],
+    'Spring-Vibes': ['Spring Blossom', 'Fresh & Floral', 'Springtime Joy']
+  }
+  
+  if (!petName || !petName.trim()) {
+    return `A ${styleName} Masterpiece`
+  }
+  
+  const keywords = styleKeywords[styleName] || ['Stunning Portrait']
+  const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)]
+  
+  return `${petName.trim()} - ${randomKeyword}`
+}
+
+/**
  * Pre-process image with blurred background padding
  * This ensures the output matches the target aspect ratio perfectly
  * while keeping the pet complete and centered
@@ -418,7 +445,8 @@ export async function POST(request: NextRequest) {
       prompt: userPrompt, 
       petType = 'pet', 
       aspectRatio = '1:1', // Default to square
-      strength // Accept from frontend but don't set default here
+      strength, // Accept from frontend but don't set default here
+      petName = '' // Pet name for Art Card title generation
     } = body
 
     if (!style || !userPrompt) {
@@ -592,6 +620,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Create generation record (status: processing)
+    // Generate Art Card title
+    const artCardTitle = generateArtCardTitle(petName, styleConfig.label || style)
+    
     const { data: generation, error: genError } = await supabase
       .from('generations')
       .insert({
@@ -604,6 +635,8 @@ export async function POST(request: NextRequest) {
         views: 0,
         likes: 0,
         is_rewarded: false,
+        pet_name: petName || null,
+        art_card_title: artCardTitle,
         metadata: {
           petType,
           userPrompt,

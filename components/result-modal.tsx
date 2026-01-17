@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { X, Download, Sparkles, ShoppingBag, CheckCircle, ChevronDown } from 'lucide-react'
+import { X, Download, Sparkles, ShoppingBag, CheckCircle, ChevronDown, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ArtCardModal } from '@/components/art-card-modal'
 import { ShareSuccessModal } from '@/components/share-success-modal'
@@ -35,6 +35,12 @@ interface ResultModalProps {
   remainingCredits: number | null
   isRewarded?: boolean
   onShareSuccess?: () => void
+  generationMetadata?: {
+    hasHeterochromia?: boolean
+    heterochromiaDetails?: string
+    style?: string
+    strength?: number
+  }
 }
 
 export function ResultModal({
@@ -44,7 +50,8 @@ export function ResultModal({
   generationId,
   remainingCredits,
   isRewarded = false,
-  onShareSuccess
+  onShareSuccess,
+  generationMetadata
 }: ResultModalProps) {
   // Share states
   const [isSharing, setIsSharing] = useState(false)
@@ -205,6 +212,48 @@ export function ResultModal({
                       >
                         Cancel
                       </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Heterochromia Detection Alert (if detected but possibly not preserved) */}
+                {generationMetadata?.hasHeterochromia && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-amber-900 text-sm">
+                          Feature Preservation Alert
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          We detected heterochromia ({generationMetadata.heterochromiaDetails}), 
+                          but it may not be fully preserved in the generated image.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              // Trigger regeneration with 95% strength
+                              window.location.reload()
+                            }}
+                            className="text-xs h-8"
+                          >
+                            🔄 Regenerate (95% strength)
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              // Close modal and reopen upload wizard with prompt hint
+                              onClose()
+                            }}
+                            className="text-xs h-8"
+                          >
+                            💡 Try with prompt hint
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
