@@ -126,12 +126,32 @@ If no pet detected:
       return parsed
     } catch (parseError) {
       console.error('❌ Failed to parse JSON from Qwen:', content)
-      // Fallback: assume good quality if parsing fails
+      console.error('Parse error:', parseError)
+      
+      // If parsing fails, check if content contains indicators of no pet
+      const lowerContent = content.toLowerCase()
+      if (lowerContent.includes('no pet') || lowerContent.includes('not a pet') || 
+          lowerContent.includes('no animal') || lowerContent.includes('not an animal')) {
+        return {
+          hasPet: false,
+          petType: 'none',
+          quality: 'unusable',
+          issues: ['no_pet'],
+          hasHeterochromia: false,
+          heterochromiaDetails: '',
+          breed: '',
+          complexPattern: false,
+          multiplePets: 0,
+          detectedColors: ''
+        }
+      }
+      
+      // Otherwise, proceed with caution - mark as poor quality to show warning
       return {
         hasPet: true,
         petType: 'unknown',
-        quality: 'good',
-        issues: [],
+        quality: 'poor',
+        issues: ['unclear_detection'],
         hasHeterochromia: false,
         heterochromiaDetails: '',
         breed: 'unknown',
@@ -142,7 +162,7 @@ If no pet detected:
     }
   } catch (error) {
     console.error('Qwen API Error:', error)
-    // On error, return good quality to not block user
+    // On API error, skip quality check and proceed
     return {
       hasPet: true,
       petType: 'unknown',

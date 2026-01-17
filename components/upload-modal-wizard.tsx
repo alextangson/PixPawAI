@@ -638,7 +638,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
               {/* Tips */}
               <div className="bg-blue-50 rounded-xl p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">📸 Tips for best results:</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Tips for best results:</h4>
                 <ul className="space-y-1 text-sm text-blue-800">
                   <li>• Clear, well-lit photos work best</li>
                   <li>• Face should be visible and in focus</li>
@@ -692,30 +692,30 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     </div>
                     
                     <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                      <p className="font-semibold text-blue-900 mb-2">💡 Tips for Better Results:</p>
+                      <p className="font-semibold text-blue-900 mb-2">Tips for Better Results:</p>
                       <ul className="text-sm space-y-1 text-blue-800">
-                        <li>✓ Good lighting (natural light works best)</li>
-                        <li>✓ Pet takes up 50%+ of the frame</li>
-                        <li>✓ Eyes are clearly visible</li>
-                        <li>✓ Sharp focus (not blurry)</li>
+                        <li>• Good lighting (natural light works best)</li>
+                        <li>• Pet takes up 50%+ of the frame</li>
+                        <li>• Eyes are clearly visible</li>
+                        <li>• Sharp focus (not blurry)</li>
                       </ul>
                     </div>
                     
                     <div className="flex gap-3">
                       <Button onClick={handleReupload} className="flex-1">
-                        📷 Upload Better Photo
+                        Upload Better Photo
                       </Button>
                       <Button 
                         onClick={handleContinueAnyway} 
                         variant="outline"
                         className="flex-1"
                       >
-                        ⚠️ Continue Anyway
+                        Continue Anyway
                       </Button>
                     </div>
                     
                     <p className="text-xs text-amber-700 mt-2 text-center">
-                      ⚠️ Continuing will use 1 credit, but results may be poor
+                      Continuing will use 1 credit, but results may be poor
                     </p>
                   </div>
                 </div>
@@ -776,7 +776,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                           {qualityCheckResult.heterochromiaDetails}
                         </p>
                         <p className="text-xs text-blue-600 mt-1">
-                          💡 Tip: Use 95% strength for best preservation
+                          Tip: Use 95% strength for best preservation
                         </p>
                       </div>
                     </div>
@@ -787,7 +787,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 <div className="w-full max-w-md">
                   <label className="block mb-2">
                     <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      🐾 Your Pet's Name
+                      Your Pet's Name
                       <span className="text-xs font-normal text-gray-500">(Optional)</span>
                     </span>
                   </label>
@@ -798,7 +798,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     className="text-lg h-12"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    💡 This name will appear on your art card
+                    This name will appear on your art card
                   </p>
                 </div>
               </div>
@@ -815,16 +815,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       className="text-xs text-coral hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
                     >
                       <Sparkles className="w-3 h-3" />
-                      换一批
+                      Shuffle
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {displayedStyles.map((style) => (
                       <button
                         key={style.id}
                         onClick={() => setSelectedStyle(style.id)}
                         className={cn(
-                          "relative rounded-xl overflow-hidden border-2 transition-all aspect-square",
+                          "relative rounded-xl overflow-hidden border-2 transition-all aspect-[4/3]",
                           selectedStyle === style.id 
                             ? "border-coral ring-2 ring-coral/20 scale-105" 
                             : "border-gray-200 hover:border-gray-300"
@@ -848,7 +848,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                         onClose()
                         router.push('/en/gallery')
                       }}
-                      className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-coral transition-all bg-gradient-to-br from-gray-50 to-gray-100 hover:from-coral/5 hover:to-coral/10 flex flex-col items-center justify-center gap-2"
+                      className="relative aspect-[4/3] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-coral transition-all bg-gradient-to-br from-gray-50 to-gray-100 hover:from-coral/5 hover:to-coral/10 flex flex-col items-center justify-center gap-2"
                     >
                       <Grid3x3 className="w-8 h-8 text-gray-400" />
                       <span className="text-sm font-semibold text-gray-600">
@@ -888,24 +888,23 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   </div>
                 </div>
 
-                {/* Prompt Input - Redesigned */}
-                <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-2 border-blue-100">
+                {/* Prompt Input */}
+                <div className="mb-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
                   <label className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-bold text-gray-900">
-                      ✨ Add Your Creative Touch
+                    <Sparkles className="w-4 h-4 text-coral" />
+                    <span className="text-sm font-semibold text-gray-900">
+                      Add Your Creative Touch
                     </span>
                     <span className="text-xs text-gray-500 font-normal">(Optional)</span>
                   </label>
                   <Input
                     value={userPrompt}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
-                    placeholder="💡 e.g., wearing sunglasses, at the beach, with flowers..."
-                    className="h-12 text-base border-2 border-blue-200 focus:border-blue-400 bg-white"
+                    placeholder="e.g., wearing sunglasses, at the beach, with flowers..."
+                    className="h-11 border-gray-300 focus:border-coral bg-white"
                   />
-                  <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
-                    <span>💬</span>
-                    <span>Describe what you'd like to add or change</span>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Describe what you'd like to add or change
                   </p>
                 </div>
                 
@@ -950,14 +949,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   />
                   
                   <div className="flex justify-between text-xs text-gray-600 px-1">
-                    <span className="flex items-center gap-1">
-                      <span>🎨</span>
-                      <span className="font-medium">More Creative</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="font-medium">More Realistic</span>
-                      <span>📸</span>
-                    </span>
+                    <span className="font-medium">More Creative</span>
+                    <span className="font-medium">More Realistic</span>
                   </div>
                   
                   {/* Dynamic Recommendation */}
@@ -970,11 +963,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       : "bg-amber-50 border-amber-200 text-amber-800"
                   )}>
                     {strength >= 0.9 ? (
-                      <>✅ <strong>Recommended:</strong> High accuracy preserves unique features</>
+                      <><strong>Recommended:</strong> High accuracy preserves unique features</>
                     ) : strength >= 0.80 ? (
-                      <>⚖️ <strong>Balanced:</strong> Good mix of style and accuracy</>
+                      <><strong>Balanced:</strong> Good mix of style and accuracy</>
                     ) : (
-                      <>🎨 <strong>Creative:</strong> More artistic, features may change</>
+                      <><strong>Creative:</strong> More artistic, features may change</>
                     )}
                   </div>
                 </div>
