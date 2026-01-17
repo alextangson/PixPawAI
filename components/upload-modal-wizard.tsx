@@ -63,6 +63,9 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [qualityCheckResult, setQualityCheckResult] = useState<QualityCheckResult | null>(null)
   const [showQualityWarning, setShowQualityWarning] = useState(false)
   const [isCheckingQuality, setIsCheckingQuality] = useState(false)
+  
+  // Style rotation for "换一批"
+  const [styleRotationIndex, setStyleRotationIndex] = useState(0)
 
   // Check user authentication
   useEffect(() => {
@@ -145,6 +148,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       style: { width: '28px', height: '35px' }
     }
   ]
+  
+  // Get 4 hot styles based on rotation index
+  const getDisplayedStyles = () => {
+    // Define hot style sets (4 styles per set)
+    const styleSets = [
+      ['Johannes Vermeer', 'Victorian-Royal', 'Watercolor-Dream', 'Christmas-Vibe'],
+      ['Spring-Vibes', 'Retro-Pop-Art', 'Flower-Crown', 'Birthday-Party'],
+      ['Smart-Casual', 'Embroidery-Art', 'Music-Lover', 'Fine-Sketch'],
+      ['Vintage-Traveler', 'Pixel-Mosaic', 'Johannes Vermeer', 'Watercolor-Dream']
+    ]
+    
+    const currentSet = styleSets[styleRotationIndex % styleSets.length]
+    return STYLES.filter(style => currentSet.includes(style.id))
+  }
+  
+  const displayedStyles = getDisplayedStyles()
 
   // Animate progress bar from 0% to 90% over 25 seconds
   useEffect(() => {
@@ -781,16 +800,25 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 
                 {/* Style Selector */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold mb-3">Choose a Style</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {STYLES.map((style) => (
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold">Choose a Style</h3>
+                    <button
+                      onClick={() => setStyleRotationIndex(prev => prev + 1)}
+                      className="text-xs text-coral hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      换一批
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {displayedStyles.map((style) => (
                       <button
                         key={style.id}
                         onClick={() => setSelectedStyle(style.id)}
                         className={cn(
                           "relative rounded-xl overflow-hidden border-2 transition-all aspect-square",
                           selectedStyle === style.id 
-                            ? "border-coral ring-2 ring-coral/20" 
+                            ? "border-coral ring-2 ring-coral/20 scale-105" 
                             : "border-gray-200 hover:border-gray-300"
                         )}
                       >
@@ -800,11 +828,28 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                         </div>
                         {selectedStyle === style.id && (
                           <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
-                            <CheckCircle className="w-3 h-3" />
+                            <CheckCircle className="w-4 h-4" />
                           </div>
                         )}
                       </button>
                     ))}
+                    
+                    {/* More Styles Card */}
+                    <button
+                      onClick={() => {
+                        onClose()
+                        router.push('/en/gallery')
+                      }}
+                      className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-coral transition-all bg-gradient-to-br from-gray-50 to-gray-100 hover:from-coral/5 hover:to-coral/10 flex flex-col items-center justify-center gap-2"
+                    >
+                      <Grid3x3 className="w-8 h-8 text-gray-400" />
+                      <span className="text-sm font-semibold text-gray-600">
+                        More Styles
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Browse Gallery
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -835,19 +880,25 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   </div>
                 </div>
 
-                {/* Prompt Input */}
-                <div className="mb-6">
-                  <label className="block mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      Your Prompt (Optional)
+                {/* Prompt Input - Redesigned */}
+                <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-2 border-blue-100">
+                  <label className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-bold text-gray-900">
+                      ✨ Add Your Creative Touch
                     </span>
+                    <span className="text-xs text-gray-500 font-normal">(Optional)</span>
                   </label>
                   <Input
                     value={userPrompt}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
-                    placeholder="e.g., wearing sunglasses, at the beach..."
-                    className="h-11"
+                    placeholder="💡 e.g., wearing sunglasses, at the beach, with flowers..."
+                    className="h-12 text-base border-2 border-blue-200 focus:border-blue-400 bg-white"
                   />
+                  <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
+                    <span>💬</span>
+                    <span>Describe what you'd like to add or change</span>
+                  </p>
                 </div>
                 
                 {/* Style Strength - Prominent (not hidden in Advanced) */}
@@ -919,15 +970,6 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     )}
                   </div>
                 </div>
-                
-                {/* Generate Button */}
-                <Button 
-                  onClick={handleGenerate}
-                  className="w-full h-12 text-lg"
-                  disabled={!selectedStyle}
-                >
-                  ✨ Generate Portrait
-                </Button>
               </div>
             </div>
           )}
