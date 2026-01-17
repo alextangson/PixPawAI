@@ -6,7 +6,9 @@
 import { createClient } from '@/lib/supabase/client'
 
 /**
- * 上传用户原图到 user-uploads bucket
+ * 上传用户原图到对应的 bucket
+ * - 游客上传到 guest-uploads bucket (24小时有效期)
+ * - 登录用户上传到 user-uploads bucket (1小时有效期)
  */
 export async function uploadUserImage(
   file: File,
@@ -15,13 +17,20 @@ export async function uploadUserImage(
   try {
     const supabase = createClient()
 
+    // 判断是游客还是用户
+    const isGuest = userId.startsWith('guest-')
+    const bucket = isGuest ? 'guest-uploads' : 'user-uploads'
+    const expiresIn = isGuest ? 86400 : 3600 // 游客 24h，用户 1h
+
     // 生成唯一文件名
     const fileExt = file.name.split('.').pop()
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-    // 上传到 user-uploads bucket (私有)
+    console.log(`📤 Uploading to ${bucket}: ${fileName}`)
+
+    // 上传到对应的 bucket (私有)
     const { data, error } = await supabase.storage
-      .from('user-uploads')
+      .from(bucket)
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
@@ -34,12 +43,14 @@ export async function uploadUserImage(
 
     // 获取私有 URL（需要签名）
     const { data: signedUrlData } = await supabase.storage
-      .from('user-uploads')
-      .createSignedUrl(data.path, 3600) // 1小时有效期
+      .from(bucket)
+      .createSignedUrl(data.path, expiresIn)
 
     if (!signedUrlData) {
       return { error: 'Failed to generate signed URL' }
     }
+
+    console.log(`✅ Upload successful to ${bucket}, expires in ${expiresIn}s`)
 
     return {
       url: signedUrlData.signedUrl,
