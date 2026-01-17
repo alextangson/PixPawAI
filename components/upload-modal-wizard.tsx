@@ -274,13 +274,21 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setQualityCheckResult(result)
       setIsCheckingQuality(false)
       
+      console.log('🔍 Quality Check Result:', result)
+      
+      // Check if no pet detected or quality is unusable
+      if (!result.hasPet || result.quality === 'unusable') {
+        setShowQualityWarning(true)
+        return
+      }
+      
       // Auto-proceed if quality is good/excellent
       if (result.quality === 'excellent' || result.quality === 'good') {
         setTimeout(() => {
           setStep('configure')
         }, 1500) // Short delay to show success
-      } else {
-        // Show warning for poor/unusable quality
+      } else if (result.quality === 'poor') {
+        // Show warning for poor quality
         setShowQualityWarning(true)
       }
     } catch (error) {
