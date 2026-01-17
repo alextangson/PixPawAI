@@ -1,6 +1,14 @@
 /**
  * Supabase Cron Job Setup for Guest Uploads Cleanup
  * 
+ * ⚠️ TODO: DO NOT RUN THIS YET (Phase 3 Feature)
+ * 
+ * Status: Deferred to growth stage
+ * Reason: MVP costs too low to justify automation
+ * Run when: Daily uploads > 100 OR monthly cost > $1
+ * 
+ * ---
+ * 
  * This SQL script sets up a daily cron job to automatically delete
  * guest-uploaded files older than 24 hours from the guest-uploads bucket.
  * 

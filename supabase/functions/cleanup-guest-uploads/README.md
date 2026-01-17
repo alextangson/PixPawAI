@@ -1,5 +1,20 @@
 # Cleanup Guest Uploads Edge Function
 
+> ⚠️ **TODO: NOT YET DEPLOYED (Phase 3 Feature)**
+> 
+> **Status**: Code complete, deployment deferred
+> 
+> **Reason**: MVP stage storage costs are minimal (~$0.01-0.03/month)
+> 
+> **Deploy when**: 
+> - Daily guest uploads exceed 100
+> - Monthly storage costs exceed $1
+> - Or after 3 months if forgotten to manually clean
+> 
+> **Manual cleanup**: See SQL query at bottom of this README
+
+---
+
 ## 📋 Purpose
 
 Automatically delete guest-uploaded files from the `guest-uploads` bucket that are older than 24 hours. This prevents storage costs from accumulating due to temporary files.
@@ -193,3 +208,26 @@ SELECT cron.schedule(
 - Only accessible via authenticated requests
 - Cron job runs server-side
 - No sensitive data exposed in logs
+
+---
+
+## 🖐️ Manual Cleanup (MVP Alternative)
+
+If not deploying automated cleanup yet, run this SQL periodically in Supabase SQL Editor:
+
+```sql
+-- Delete guest uploads older than 7 days
+DELETE FROM storage.objects 
+WHERE bucket_id = 'guest-uploads' 
+AND created_at < NOW() - INTERVAL '7 days';
+
+-- Check how much will be deleted (dry run)
+SELECT 
+  COUNT(*) as file_count,
+  pg_size_pretty(SUM(octet_length(metadata))) as estimated_size
+FROM storage.objects 
+WHERE bucket_id = 'guest-uploads' 
+AND created_at < NOW() - INTERVAL '7 days';
+```
+
+**Recommended frequency**: Weekly or monthly during MVP stage

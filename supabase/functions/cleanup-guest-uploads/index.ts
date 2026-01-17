@@ -6,6 +6,18 @@
  * 
  * This helps control storage costs by removing temporary guest files
  * that are no longer needed after their signed URLs expire.
+ * 
+ * ⚠️ TODO: DEPLOYMENT DEFERRED TO PHASE 3
+ * 
+ * Status: Code ready, not deployed
+ * Reason: MVP stage cost too low (~$0.01-0.03/month) to justify deployment
+ * Deploy when: Daily guest uploads > 100 OR monthly storage cost > $1
+ * Estimated time to deploy: 10-15 minutes
+ * 
+ * Manual cleanup alternative (run in Supabase SQL Editor):
+ *   DELETE FROM storage.objects 
+ *   WHERE bucket_id = 'guest-uploads' 
+ *   AND created_at < NOW() - INTERVAL '7 days';
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'

@@ -126,15 +126,24 @@ Upload → Quality Check → [GATE] → Configure → Generate
 
 ---
 
-#### 5. Automated Cleanup ✅ IMPLEMENTED
-**Status**: Active
+#### 5. Automated Cleanup 📝 PLANNED (Phase 3)
+**Status**: Code ready, not deployed
 
-**Implementation**: 
-- Supabase Edge Function deployed
-- Cron job scheduled (daily at 2:00 AM UTC)
+**Reason**: MVP stage costs too low (~$0.01-0.03/month) to justify deployment effort
+
+**Current solution**: Manual cleanup via SQL (weekly/monthly)
+
+**Deploy when**: 
+- Daily guest uploads > 100
+- Monthly storage cost > $1
+- Estimated deployment time: 10-15 minutes
+
+**Implementation ready**: 
+- Supabase Edge Function coded
+- Cron job SQL script prepared
 - Deletes files older than 24 hours
 
-**Impact**: Storage costs controlled, 97% cost reduction
+**Expected impact**: 97% storage cost reduction (when volume justifies it)
 
 ---
 
@@ -148,12 +157,18 @@ Upload → Quality Check → [GATE] → Configure → Generate
 ### Phase 2: This Week (High Priority)
 - [ ] Vercel KV + Rate Limiting (IP-based, 5 uploads/minute)
 - [ ] Cost monitoring alerts (Supabase + Replicate)
-- [x] Cleanup Edge Function (delete files > 24h old) ✅ COMPLETED
 
 ### Phase 3: Next Week (Important)
 - [ ] Cloudflare Turnstile CAPTCHA
 - [ ] IP blocking table (Supabase)
 - [ ] Admin dashboard for monitoring
+
+### Phase 3: Growth Stage (When DAU > 100)
+- [ ] Deploy automated cleanup Edge Function + Cron job
+  - Code ready in `supabase/functions/cleanup-guest-uploads/`
+  - 10-15 min deployment time
+  - Expected 97% storage cost reduction
+- [ ] Cost monitoring alerts (Supabase + Replicate)
 
 ### Phase 4: Future (Nice-to-Have)
 - [ ] Advanced anomaly detection
