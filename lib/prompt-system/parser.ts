@@ -62,9 +62,10 @@ const FEATURE_KEYWORDS: Record<FeatureType, string[]> = {
     'gentle', 'playful', 'serious', 'curious'
   ],
   breed: [
-    'husky', 'golden retriever', 'poodle', 'bulldog', 'beagle',
-    'persian', 'siamese', 'maine coon', 'tabby', 'chihuahua',
-    'labrador', 'german shepherd', 'corgi', 'shiba inu'
+    'husky', 'samoyed', 'golden retriever', 'poodle', 'bulldog', 'beagle',
+    'dalmatian', 'border collie', 'french bulldog', 'yorkshire terrier',
+    'persian', 'siamese', 'maine coon', 'british shorthair', 'tabby', 
+    'chihuahua', 'labrador', 'german shepherd', 'corgi', 'shiba inu'
   ],
   other: []
 }
@@ -205,16 +206,61 @@ export function parseUserPrompt(userInput: string): ParsedUserPrompt {
   // 检测语言
   const language = detectLanguage(positive)
   
-  // 分割为短语（用逗号、句号、分号分割）
-  const phrases = positive
+  // 🔍 Step 1: 先提取品种（优先级最高）
+  const features: ParsedFeature[] = []
+  let remainingText = positive
+  
+  // 检查多词品种（如 "Golden Retriever", "Siberian Husky"）
+  for (const breed of MULTI_WORD_BREEDS) {
+    const regex = new RegExp(`\\b${breed}\\b`, 'gi')
+    if (regex.test(remainingText)) {
+      features.push({
+        type: 'breed',
+        value: breed,
+        normalized: normalizeFeatureValue(breed, 'breed'),
+        priority: calculatePriority('breed', 'user'),
+        source: 'user'
+      })
+      // 从剩余文本中移除品种词
+      remainingText = remainingText.replace(regex, '').trim()
+      break // 只提取第一个找到的品种
+    }
+  }
+  
+  // 检查单词品种（如 "Samoyed", "Corgi", "Husky"）
+  if (features.length === 0) { // 如果没找到多词品种
+    const breedKeywords = FEATURE_KEYWORDS.breed
+    for (const breed of breedKeywords) {
+      const regex = new RegExp(`\\b${breed}\\b`, 'gi')
+      if (regex.test(remainingText)) {
+        features.push({
+          type: 'breed',
+          value: breed,
+          normalized: normalizeFeatureValue(breed, 'breed'),
+          priority: calculatePriority('breed', 'user'),
+          source: 'user'
+        })
+        // 从剩余文本中移除品种词
+        remainingText = remainingText.replace(regex, '').trim()
+        break
+      }
+    }
+  }
+  
+  // 🔍 Step 2: 解析剩余文本（颜色、风格等）
+  // 清理剩余文本中的多余空格和连词
+  remainingText = remainingText.replace(/\s+/g, ' ').replace(/\b(with|and|,)\b/gi, ',').trim()
+  
+  // 分割为短语
+  const phrases = remainingText
     .split(/[,，.。;；]/)
     .map(p => p.trim())
     .filter(p => p.length > 0)
   
   // 解析每个短语
-  const features: ParsedFeature[] = []
-  
   for (const phrase of phrases) {
+    if (phrase.length === 0) continue
+    
     const type = detectFeatureType(phrase)
     const normalized = normalizeFeatureValue(phrase, type)
     const priority = calculatePriority(type, 'user')
