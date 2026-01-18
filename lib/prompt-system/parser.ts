@@ -8,6 +8,10 @@ import { logPromptBuild } from '@/lib/logger'
 
 // 特征关键词映射
 const FEATURE_KEYWORDS: Record<FeatureType, string[]> = {
+  pet_type: [
+    'cat', 'dog', 'bird', 'rabbit', 'hamster', 'guinea pig',
+    'kitten', 'puppy', 'feline', 'canine', 'pet'
+  ],
   color: [
     'blue', 'golden', 'white', 'black', 'brown', 'orange', 'gray', 'grey',
     'red', 'pink', 'purple', 'green', 'yellow', 'tan', 'cream', 'dark', 'light',
@@ -144,6 +148,7 @@ function detectFeatureType(phrase: string): FeatureType {
  */
 function calculatePriority(type: FeatureType, source: 'user' | 'qwen' | 'style' | 'system'): number {
   const basePriority: Record<FeatureType, number> = {
+    pet_type: 10,     // 🚨 最高优先级！宠物类型必须在最前面
     breed: 9,
     color: 8,
     pattern: 8,
@@ -232,6 +237,17 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
   const features: ParsedFeature[] = []
   
   logPromptBuild('Parsing Qwen features', { qwenResult })
+  
+  // 🚨 最重要：宠物类型（必须在最前面）
+  if (qwenResult.petType && qwenResult.petType !== 'unknown') {
+    features.push({
+      type: 'pet_type',
+      value: qwenResult.petType,
+      normalized: qwenResult.petType.toLowerCase(), // cat, dog, bird, etc.
+      priority: 15, // 最高优先级！
+      source: 'qwen'
+    })
+  }
   
   // 品种
   if (qwenResult.breed && qwenResult.breed !== 'unknown') {

@@ -4,6 +4,8 @@
 
 // 提示词特征类型
 export type FeatureType = 
+  | 'pet_type'        // 🚨 宠物类型（cat, dog, bird）- 最重要！
+  | 'breed'           // 品种（husky, golden retriever）
   | 'color'           // 颜色（blue eyes, golden fur）
   | 'pattern'         // 花纹（spotted, striped）
   | 'action'          // 动作（running, sleeping）
@@ -13,7 +15,6 @@ export type FeatureType =
   | 'lighting'        // 光照（soft lighting, golden hour）
   | 'composition'     // 构图（close-up, full body）
   | 'mood'            // 情绪（happy, majestic）
-  | 'breed'           // 品种（husky, golden retriever）
   | 'other'           // 其他
 
 // 解析后的特征

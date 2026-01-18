@@ -25,8 +25,36 @@ export function buildPrompt(
   const qwenFeatures = features.filter(f => f.source === 'qwen')
   const styleFeatures = features.filter(f => f.source === 'style')
   
-  // 构建正面提示词
-  const positivePromptParts = features.map(f => f.normalized)
+  // 构建正面提示词 - 按重要性排序
+  // 1. 宠物类型必须在最前面（pet_type）
+  // 2. 然后是品种（breed）
+  // 3. 接着是物理特征（eyes, fur, colors, body, pose）
+  // 4. 最后是风格和配饰（accessories, style）
+  
+  const typeOrder: Record<string, number> = {
+    'pet_type': 0,      // 最重要：猫/狗/鸟等
+    'breed': 1,         // 品种
+    'eyes': 2,          // 眼睛特征（包括异瞳）
+    'fur': 3,           // 毛发
+    'colors': 4,        // 颜色
+    'body': 5,          // 体型
+    'age': 6,           // 年龄
+    'pose': 7,          // 姿势
+    'background': 8,    // 背景
+    'accessories': 9,   // 配饰（帽子、衣服等）
+    'style': 10,        // 风格特征
+    'quality': 11,      // 质量词
+    'other': 12         // 其他
+  }
+  
+  // 按类型排序特征
+  const sortedFeatures = [...features].sort((a, b) => {
+    const orderA = typeOrder[a.type] ?? 12
+    const orderB = typeOrder[b.type] ?? 12
+    return orderA - orderB
+  })
+  
+  const positivePromptParts = sortedFeatures.map(f => f.normalized)
   
   // 可选：添加默认质量词（如果没有质量特征）
   if (options?.includeQuality !== false) {
