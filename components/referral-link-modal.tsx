@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Copy, Check, Share2, Users, Gift } from 'lucide-react';
+import { X, Copy, Check, Share2, Users, Gift, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { signInWithGoogle } from '@/lib/auth/actions';
 
 interface ReferralLinkModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -26,10 +28,19 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
   const fetchReferralLink = async () => {
     setLoading(true);
     setError(null);
+    setIsUnauthorized(false);
 
     try {
       // Try to get existing referral link
       const getResponse = await fetch('/api/referral/generate');
+      
+      // Check if user is not logged in
+      if (getResponse.status === 401) {
+        setIsUnauthorized(true);
+        setLoading(false);
+        return;
+      }
+
       const getData = await getResponse.json();
 
       if (getData.hasReferralCode) {
@@ -44,6 +55,12 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
       const postResponse = await fetch('/api/referral/generate', {
         method: 'POST',
       });
+
+      if (postResponse.status === 401) {
+        setIsUnauthorized(true);
+        setLoading(false);
+        return;
+      }
 
       if (!postResponse.ok) {
         throw new Error('Failed to generate referral link');
@@ -60,6 +77,10 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSignIn = async () => {
+    await signInWithGoogle('/en/pricing');
   };
 
   const copyToClipboard = async () => {
@@ -118,6 +139,29 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral"></div>
+          </div>
+        ) : isUnauthorized ? (
+          /* Login Prompt for Guests */
+          <div className="text-center py-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-coral to-orange-600 rounded-full mb-4">
+              <LogIn className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              Sign In to Get Your Referral Link
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+              Create a free account to generate your referral link and start earning credits by inviting friends!
+            </p>
+            <Button
+              onClick={handleSignIn}
+              className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all"
+            >
+              <LogIn className="w-5 h-5 mr-2" />
+              Sign In with Google
+            </Button>
+            <p className="text-xs text-gray-500 mt-4">
+              Free to join • Get 2 free credits on signup
+            </p>
           </div>
         ) : error ? (
           <div className="text-center py-8">
