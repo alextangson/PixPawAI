@@ -39,8 +39,10 @@ export const FEATURE_FLAGS = {
    * 详细日志开关
    * - 开发环境默认开启，方便调试
    * - 生产环境默认关闭，避免性能影响
+   * 
+   * 🔍 临时启用：测试阶段需要查看 Prompt Builder 详细日志
    */
-  ENABLE_DETAILED_LOGS: process.env.NODE_ENV === 'development',
+  ENABLE_DETAILED_LOGS: true, // 临时启用以进行冲突检测调试
 }
 
 /**
