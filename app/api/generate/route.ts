@@ -599,20 +599,11 @@ export async function POST(request: NextRequest) {
         logger.promptBuild('User Features Parsed', userFeatures)
         
         // 2. Parse Qwen analysis results
-        const qwenFeatures = parseQwenFeatures({
-          breed: petComplexity.breed,
-          furColors: [], // Extract from petComplexity if available
-          hasHeterochromia: petComplexity.hasHeterochromia,
-          heterochromiaDetails: petComplexity.heterochromiaDetails,
-          complexPattern: petComplexity.complexPattern,
-          patternDetails: '',
-          multiplePets: petComplexity.multiplePets,
-          keyFeatures: petComplexity.keyFeatures || ''
-        })
+        const qwenFeatures = parseQwenFeatures(petComplexity)
         logger.promptBuild('Qwen Features Parsed', qwenFeatures)
         
-        // 3. Parse style template
-        const styleFeatures = parseStylePrompt(styleConfig.promptSuffix, styleConfig.id)
+        // 3. Parse style template (using 'suffix' as source type)
+        const styleFeatures = parseStylePrompt(styleConfig.promptSuffix, 'suffix')
         logger.promptBuild('Style Features Parsed', styleFeatures)
         
         // 4. Merge all features (user > qwen > style priority)
