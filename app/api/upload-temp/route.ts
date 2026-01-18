@@ -3,16 +3,24 @@
  * 用于 Test Lab 上传测试图片
  * 
  * 功能：
- * - 上传图片到 Supabase Storage (temp bucket)
+ * - 上传图片到 Supabase Storage
  * - 返回临时URL用于 Qwen 分析
- * - 图片会自动过期清理（通过 Supabase Storage 策略）
+ * - 使用用户认证，无需 Service Role Key
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // 验证用户登录
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
     const formData = await request.formData()
     const file = formData.get('file') as File
     
@@ -34,10 +42,9 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     
-    // 上传到 Supabase Storage
-    const supabase = createAdminClient()
+    // 上传到 Supabase Storage（使用用户ID作为路径）
     const fileName = `test-${Date.now()}-${file.name}`
-    const filePath = `test-lab/${fileName}`
+    const filePath = `${user.id}/test-lab/${fileName}`
     
     const { data, error } = await supabase.storage
       .from('generated-results')  // 使用现有的 bucket
