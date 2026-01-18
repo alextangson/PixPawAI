@@ -611,7 +611,25 @@ export async function POST(request: NextRequest) {
       try {
         // 1. Parse user input (from "Add Your Creative Touch" field)
         const userPromptResult = parseUserPrompt(userPrompt || '')
-        logger.promptBuild('User Features Parsed', userPromptResult)
+        logger.promptBuild('User Features Parsed (before filter)', userPromptResult)
+        
+        // 🎯 ENHANCEMENT MODE: User input only for scene/action/composition
+        // Base features (breed/color/pattern) come ONLY from Qwen
+        const ENHANCEMENT_TYPES = ['action', 'scene', 'composition', 'lighting', 'mood', 'style_modifier']
+        const userEnhancementFeatures = userPromptResult.features.filter(f => 
+          ENHANCEMENT_TYPES.includes(f.type)
+        )
+        
+        const filteredUserResult = {
+          ...userPromptResult,
+          features: userEnhancementFeatures
+        }
+        
+        logger.info('EnhancementMode', `Filtered user input: ${userPromptResult.features.length} → ${userEnhancementFeatures.length} (kept: ${ENHANCEMENT_TYPES.join(', ')})`)
+        if (userPromptResult.features.length !== userEnhancementFeatures.length) {
+          const removed = userPromptResult.features.filter(f => !ENHANCEMENT_TYPES.includes(f.type))
+          logger.info('EnhancementMode', `Removed base features from user input: ${removed.map(f => `${f.type}:${f.value}`).join(', ')}`)
+        }
         
         // 2. Parse Qwen analysis results
         // 🚨 CRITICAL: Use petType from detailed analysis (most accurate)
@@ -629,9 +647,15 @@ export async function POST(request: NextRequest) {
         const styleFeatures = parseStylePrompt(styleConfig.promptSuffix, 'suffix')
         logger.promptBuild('Style Features Parsed', styleFeatures)
         
-        // 4. Merge all features (user > qwen > style priority)
-        const allFeatures = [...userPromptResult.features, ...qwenFeatures, ...styleFeatures]
-        logger.promptBuild('All Features Before Cleaning', { count: allFeatures.length })
+        // 4. Merge all features (Enhancement Mode: Qwen base + User enhancement + Style)
+        // Priority: Base features (Qwen) → Enhancement features (User) → Style features
+        const allFeatures = [...qwenFeatures, ...filteredUserResult.features, ...styleFeatures]
+        logger.promptBuild('All Features Before Cleaning', { 
+          count: allFeatures.length,
+          qwenBase: qwenFeatures.length,
+          userEnhancement: filteredUserResult.features.length,
+          style: styleFeatures.length
+        })
         
         // 5. Clean conflicts based on priority
         const { cleaned, conflicts } = cleanConflicts(allFeatures)
@@ -641,7 +665,7 @@ export async function POST(request: NextRequest) {
         // 6. Build final prompts
         const promptResult = buildPrompt(cleaned, {
           includeQuality: true,
-          negativePrompt: userPromptResult.negativePrompt
+          negativePrompt: filteredUserResult.negativePrompt
         })
         
         // Construct final prompt with tier-specific strategy

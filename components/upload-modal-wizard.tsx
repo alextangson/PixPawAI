@@ -1193,18 +1193,18 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <label className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-coral" />
                     <span className="text-sm font-semibold text-gray-900">
-                      Add Your Creative Touch
+                      Customize Scene & Style
                     </span>
                     <span className="text-xs text-gray-500 font-normal">(Optional)</span>
                       </label>
                   <Input
                     value={userPrompt}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
-                    placeholder="e.g., wearing sunglasses, at the beach, with flowers..."
+                    placeholder="e.g., wearing a hat, on the beach, close-up portrait..."
                     className="h-11 border-gray-300 focus:border-coral bg-white"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Describe what you'd like to add or change
+                    Add accessories, change background, or adjust composition. Your pet's features stay the same!
                     </p>
                   </div>
                 
