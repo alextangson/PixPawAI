@@ -12,6 +12,9 @@ import { getStyleById } from '@/lib/styles'
 import { getStyleTierConfig, getDefaultTierConfig, adjustStrengthForComplexity } from '@/lib/style-tiers'
 import Replicate from 'replicate'
 import sharp from 'sharp'
+import { FEATURE_FLAGS } from '@/lib/feature-flags'
+import { logger } from '@/lib/logger'
+import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompts } from '@/lib/prompt-system'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -334,7 +337,8 @@ async function generateWithReplicate(
   generationId: string,
   imageUrl?: string,  // Pre-processed image URL (already correct size)
   promptStrength: number = 0.35,  // Dynamic strength based on style tier
-  guidance: number = 2.5  // Dynamic guidance based on style tier
+  guidance: number = 2.5,  // Dynamic guidance based on style tier
+  negativePrompt?: string  // Optional negative prompt from new system
 ): Promise<{ publicUrl: string; storagePath: string; originalPath?: string }> {
   const apiKey = process.env.REPLICATE_API_TOKEN
 
@@ -356,6 +360,12 @@ async function generateWithReplicate(
     disable_safety_checker: true,
     num_inference_steps: 50,
     guidance: guidance,  // Dynamic guidance based on style tier
+  }
+  
+  // Add negative prompt if provided (from new prompt system)
+  if (negativePrompt && negativePrompt.trim()) {
+    input.negative_prompt = negativePrompt
+    console.log('🚫 Negative prompt added:', negativePrompt.substring(0, 100) + '...')
   }
 
   // 🎨 Image-to-image mode
@@ -575,65 +585,136 @@ export async function POST(request: NextRequest) {
     
     // STEP E: CONSTRUCT TIER-APPROPRIATE PROMPT
     let finalPrompt = ''
+    let finalNegativePrompt = ''
     const styleName = styleConfig.label || '3D Pixar'
     
-    if (imageUrl) {
-      // Build feature preservation prefix
-      let featurePrefix = ''
+    if (FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM) {
+      // ========== NEW PROMPT SYSTEM ==========
+      logger.info('PromptGeneration', 'Using NEW prompt system')
+      logger.featureFlag('USE_NEW_PROMPT_SYSTEM', true)
       
-      // Add breed constraint if detected
-      if (petComplexity.breed !== 'unknown') {
-        featurePrefix += `${petComplexity.breed}, `
-      }
-      
-      // Add heterochromia constraint
-      if (petComplexity.hasHeterochromia && petComplexity.heterochromiaDetails) {
-        featurePrefix += `with heterochromia (${petComplexity.heterochromiaDetails}), `
-      }
-      
-      // Tier-specific prompt strategy
-      if (tierConfig.tier <= 2) {
-        // Tier 1-2: 写实/轻艺术 - 强调特征保留，但也需要清理颜色强制
-        const cleanSuffix = styleConfig.promptSuffix
-          .replace(/soft white fur/gi, 'fur')
-          .replace(/white and pink/gi, 'colorful')
-          .replace(/pink and white/gi, 'colorful')
-          .replace(/yellow and pink/gi, 'colorful')
-          .replace(/orange turtleneck/gi, 'turtleneck')
-          .replace(/olive green background/gi, 'solid background')
+      try {
+        // 1. Parse user input (from petName field)
+        const userFeatures = parseUserPrompt(petName || '')
+        logger.promptBuild('User Features Parsed', userFeatures)
         
-        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}. Keep original appearance, only apply ${styleName} artistic style.`
-      } else {
-        // Tier 3-4: 强艺术 - 平衡风格和特征
-        // 清理可能冲突的颜色/特征描述，保留艺术风格
-        const cleanSuffix = styleConfig.promptSuffix
-          .replace(/warm/gi, '')
-          .replace(/bright/gi, '')
-          .replace(/soft white fur/gi, 'fur')
-          .replace(/white and pink/gi, 'colorful')
-          .replace(/pink and white/gi, 'colorful')
-          .replace(/pastel pink and white/gi, 'pastel')
-          .replace(/yellow and pink/gi, 'colorful')
-          .replace(/blue and yellow/gi, 'colorful')
-          .replace(/orange turtleneck/gi, 'turtleneck')
-          .replace(/olive green background/gi, 'solid background')
+        // 2. Parse Qwen analysis results
+        const qwenFeatures = parseQwenFeatures({
+          breed: petComplexity.breed,
+          furColors: [], // Extract from petComplexity if available
+          hasHeterochromia: petComplexity.hasHeterochromia,
+          heterochromiaDetails: petComplexity.heterochromiaDetails,
+          complexPattern: petComplexity.complexPattern,
+          patternDetails: '',
+          multiplePets: petComplexity.multiplePets,
+          keyFeatures: petComplexity.keyFeatures || ''
+        })
+        logger.promptBuild('Qwen Features Parsed', qwenFeatures)
         
-        finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}. Based on reference image, maintain core breed characteristics and distinctive features.`
+        // 3. Parse style template
+        const styleFeatures = parseStylePrompt(styleConfig.promptSuffix, styleConfig.id)
+        logger.promptBuild('Style Features Parsed', styleFeatures)
+        
+        // 4. Merge all features (user > qwen > style priority)
+        const allFeatures = [...userFeatures, ...qwenFeatures, ...styleFeatures]
+        logger.promptBuild('All Features Before Cleaning', { count: allFeatures.length })
+        
+        // 5. Clean conflicts based on priority
+        const { cleanedFeatures, conflicts } = cleanConflicts(allFeatures)
+        logger.promptBuild('Conflicts Detected', conflicts)
+        logger.promptBuild('Cleaned Features', { count: cleanedFeatures.length })
+        
+        // 6. Build final prompts
+        const promptResult = buildPrompts({
+          features: cleanedFeatures,
+          tierConfig,
+          imageUrl: imageUrl || undefined,
+          userPrompt: userPrompt || undefined,
+          styleName
+        })
+        
+        finalPrompt = promptResult.positivePrompt
+        finalNegativePrompt = promptResult.negativePrompt
+        
+        logger.promptBuild('Final Prompts Built', {
+          positive: finalPrompt.substring(0, 150) + '...',
+          negative: finalNegativePrompt.substring(0, 100) + '...',
+          metadata: promptResult.metadata
+        })
+        
+        console.log('✨ NEW SYSTEM - Final Prompt:', finalPrompt.substring(0, 150) + '...')
+        
+      } catch (error: any) {
+        logger.error('PromptGeneration', `New system failed, falling back to old: ${error.message}`)
+        console.error('⚠️ New prompt system error, using fallback:', error)
+        
+        // Fallback to old system if new system fails
+        FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM && (FEATURE_FLAGS as any).USE_NEW_PROMPT_SYSTEM = false
       }
-      
-      // Add complexity-specific reminders
-      if (petComplexity.complexPattern) {
-        finalPrompt += ` Preserve intricate patterns and markings.`
-      }
-      if (petComplexity.multiplePets > 1) {
-        finalPrompt += ` Image contains ${petComplexity.multiplePets} pets, keep all visible.`
-      }
-    } else {
-      // TEXT-TO-IMAGE MODE
-      finalPrompt = `${userPrompt}${styleConfig.promptSuffix}. Professional quality, highly detailed.`
     }
     
-    console.log('📝 Final Prompt:', finalPrompt.substring(0, 150) + '...')
+    if (!FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM) {
+      // ========== OLD PROMPT SYSTEM (FALLBACK) ==========
+      logger.info('PromptGeneration', 'Using OLD prompt system (fallback)')
+      
+      if (imageUrl) {
+        // Build feature preservation prefix
+        let featurePrefix = ''
+        
+        // Add breed constraint if detected
+        if (petComplexity.breed !== 'unknown') {
+          featurePrefix += `${petComplexity.breed}, `
+        }
+        
+        // Add heterochromia constraint
+        if (petComplexity.hasHeterochromia && petComplexity.heterochromiaDetails) {
+          featurePrefix += `with heterochromia (${petComplexity.heterochromiaDetails}), `
+        }
+        
+        // Tier-specific prompt strategy
+        if (tierConfig.tier <= 2) {
+          // Tier 1-2: 写实/轻艺术 - 强调特征保留，但也需要清理颜色强制
+          const cleanSuffix = styleConfig.promptSuffix
+            .replace(/soft white fur/gi, 'fur')
+            .replace(/white and pink/gi, 'colorful')
+            .replace(/pink and white/gi, 'colorful')
+            .replace(/yellow and pink/gi, 'colorful')
+            .replace(/orange turtleneck/gi, 'turtleneck')
+            .replace(/olive green background/gi, 'solid background')
+          
+          finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}. Keep original appearance, only apply ${styleName} artistic style.`
+        } else {
+          // Tier 3-4: 强艺术 - 平衡风格和特征
+          // 清理可能冲突的颜色/特征描述，保留艺术风格
+          const cleanSuffix = styleConfig.promptSuffix
+            .replace(/warm/gi, '')
+            .replace(/bright/gi, '')
+            .replace(/soft white fur/gi, 'fur')
+            .replace(/white and pink/gi, 'colorful')
+            .replace(/pink and white/gi, 'colorful')
+            .replace(/pastel pink and white/gi, 'pastel')
+            .replace(/yellow and pink/gi, 'colorful')
+            .replace(/blue and yellow/gi, 'colorful')
+            .replace(/orange turtleneck/gi, 'turtleneck')
+            .replace(/olive green background/gi, 'solid background')
+          
+          finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}. Based on reference image, maintain core breed characteristics and distinctive features.`
+        }
+        
+        // Add complexity-specific reminders
+        if (petComplexity.complexPattern) {
+          finalPrompt += ` Preserve intricate patterns and markings.`
+        }
+        if (petComplexity.multiplePets > 1) {
+          finalPrompt += ` Image contains ${petComplexity.multiplePets} pets, keep all visible.`
+        }
+      } else {
+        // TEXT-TO-IMAGE MODE
+        finalPrompt = `${userPrompt}${styleConfig.promptSuffix}. Professional quality, highly detailed.`
+      }
+      
+      console.log('📝 OLD SYSTEM - Final Prompt:', finalPrompt.substring(0, 150) + '...')
+    }
 
     // 5. Check user credits
     const { data: profile, error: profileError } = await supabase
@@ -722,7 +803,8 @@ export async function POST(request: NextRequest) {
         generation.id,
         processedImageUrl,  // Pre-processed image (already correct dimensions)
         finalStrength,  // Use frontend or calculated strength
-        tierConfig.guidance  // Dynamic guidance based on tier
+        tierConfig.guidance,  // Dynamic guidance based on tier
+        finalNegativePrompt || undefined  // Negative prompt from new system
       )
       
       console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'calculated'}), guidance=${tierConfig.guidance}`)
