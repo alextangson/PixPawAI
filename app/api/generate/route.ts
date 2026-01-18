@@ -595,8 +595,8 @@ export async function POST(request: NextRequest) {
       
       try {
         // 1. Parse user input (from petName field)
-        const userFeatures = parseUserPrompt(petName || '')
-        logger.promptBuild('User Features Parsed', userFeatures)
+        const userPromptResult = parseUserPrompt(petName || '')
+        logger.promptBuild('User Features Parsed', userPromptResult)
         
         // 2. Parse Qwen analysis results
         const qwenFeatures = parseQwenFeatures(petComplexity)
@@ -607,7 +607,7 @@ export async function POST(request: NextRequest) {
         logger.promptBuild('Style Features Parsed', styleFeatures)
         
         // 4. Merge all features (user > qwen > style priority)
-        const allFeatures = [...userFeatures, ...qwenFeatures, ...styleFeatures]
+        const allFeatures = [...userPromptResult.features, ...qwenFeatures, ...styleFeatures]
         logger.promptBuild('All Features Before Cleaning', { count: allFeatures.length })
         
         // 5. Clean conflicts based on priority
