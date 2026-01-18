@@ -18,8 +18,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, Loader2 } from 'lucide-react'
+import { Upload, Loader2, Code } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
+import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
+import { ParsedFeature } from '@/lib/prompt-system/types'
 
 interface QwenResult {
   hasPet: boolean
@@ -42,6 +44,56 @@ export default function TestLabPage() {
   const [qwenResult, setQwenResult] = useState<QwenResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string>('')
+  
+  // Parser 测试状态
+  const [testPrompt, setTestPrompt] = useState<string>('')
+  const [parsedFeatures, setParsedFeatures] = useState<ParsedFeature[]>([])
+  const [showParserTest, setShowParserTest] = useState(false)
+  
+  // 测试 Parser
+  function handleTestParser() {
+    if (!testPrompt.trim()) {
+      setParsedFeatures([])
+      return
+    }
+    
+    const parsed = parseUserPrompt(testPrompt)
+    setParsedFeatures(parsed.features)
+    
+    console.log('Parser Test Result:', {
+      original: parsed.original,
+      language: parsed.detectedLanguage,
+      hasNegative: parsed.hasNegativePrompt,
+      features: parsed.features
+    })
+  }
+  
+  // 测试 Qwen Features Parser
+  function handleTestQwenParser() {
+    if (!qwenResult) {
+      alert('请先上传图片并获取 Qwen 分析结果')
+      return
+    }
+    
+    const qwenFeatures = parseQwenFeatures(qwenResult)
+    setParsedFeatures(qwenFeatures)
+    
+    console.log('Qwen Features:', qwenFeatures)
+  }
+  
+  // 测试 Style Parser
+  function handleTestStyleParser() {
+    const style = STYLES.find(s => s.id === selectedStyle)
+    if (!style || !style.promptSuffix) {
+      alert('当前风格没有 promptSuffix')
+      return
+    }
+    
+    const styleFeatures = parseStylePrompt(style.promptSuffix, 'suffix')
+    setParsedFeatures(styleFeatures)
+    
+    console.log('Style Features:', styleFeatures)
+  }
   
   // 上传图片
   async function handleImageUpload(file: File) {
@@ -279,6 +331,115 @@ export default function TestLabPage() {
         </Card>
       )}
       
+      {/* Phase 1: Prompt Parser 测试 */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">3. Prompt Parser 测试 (Phase 1)</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowParserTest(!showParserTest)}
+          >
+            <Code className="w-4 h-4 mr-2" />
+            {showParserTest ? '隐藏' : '显示'} Parser
+          </Button>
+        </div>
+        
+        {showParserTest && (
+          <div className="space-y-4">
+            {/* 测试输入 */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                输入测试提示词（支持中英文）
+              </label>
+              <textarea
+                value={testPrompt}
+                onChange={(e) => setTestPrompt(e.target.value)}
+                placeholder="例如: golden retriever, blue eyes, running in garden, negative: blurry"
+                className="w-full h-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            {/* 测试按钮 */}
+            <div className="flex gap-2">
+              <Button onClick={handleTestParser} variant="default">
+                解析用户提示词
+              </Button>
+              <Button 
+                onClick={handleTestQwenParser} 
+                variant="outline"
+                disabled={!qwenResult}
+              >
+                解析 Qwen 结果
+              </Button>
+              <Button 
+                onClick={handleTestStyleParser} 
+                variant="outline"
+              >
+                解析风格提示词
+              </Button>
+            </div>
+            
+            {/* 解析结果 */}
+            {parsedFeatures.length > 0 && (
+              <div className="border rounded-lg p-4 bg-blue-50">
+                <h3 className="font-semibold mb-3">解析结果（共 {parsedFeatures.length} 个特征）</h3>
+                <div className="space-y-2">
+                  {parsedFeatures.map((feature, index) => (
+                    <div 
+                      key={index}
+                      className="p-3 bg-white rounded border-l-4"
+                      style={{
+                        borderLeftColor: 
+                          feature.source === 'user' ? '#3b82f6' :
+                          feature.source === 'qwen' ? '#10b981' :
+                          feature.source === 'style' ? '#f59e0b' : '#6b7280'
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm">
+                          {feature.type}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            feature.source === 'user' ? 'bg-blue-100 text-blue-700' :
+                            feature.source === 'qwen' ? 'bg-green-100 text-green-700' :
+                            feature.source === 'style' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {feature.source}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
+                            优先级: {feature.priority}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        <span className="text-gray-500">原始:</span> {feature.value}
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        <span className="text-gray-500">标准化:</span> {feature.normalized}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* 提示信息 */}
+            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+              <strong>说明:</strong>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>蓝色标签 = 用户输入（优先级最高）</li>
+                <li>绿色标签 = Qwen 识别（优先级中等）</li>
+                <li>黄色标签 = 风格模板（优先级较低）</li>
+                <li>优先级数值越高，冲突时越优先保留</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </Card>
+      
       {/* 占位：后续Phase会添加的功能 */}
       {qwenResult && (
         <Card className="p-6 border-dashed">
@@ -286,10 +447,10 @@ export default function TestLabPage() {
             Phase 2-5 功能预览（即将上线）
           </h2>
           <div className="space-y-2 text-sm text-gray-500">
-            <p>Phase 2: 用户提示词解析器</p>
-            <p>Phase 3: promptSuffix 冲突清理器</p>
-            <p>Phase 4: 风格库数据库管理</p>
-            <p>Phase 5: 完整提示词构建流程展示</p>
+            <p>Phase 2: Conflict Cleaner - 冲突清理器</p>
+            <p>Phase 3: Style Library Database - 风格库数据库集成</p>
+            <p>Phase 4: Prompt Builder - 最终提示词构建器</p>
+            <p>Phase 5: API Integration - 完整生成流程集成</p>
           </div>
         </Card>
       )}
