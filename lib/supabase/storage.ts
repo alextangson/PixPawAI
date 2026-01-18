@@ -22,11 +22,12 @@ export async function uploadUserImage(
     const bucket = isGuest ? 'guest-uploads' : 'user-uploads'
     const expiresIn = isGuest ? 86400 : 3600 // 游客 24h，用户 1h
 
-    // 生成唯一文件名
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    // 生成唯一文件名（清理文件扩展名，移除特殊字符）
+    const fileExt = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const randomId = Math.random().toString(36).substring(7)
+    const fileName = `${userId}/${Date.now()}-${randomId}.${fileExt}`
 
-    console.log(`📤 Uploading to ${bucket}: ${fileName}`)
+    console.log(`Uploading to ${bucket}: ${fileName}`)
 
     // 上传到对应的 bucket (私有)
     const { data, error } = await supabase.storage
