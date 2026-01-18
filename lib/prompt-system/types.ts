@@ -75,7 +75,7 @@ export interface MergedPrompt {
 export interface PromptConflict {
   feature1: ParsedFeature
   feature2: ParsedFeature
-  conflictType: 'color' | 'pattern' | 'style' | 'composition'
+  conflictType: 'breed' | 'color' | 'pattern' | 'style' | 'composition'
   resolution: 'keep_higher_priority' | 'merge' | 'keep_user'
   winner: ParsedFeature
 }
