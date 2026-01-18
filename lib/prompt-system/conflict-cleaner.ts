@@ -5,6 +5,7 @@
 
 import { ParsedFeature, PromptConflict } from './types'
 import { logPromptBuild } from '@/lib/logger'
+import { isAssociatedWithBreed, areOppositeColors } from './breed-associations'
 
 // 冲突规则定义
 interface ConflictRule {
@@ -16,10 +17,12 @@ interface ConflictRule {
 /**
  * 检测颜色冲突
  * 例如: "blue eyes" vs "brown eyes"
+ * 新增: "golden" vs "black" (对立颜色)
  */
 function detectColorConflict(f1: ParsedFeature, f2: ParsedFeature): boolean {
   if (f1.type !== 'color' || f2.type !== 'color') return false
   
+  // 1. 检测同一部位的不同颜色
   const colorWords = ['eyes', 'fur', 'coat']
   
   for (const word of colorWords) {
@@ -29,6 +32,11 @@ function detectColorConflict(f1: ParsedFeature, f2: ParsedFeature): boolean {
         return true
       }
     }
+  }
+  
+  // 2. 检测对立颜色（如 golden vs black）
+  if (areOppositeColors(f1.normalized, f2.normalized)) {
+    return true
   }
   
   return false
@@ -261,6 +269,7 @@ export function cleanConflicts(features: ParsedFeature[]): {
   // Step 2: 检测并解决冲突
   const conflicts: PromptConflict[] = []
   const toRemove = new Set<number>()
+  const losingBreeds: string[] = []
   
   for (let i = 0; i < deduped.length; i++) {
     for (let j = i + 1; j < deduped.length; j++) {
@@ -272,8 +281,18 @@ export function cleanConflicts(features: ParsedFeature[]): {
         // 标记要移除的特征（失败者）
         if (conflict.winner === deduped[i]) {
           toRemove.add(j)
+          
+          // 如果是品种冲突，记录失败的品种
+          if (conflict.conflictType === 'breed') {
+            losingBreeds.push(deduped[j].normalized)
+          }
         } else {
           toRemove.add(i)
+          
+          // 如果是品种冲突，记录失败的品种
+          if (conflict.conflictType === 'breed') {
+            losingBreeds.push(deduped[i].normalized)
+          }
         }
         
         logPromptBuild('Conflict detected', {
@@ -288,13 +307,53 @@ export function cleanConflicts(features: ParsedFeature[]): {
   }
   
   // Step 3: 移除失败者
-  const cleaned = deduped.filter((_, index) => !toRemove.has(index))
+  let cleaned = deduped.filter((_, index) => !toRemove.has(index))
+  
+  // Step 4: 关联特征清理 - 移除与失败品种关联的视觉特征
+  if (losingBreeds.length > 0) {
+    const beforeAssociatedCleanup = cleaned.length
+    const associatedRemoved: ParsedFeature[] = []
+    
+    cleaned = cleaned.filter(feature => {
+      // 跳过品种类型（已经在Step 3处理）
+      if (feature.type === 'breed') return true
+      
+      // 检查是否与任何失败的品种关联
+      for (const losingBreed of losingBreeds) {
+        if (isAssociatedWithBreed(feature.normalized, losingBreed)) {
+          associatedRemoved.push(feature)
+          
+          logPromptBuild('Associated feature removed', {
+            feature: feature.value,
+            type: feature.type,
+            associatedBreed: losingBreed,
+            reason: 'Breed conflict cleanup'
+          })
+          
+          return false
+        }
+      }
+      
+      return true
+    })
+    
+    if (associatedRemoved.length > 0) {
+      logPromptBuild('Associated cleanup complete', {
+        losingBreeds,
+        featuresRemoved: associatedRemoved.length,
+        beforeCleanup: beforeAssociatedCleanup,
+        afterCleanup: cleaned.length
+      })
+    }
+  }
   
   logPromptBuild('Conflict cleaning complete', {
     originalCount: features.length,
     afterDedup: deduped.length,
-    afterCleaning: cleaned.length,
-    conflictsResolved: conflicts.length
+    afterConflictResolution: cleaned.length,
+    conflictsResolved: conflicts.length,
+    breedConflicts: losingBreeds.length,
+    finalCount: cleaned.length
   })
   
   return { cleaned, conflicts }
