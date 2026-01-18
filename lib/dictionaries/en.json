@@ -228,7 +228,14 @@
         "refund": "Refund Policy"
       }
     },
-    "copyright": "© 2026 PixPaw AI. All rights reserved."
+    "copyright": "© 2026 PixPaw AI. All rights reserved.",
+    "language": {
+      "label": "Language",
+      "languages": {
+        "en": "English",
+        "zh-CN": "简体中文"
+      }
+    }
   },
   "howToGuide": {
     "hero": {

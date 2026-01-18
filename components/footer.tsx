@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart } from 'lucide-react';
+import { LanguageSwitcher } from './language-switcher';
 
 interface FooterProps {
   dict: {
@@ -35,6 +36,13 @@ interface FooterProps {
         };
       };
       copyright: string;
+      language: {
+        label: string;
+        languages: {
+          en: string;
+          'zh-CN': string;
+        };
+      };
     };
   };
   lang: string;
@@ -141,14 +149,20 @@ export function Footer({ dict, lang }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8 text-center">
-          <p className="text-gray-400 text-sm flex items-center justify-center gap-2 flex-wrap">
-            <span>{dict.footer.copyright}</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="flex items-center gap-1">
-              Made with <Heart className="w-3 h-3 fill-coral text-coral inline" /> for pets
-            </span>
-          </p>
+        <div className="border-t border-gray-800 pt-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Left: Copyright */}
+            <p className="text-gray-400 text-sm flex items-center gap-2 flex-wrap">
+              <span>{dict.footer.copyright}</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="flex items-center gap-1">
+                Made with <Heart className="w-3 h-3 fill-coral text-coral inline" /> for pets
+              </span>
+            </p>
+            
+            {/* Right: Language Switcher */}
+            <LanguageSwitcher currentLang={lang} dict={dict} />
+          </div>
         </div>
       </div>
     </footer>
