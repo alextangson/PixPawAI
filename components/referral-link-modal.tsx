@@ -73,7 +73,7 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
   };
 
   const shareNatively = async () => {
-    if (navigator.share) {
+    if (typeof window !== 'undefined' && 'share' in navigator) {
       try {
         await navigator.share({
           title: 'PixPaw AI - Turn Your Pet Into 3D Art!',
@@ -203,8 +203,8 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
               </div>
             </div>
 
-            {/* Share Button */}
-            {navigator.share && (
+            {/* Share Button - Only show on supported browsers */}
+            {typeof window !== 'undefined' && 'share' in navigator && (
               <Button
                 onClick={shareNatively}
                 className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold py-3 mb-4"

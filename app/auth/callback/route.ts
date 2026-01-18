@@ -12,7 +12,7 @@ async function processReferralCode(
 ) {
   try {
     // Import admin client dynamically to avoid circular dependencies
-    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { createAdminClient } = await import('@/lib/supabase/server')
     const adminSupabase = createAdminClient()
 
     // 0. Check if user already has a referral code associated

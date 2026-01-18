@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     console.log('📥 Fetching image from:', imageUrl.substring(0, 100) + '...')
     
     const imageResponse = await fetch(imageUrl, {
-      signal: AbortSignal.timeout(10000) // 10 second timeout
+      signal: AbortSignal.timeout(20000) // 20 second timeout (increased for large images)
     })
     
     if (!imageResponse.ok) {
@@ -93,7 +93,7 @@ Output ONLY this JSON (no explanations):
         max_tokens: 100,
         temperature: 0.5
       }),
-      signal: AbortSignal.timeout(15000) // 15 second timeout for AI processing
+      signal: AbortSignal.timeout(30000) // 30 second timeout for AI processing (VL models are slow)
     })
 
     if (!response.ok) {
