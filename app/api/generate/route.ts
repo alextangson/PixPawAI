@@ -648,12 +648,14 @@ export async function POST(request: NextRequest) {
         logger.error('PromptGeneration', `New system failed, falling back to old: ${error.message}`)
         console.error('⚠️ New prompt system error, using fallback:', error)
         
-        // Fallback to old system if new system fails
-        FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM && (FEATURE_FLAGS as any).USE_NEW_PROMPT_SYSTEM = false
+        // Clear finalPrompt to trigger fallback to old system
+        finalPrompt = ''
+        finalNegativePrompt = ''
       }
     }
     
-    if (!FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM) {
+    // Use old system if new system is disabled OR if new system failed (finalPrompt is empty)
+    if (!FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM || !finalPrompt) {
       // ========== OLD PROMPT SYSTEM (FALLBACK) ==========
       logger.info('PromptGeneration', 'Using OLD prompt system (fallback)')
       
