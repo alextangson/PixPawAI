@@ -132,6 +132,7 @@ async function padImageWithBlur(
  */
 interface PetComplexity {
   petType?: string        // 🚨 CRITICAL: Pet type from detailed analysis (cat, dog, snake, etc.)
+  detectedColors?: string // 🎨 NEW: Detailed color description (e.g., "white and gray fur with tabby markings")
   hasHeterochromia: boolean
   heterochromiaDetails: string
   complexPattern: boolean
@@ -152,6 +153,7 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
     console.warn('⚠️ SILICONFLOW_API_KEY not configured, skipping vision analysis')
     return {
       petType: 'pet',  // Default fallback
+      detectedColors: '',
       hasHeterochromia: false,
       heterochromiaDetails: '',
       complexPattern: false,
@@ -181,7 +183,7 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
               },
               {
                 type: 'text',
-                text: '🔍 CRITICAL TASK: Analyze pet characteristics accurately\n\nYou are a pet analysis specialist. Your job is to:\n\n0. PET TYPE IDENTIFICATION (MOST IMPORTANT!):\n   - Identify the specific pet type: cat, dog, bird, rabbit, snake, lizard, turtle, hamster, guinea pig, ferret, fish, etc.\n   - Be specific and accurate\n   - This is the MOST CRITICAL field\n\n1. HETEROCHROMIA DETECTION (STRICT):\n   ⚠️ ONLY mark as TRUE if you can CLEARLY SEE both eyes AND they are VISIBLY DIFFERENT colors\n   - Look at LEFT eye color (blue, brown, green, amber, etc.)\n   - Look at RIGHT eye color\n   - Are they CLEARLY DIFFERENT? Only then = heterochromia\n   - Example: "left eye blue, right eye brown"\n   - If you can\'t see both eyes clearly: hasHeterochromia = false\n   - If both eyes look the same color: hasHeterochromia = false\n   - Do NOT assume or guess - only report what you can clearly see\n\n2. BREED IDENTIFICATION:\n   - Identify the actual breed of the pet in the photo\n   - Be accurate - do not assume or force a specific breed\n   - Common dog breeds: Golden Retriever, Border Collie, Corgi, Poodle, Labrador, German Shepherd\n   - Common cat breeds: Persian, British Shorthair, Siamese, Maine Coon\n   - If unsure, output "unknown"\n\n3. OTHER CHECKS:\n   - Complex patterns: spots, stripes, unique markings (be specific)\n   - Multiple pets: count how many animals are in the photo\n\nOutput ONLY this JSON (no markdown, no explanation):\n{\n  "petType": "cat",\n  "hasHeterochromia": true,\n  "heterochromiaDetails": "left eye blue, right eye brown",\n  "complexPattern": false,\n  "patternDetails": "",\n  "multiplePets": 1,\n  "breed": "Border Collie",\n  "keyFeatures": "heterochromia clearly visible"\n}\n\nIf NO heterochromia (most common):\n{"petType": "dog", "hasHeterochromia": false, "heterochromiaDetails": "", "complexPattern": false, "patternDetails": "", "multiplePets": 1, "breed": "Golden Retriever", "keyFeatures": "standard appearance"}'
+                text: '🔍 CRITICAL TASK: Analyze pet characteristics accurately\n\nYou are a pet analysis specialist. Your job is to:\n\n0. PET TYPE IDENTIFICATION (MOST IMPORTANT!):\n   - Identify the specific pet type: cat, dog, bird, rabbit, snake, lizard, turtle, hamster, guinea pig, ferret, fish, etc.\n   - Be specific and accurate\n   - This is the MOST CRITICAL field\n\n1. COLOR ANALYSIS (REQUIRED!):\n   - Describe the PRIMARY fur/feather/scale colors you see\n   - Be specific: "white and gray", "orange tabby", "black with white patches", "golden brown"\n   - Include markings: "tuxedo", "calico", "brindle"\n   - Output in detectedColors field\n\n2. PATTERN ANALYSIS (REQUIRED!):\n   - If complexPattern = true, specify pattern type in patternDetails:\n     * "stripes" or "tabby stripes" (for striped cats/animals)\n     * "spots" or "dalmatian spots" (for spotted animals)\n     * "patches" or "calico patches" (for multi-color patches)\n     * "brindle" (for tiger-stripe dogs)\n     * "merle" (for marbled patterns)\n   - If solid color, leave patternDetails empty\n\n3. HETEROCHROMIA DETECTION (STRICT):\n   ⚠️ ONLY mark as TRUE if you can CLEARLY SEE both eyes AND they are VISIBLY DIFFERENT colors\n   - Look at LEFT eye color (blue, brown, green, amber, etc.)\n   - Look at RIGHT eye color\n   - Are they CLEARLY DIFFERENT? Only then = heterochromia\n   - Example: "left eye blue, right eye brown"\n   - If you can\'t see both eyes clearly: hasHeterochromia = false\n   - If both eyes look the same color: hasHeterochromia = false\n\n4. BREED IDENTIFICATION:\n   - Identify the actual breed of the pet in the photo\n   - Be accurate - do not assume\n   - If unsure, output "unknown"\n\n5. KEY VISUAL FEATURES (IMPORTANT!):\n   - Describe VISIBLE features that define this pet\'s appearance\n   - Focus on: fur texture, distinctive markings, body shape, ear shape\n   - DO NOT describe actions or expressions (no "open mouth", "playing", etc.)\n   - Good examples: "fluffy long fur", "pointed ears", "short legs", "bushy tail"\n   - Bad examples: "open mouth", "happy expression", "looking at camera"\n\nOutput ONLY this JSON (no markdown, no explanation):\n{\n  "petType": "cat",\n  "detectedColors": "white and gray fur with tabby markings",\n  "hasHeterochromia": false,\n  "heterochromiaDetails": "",\n  "complexPattern": true,\n  "patternDetails": "tabby stripes",\n  "multiplePets": 1,\n  "breed": "American Shorthair",\n  "keyFeatures": "striped pattern, short fur, round face"\n}\n\nAnother example (dog):\n{"petType": "dog", "detectedColors": "golden cream colored fur", "hasHeterochromia": false, "heterochromiaDetails": "", "complexPattern": false, "patternDetails": "", "multiplePets": 1, "breed": "Golden Retriever", "keyFeatures": "fluffy long fur, floppy ears"}'
               }
             ]
           }
@@ -196,6 +198,7 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
       console.error('SiliconFlow Vision API error:', response.status, errorText.substring(0, 200))
       return {
         petType: 'pet',  // Default fallback
+        detectedColors: '',
         hasHeterochromia: false,
         heterochromiaDetails: '',
         complexPattern: false,
@@ -269,6 +272,8 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
   } catch (error: any) {
     console.error('❌ Vision analysis failed:', error.message)
     return {
+      petType: 'pet',
+      detectedColors: '',
       hasHeterochromia: false,
       heterochromiaDetails: '',
       complexPattern: false,
