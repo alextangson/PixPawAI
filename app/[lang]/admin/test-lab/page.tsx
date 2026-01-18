@@ -21,7 +21,8 @@ import { Card } from '@/components/ui/card'
 import { Upload, Loader2, Code } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
-import { ParsedFeature } from '@/lib/prompt-system/types'
+import { cleanConflicts, sortFeatures } from '@/lib/prompt-system/conflict-cleaner'
+import { ParsedFeature, PromptConflict } from '@/lib/prompt-system/types'
 
 interface QwenResult {
   hasPet: boolean
@@ -49,6 +50,11 @@ export default function TestLabPage() {
   const [testPrompt, setTestPrompt] = useState<string>('')
   const [parsedFeatures, setParsedFeatures] = useState<ParsedFeature[]>([])
   const [showParserTest, setShowParserTest] = useState(false)
+  
+  // Conflict Cleaner 测试状态
+  const [cleanedFeatures, setCleanedFeatures] = useState<ParsedFeature[]>([])
+  const [conflicts, setConflicts] = useState<PromptConflict[]>([])
+  const [showCleanerTest, setShowCleanerTest] = useState(false)
   
   // 测试 Parser
   function handleTestParser() {
@@ -93,6 +99,74 @@ export default function TestLabPage() {
     setParsedFeatures(styleFeatures)
     
     console.log('Style Features:', styleFeatures)
+  }
+  
+  // 测试冲突清理器
+  function handleTestCleaner() {
+    if (parsedFeatures.length === 0) {
+      alert('请先解析提示词获得特征列表')
+      return
+    }
+    
+    const { cleaned, conflicts: detectedConflicts } = cleanConflicts(parsedFeatures)
+    const sorted = sortFeatures(cleaned)
+    
+    setCleanedFeatures(sorted)
+    setConflicts(detectedConflicts)
+    setShowCleanerTest(true)
+    
+    console.log('Conflict Cleaner Result:', {
+      original: parsedFeatures.length,
+      cleaned: cleaned.length,
+      conflicts: detectedConflicts.length
+    })
+  }
+  
+  // 测试完整流程（Parser + Cleaner）
+  function handleTestFullFlow() {
+    if (!testPrompt.trim() && !qwenResult) {
+      alert('请输入提示词或上传图片')
+      return
+    }
+    
+    // 收集所有特征
+    const allFeatures: ParsedFeature[] = []
+    
+    // 1. 用户提示词
+    if (testPrompt.trim()) {
+      const userParsed = parseUserPrompt(testPrompt)
+      allFeatures.push(...userParsed.features)
+    }
+    
+    // 2. Qwen 特征
+    if (qwenResult) {
+      const qwenFeatures = parseQwenFeatures(qwenResult)
+      allFeatures.push(...qwenFeatures)
+    }
+    
+    // 3. 风格特征
+    const style = STYLES.find(s => s.id === selectedStyle)
+    if (style?.promptSuffix) {
+      const styleFeatures = parseStylePrompt(style.promptSuffix, 'suffix')
+      allFeatures.push(...styleFeatures)
+    }
+    
+    // 解析
+    setParsedFeatures(allFeatures)
+    
+    // 清理
+    const { cleaned, conflicts: detectedConflicts } = cleanConflicts(allFeatures)
+    const sorted = sortFeatures(cleaned)
+    
+    setCleanedFeatures(sorted)
+    setConflicts(detectedConflicts)
+    setShowCleanerTest(true)
+    
+    console.log('Full Flow Result:', {
+      total: allFeatures.length,
+      cleaned: sorted.length,
+      conflicts: detectedConflicts.length
+    })
   }
   
   // 上传图片
@@ -361,7 +435,7 @@ export default function TestLabPage() {
             </div>
             
             {/* 测试按钮 */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={handleTestParser} variant="default">
                 解析用户提示词
               </Button>
@@ -378,51 +452,153 @@ export default function TestLabPage() {
               >
                 解析风格提示词
               </Button>
+              <Button 
+                onClick={handleTestFullFlow} 
+                variant="default"
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                测试完整流程 (All-in-One)
+              </Button>
             </div>
             
             {/* 解析结果 */}
             {parsedFeatures.length > 0 && (
-              <div className="border rounded-lg p-4 bg-blue-50">
-                <h3 className="font-semibold mb-3">解析结果（共 {parsedFeatures.length} 个特征）</h3>
-                <div className="space-y-2">
-                  {parsedFeatures.map((feature, index) => (
-                    <div 
-                      key={index}
-                      className="p-3 bg-white rounded border-l-4"
-                      style={{
-                        borderLeftColor: 
-                          feature.source === 'user' ? '#3b82f6' :
-                          feature.source === 'qwen' ? '#10b981' :
-                          feature.source === 'style' ? '#f59e0b' : '#6b7280'
-                      }}
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">解析结果（共 {parsedFeatures.length} 个特征）</h3>
+                    <Button 
+                      onClick={handleTestCleaner}
+                      size="sm"
+                      variant="default"
+                      className="bg-orange-600 hover:bg-orange-700"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">
-                          {feature.type}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            feature.source === 'user' ? 'bg-blue-100 text-blue-700' :
-                            feature.source === 'qwen' ? 'bg-green-100 text-green-700' :
-                            feature.source === 'style' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {feature.source}
+                      运行冲突清理器
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {parsedFeatures.map((feature, index) => (
+                      <div 
+                        key={index}
+                        className="p-3 bg-white rounded border-l-4"
+                        style={{
+                          borderLeftColor: 
+                            feature.source === 'user' ? '#3b82f6' :
+                            feature.source === 'qwen' ? '#10b981' :
+                            feature.source === 'style' ? '#f59e0b' : '#6b7280'
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-sm">
+                            {feature.type}
                           </span>
-                          <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
-                            优先级: {feature.priority}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              feature.source === 'user' ? 'bg-blue-100 text-blue-700' :
+                              feature.source === 'qwen' ? 'bg-green-100 text-green-700' :
+                              feature.source === 'style' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {feature.source}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
+                              优先级: {feature.priority}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-700">
+                          <span className="text-gray-500">原始:</span> {feature.value}
+                        </div>
+                        <div className="text-sm text-gray-700">
+                          <span className="text-gray-500">标准化:</span> {feature.normalized}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-700">
-                        <span className="text-gray-500">原始:</span> {feature.value}
+                    ))}
+                  </div>
+                </div>
+                
+                {/* 冲突清理结果 */}
+                {showCleanerTest && (
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h3 className="font-semibold mb-3">
+                      清理后结果（共 {cleanedFeatures.length} 个特征，解决了 {conflicts.length} 个冲突）
+                    </h3>
+                    
+                    {/* 冲突详情 */}
+                    {conflicts.length > 0 && (
+                      <div className="mb-4 p-3 bg-red-50 rounded border border-red-200">
+                        <h4 className="font-semibold text-red-800 mb-2">检测到的冲突:</h4>
+                        <div className="space-y-2">
+                          {conflicts.map((conflict, index) => (
+                            <div key={index} className="p-2 bg-white rounded text-sm">
+                              <div className="font-medium text-red-700">
+                                {conflict.conflictType} 冲突
+                              </div>
+                              <div className="text-gray-700 mt-1">
+                                <span className="line-through">{conflict.feature1.value}</span>
+                                {' vs '}
+                                {conflict.winner === conflict.feature1 ? (
+                                  <span className="font-semibold text-green-600">{conflict.feature2.value}</span>
+                                ) : (
+                                  <span className="line-through">{conflict.feature2.value}</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                胜出: {conflict.winner.value} (优先级: {conflict.winner.priority}, {conflict.resolution})
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-700">
-                        <span className="text-gray-500">标准化:</span> {feature.normalized}
+                    )}
+                    
+                    {/* 清理后的特征 */}
+                    <div className="space-y-2">
+                      {cleanedFeatures.map((feature, index) => (
+                        <div 
+                          key={index}
+                          className="p-3 bg-white rounded border-l-4"
+                          style={{
+                            borderLeftColor: 
+                              feature.source === 'user' ? '#3b82f6' :
+                              feature.source === 'qwen' ? '#10b981' :
+                              feature.source === 'style' ? '#f59e0b' : '#6b7280'
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm">
+                              {feature.type}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                feature.source === 'user' ? 'bg-blue-100 text-blue-700' :
+                                feature.source === 'qwen' ? 'bg-green-100 text-green-700' :
+                                feature.source === 'style' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {feature.source}
+                              </span>
+                              <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
+                                优先级: {feature.priority}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            {feature.normalized}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* 最终提示词预览 */}
+                    <div className="mt-4 p-3 bg-white rounded border-2 border-green-300">
+                      <h4 className="font-semibold mb-2">最终提示词预览:</h4>
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {cleanedFeatures.map(f => f.normalized).join(', ')}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
             
