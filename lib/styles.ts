@@ -19,35 +19,35 @@ export const STYLES: Style[] = [
   {
     id: 'Christmas-Vibe',
     label: 'Merry Christmas',
-    src: 'iShot_2026-01-16_15.15.27.png',
+    src: '/styles/Christmas-Vibe.jpg',
     promptSuffix: ', wearing a fluffy red and white Santa hat, festive holiday spirit, bright joyful eyes, solid bold red background, high-end commercial photography, clean composition, warm and cheerful atmosphere, 8k resolution.',
     description: 'Festive holiday look with a classic Santa hat'
   },
   {
     id: 'Smart-Casual',
     label: 'Smart Casual',
-    src: 'iShot_2026-01-16_15.15.47.png',
+    src: '/styles/smart-casual.jpg',
     promptSuffix: ', wearing a cozy textured turtleneck sweater and a herringbone newsboy flat cap, professional pet photography, solid warm background, sharp focus on eyes, clean and stylish modern aesthetic.',
     description: 'Trendy look with a sweater and newsboy cap'
   },
   {
     id: 'Birthday-Party',
     label: 'Birthday Party',
-    src: 'iShot_2026-01-16_15.16.22.png',
+    src: '/styles/birthday-party.jpg',
     promptSuffix: ', celebrating a birthday, wearing a colorful striped party hat, sitting behind a vibrant birthday cake with a burning candle, blurred party background with balloons and fairy lights, warm indoor lighting, joyful celebration.',
     description: 'Cheerful birthday celebration with cake and hat'
   },
   {
     id: 'Music-Lover',
     label: 'Music Lover',
-    src: 'iShot_2026-01-16_15.17.26.png',
+    src: '/styles/music-lover.jpg',
     promptSuffix: ', wearing professional silver wired headphones around the neck, studio portrait, deep blue textured background, cinematic rim lighting, crisp fur details, cool and contemporary vibe, high-quality photography.',
     description: 'Cool studio portrait with silver headphones'
   },
   {
     id: 'Retro-Pop-Art',
     label: 'Retro Pop Art',
-    src: 'retro-pop-art.png',
+    src: '/styles/Pop-Art.jpg',
     promptSuffix: ', bold geometric shapes and flat color blocks, mid-century modern illustration style, vibrant contrasting colors, simplified features, clean outlines, playful and energetic composition, vintage poster aesthetic with subtle paper texture, trendy and eye-catching design',
     description: 'Bold retro poster with geometric shapes'
   }
