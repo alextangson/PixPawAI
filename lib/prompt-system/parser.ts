@@ -283,15 +283,27 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
     })
   }
   
-  // 异瞳
+  // 异瞳（最高优先级特征）
   if (qwenResult.hasHeterochromia) {
-    features.push({
-      type: 'color',
-      value: 'heterochromia eyes',
-      normalized: 'heterochromia eyes',
-      priority: calculatePriority('color', 'qwen') + 1, // 异瞳是特殊特征，提高优先级
-      source: 'qwen'
-    })
+    // 如果有具体的眼睛颜色描述，使用详细信息
+    if (qwenResult.heterochromiaDetails && qwenResult.heterochromiaDetails.trim() !== '') {
+      features.push({
+        type: 'color',
+        value: `heterochromia (${qwenResult.heterochromiaDetails})`,
+        normalized: `heterochromia, ${qwenResult.heterochromiaDetails}`,
+        priority: calculatePriority('color', 'qwen') + 3, // 异瞳是最独特的特征，最高优先级
+        source: 'qwen'
+      })
+    } else {
+      // 如果没有具体描述，使用通用描述
+      features.push({
+        type: 'color',
+        value: 'heterochromia eyes',
+        normalized: 'heterochromia eyes',
+        priority: calculatePriority('color', 'qwen') + 2,
+        source: 'qwen'
+      })
+    }
   }
   
   // 🆕 detectedColors (多个颜色)
@@ -334,6 +346,13 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
       .split(/[,，]/)
       .map((p: string) => p.trim())
       .filter((p: string) => p.length > 0)
+      .filter((p: string) => {
+        // 过滤掉重复的特征：如果已经单独处理了异瞳，跳过 keyFeatures 中的 "heterochromia"
+        if (qwenResult.hasHeterochromia && p.toLowerCase().includes('heterochromia')) {
+          return false
+        }
+        return true
+      })
     
     keyPhrases.forEach((phrase: string) => {
       const type = detectFeatureType(phrase)
