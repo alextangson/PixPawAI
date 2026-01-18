@@ -35,7 +35,11 @@ const FEATURE_KEYWORDS: Record<FeatureType, string[]> = {
   ],
   action: [
     'running', 'sleeping', 'sitting', 'standing', 'jumping', 'playing',
-    'looking', 'walking', 'lying', 'smiling', 'barking', 'meowing'
+    'looking', 'walking', 'lying', 'smiling', 'barking', 'meowing',
+    'wearing', 'holding', 'carrying',
+    // 配饰和装饰（关键！这些应该是动作/场景，不是基础颜色）
+    'hat', 'cap', 'sunglasses', 'glasses', 'scarf', 'collar', 'bow', 'tie',
+    'bandana', 'crown', 'headband', 'necklace', 'bowtie', 'costume', 'outfit'
   ],
   scene: [
     'garden', 'beach', 'park', 'forest', 'indoor', 'outdoor',
@@ -140,6 +144,20 @@ function detectFeatureType(phrase: string): FeatureType {
   for (const breed of MULTI_WORD_BREEDS) {
     if (lowerPhrase.includes(breed)) {
       return 'breed'
+    }
+  }
+  
+  // 🎯 关键修复：配饰词优先级高于颜色词
+  // "green hat" 应该是 action (配饰)，不是 color
+  const ACCESSORY_KEYWORDS = [
+    'hat', 'cap', 'sunglasses', 'glasses', 'scarf', 'collar', 'bow', 'tie',
+    'bandana', 'crown', 'headband', 'necklace', 'bowtie', 'costume', 'outfit',
+    'wearing', 'holding', 'carrying'
+  ]
+  
+  for (const accessory of ACCESSORY_KEYWORDS) {
+    if (lowerPhrase.includes(accessory)) {
+      return 'action'
     }
   }
   
