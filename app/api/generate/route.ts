@@ -15,6 +15,7 @@ import sharp from 'sharp'
 import { FEATURE_FLAGS } from '@/lib/feature-flags'
 import { logger } from '@/lib/logger'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompt } from '@/lib/prompt-system'
+import { startFilteredFeaturesCollection, logFilteredFeature, getFilteredFeatures } from '@/lib/prompt-system/conflict-cleaner'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -608,6 +609,9 @@ export async function POST(request: NextRequest) {
       logger.info('PromptGeneration', 'Using NEW prompt system')
       logger.featureFlag('USE_NEW_PROMPT_SYSTEM', true)
       
+      // 📊 启动被过滤特征收集（用于数据分析）
+      startFilteredFeaturesCollection()
+      
       try {
         // 1. Parse user input (from "Add Your Creative Touch" field)
         const userPromptResult = parseUserPrompt(userPrompt || '')
@@ -629,6 +633,19 @@ export async function POST(request: NextRequest) {
         if (userPromptResult.features.length !== userEnhancementFeatures.length) {
           const removed = userPromptResult.features.filter(f => !ENHANCEMENT_TYPES.includes(f.type))
           logger.info('EnhancementMode', `Removed base features from user input: ${removed.map(f => `${f.type}:${f.value}`).join(', ')}`)
+          
+          // 记录被过滤的基础特征（用于数据分析）
+          removed.forEach(feature => {
+            logFilteredFeature({
+              feature,
+              reason: 'enhancement_mode_filter',
+              context: {
+                originalUserInput: userPrompt,
+                styleId: style,
+                petType: finalPetType
+              }
+            })
+          })
         }
         
         // 2. Parse Qwen analysis results
@@ -657,10 +674,22 @@ export async function POST(request: NextRequest) {
           style: styleFeatures.length
         })
         
-        // 5. Clean conflicts based on priority
-        const { cleaned, conflicts } = cleanConflicts(allFeatures)
-        logger.promptBuild('Conflicts Detected', conflicts)
-        logger.promptBuild('Cleaned Features', { count: cleaned.length })
+        // 5. Clean conflicts based on priority (可通过 feature flag 禁用)
+        let cleaned = allFeatures
+        let conflicts: any[] = []
+        
+        if (!FEATURE_FLAGS.DISABLE_CONFLICT_CLEANING) {
+          // 默认：启用冲突检测（安全模式）
+          const result = cleanConflicts(allFeatures)
+          cleaned = result.cleaned
+          conflicts = result.conflicts
+          logger.promptBuild('Conflicts Detected', conflicts)
+          logger.promptBuild('Cleaned Features', { count: cleaned.length })
+        } else {
+          // 实验性：禁用冲突检测（自由模式）
+          logger.info('ExperimentalMode', 'Conflict cleaning DISABLED - All features passed to FLUX')
+          logger.featureFlag('DISABLE_CONFLICT_CLEANING', true)
+        }
         
         // 6. Build final prompts
         const promptResult = buildPrompt(cleaned, {
@@ -928,6 +957,53 @@ export async function POST(request: NextRequest) {
       } catch (cardError) {
         // Non-critical, log and continue
         console.error('⚠️ Failed to pre-generate Art Card (non-critical):', cardError)
+      }
+
+      // 9.6. Save filtered features log (data collection for Phase 2 analysis)
+      if (FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM) {
+        try {
+          const filteredFeatures = getFilteredFeatures()
+          
+          if (filteredFeatures.length > 0) {
+            console.log(`📊 Data Collection: ${filteredFeatures.length} features were filtered`)
+            
+            // Batch insert filtered features
+            const logsToInsert = filteredFeatures.map(filtered => ({
+              user_id: user.id,
+              generation_id: generation.id,
+              feature_type: filtered.feature.type,
+              feature_value: filtered.feature.value,
+              feature_normalized: filtered.feature.normalized,
+              feature_priority: filtered.feature.priority,
+              feature_source: filtered.feature.source,
+              filter_reason: filtered.reason,
+              conflict_with_type: filtered.conflictWith?.type || null,
+              conflict_with_value: filtered.conflictWith?.value || null,
+              original_user_input: filtered.context?.originalUserInput || userPrompt || null,
+              style_id: filtered.context?.styleId || style,
+              pet_type: filtered.context?.petType || petType || null,
+              metadata: {
+                feature: filtered.feature,
+                conflictWith: filtered.conflictWith,
+                context: filtered.context
+              }
+            }))
+            
+            const { error: logError } = await adminSupabase
+              .from('filtered_features_log')
+              .insert(logsToInsert)
+            
+            if (logError) {
+              // Non-critical, just log the error
+              console.error('⚠️ Failed to save filtered features log:', logError)
+            } else {
+              console.log(`✅ Saved ${logsToInsert.length} filtered features to database`)
+            }
+          }
+        } catch (logError) {
+          // Non-critical, don't block generation success
+          console.error('⚠️ Error in filtered features logging:', logError)
+        }
       }
 
       // 10. Return success result

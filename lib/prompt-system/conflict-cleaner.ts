@@ -7,6 +7,58 @@ import { ParsedFeature, PromptConflict } from './types'
 import { logPromptBuild } from '@/lib/logger'
 import { isAssociatedWithBreed, areOppositeColors } from './breed-associations'
 
+// 被过滤特征的日志接口
+export interface FilteredFeature {
+  feature: ParsedFeature
+  reason: 'enhancement_mode_filter' | 'conflict_detected' | 'breed_association'
+  conflictWith?: ParsedFeature
+  context?: {
+    originalUserInput?: string
+    styleId?: string
+    petType?: string
+  }
+}
+
+// 全局收集器（在 API 调用中使用）
+let filteredFeaturesCollector: FilteredFeature[] = []
+
+/**
+ * 开始新的特征收集会话
+ */
+export function startFilteredFeaturesCollection() {
+  filteredFeaturesCollector = []
+}
+
+/**
+ * 记录被过滤的特征
+ */
+export function logFilteredFeature(filtered: FilteredFeature) {
+  filteredFeaturesCollector.push(filtered)
+  
+  // 同时输出到控制台（如果详细日志开启）
+  logPromptBuild('Feature Filtered', {
+    type: filtered.feature.type,
+    value: filtered.feature.value,
+    source: filtered.feature.source,
+    reason: filtered.reason,
+    conflictWith: filtered.conflictWith?.value
+  })
+}
+
+/**
+ * 获取当前会话收集的所有被过滤特征
+ */
+export function getFilteredFeatures(): FilteredFeature[] {
+  return [...filteredFeaturesCollector]
+}
+
+/**
+ * 清空收集器
+ */
+export function clearFilteredFeatures() {
+  filteredFeaturesCollector = []
+}
+
 // 冲突规则定义
 interface ConflictRule {
   types: string[]  // 参与冲突的特征类型
@@ -282,12 +334,26 @@ export function cleanConflicts(features: ParsedFeature[]): {
         if (conflict.winner === deduped[i]) {
           toRemove.add(j)
           
+          // 记录被过滤的特征
+          logFilteredFeature({
+            feature: deduped[j],
+            reason: 'conflict_detected',
+            conflictWith: deduped[i]
+          })
+          
           // 如果是品种冲突，记录失败的品种
           if (conflict.conflictType === 'breed') {
             losingBreeds.push(deduped[j].normalized)
           }
         } else {
           toRemove.add(i)
+          
+          // 记录被过滤的特征
+          logFilteredFeature({
+            feature: deduped[i],
+            reason: 'conflict_detected',
+            conflictWith: deduped[j]
+          })
           
           // 如果是品种冲突，记录失败的品种
           if (conflict.conflictType === 'breed') {
@@ -322,6 +388,15 @@ export function cleanConflicts(features: ParsedFeature[]): {
       for (const losingBreed of losingBreeds) {
         if (isAssociatedWithBreed(feature.normalized, losingBreed)) {
           associatedRemoved.push(feature)
+          
+          // 记录被过滤的特征
+          logFilteredFeature({
+            feature: feature,
+            reason: 'breed_association',
+            context: {
+              petType: losingBreed // 记录是哪个品种导致的关联清理
+            }
+          })
           
           logPromptBuild('Associated feature removed', {
             feature: feature.value,

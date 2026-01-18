@@ -43,6 +43,21 @@ export const FEATURE_FLAGS = {
    * 🔍 临时启用：测试阶段需要查看 Prompt Builder 详细日志
    */
   ENABLE_DETAILED_LOGS: true, // 临时启用以进行冲突检测调试
+  
+  /**
+   * 禁用冲突清理（实验性）
+   * - false: 保留冲突检测，过滤掉冲突的特征（默认，安全）
+   * - true: 禁用冲突检测，所有特征直接传给 FLUX（实验性）
+   * 
+   * 🧪 用途：
+   * 1. A/B 测试：对比有/无冲突检测的生成质量
+   * 2. 高级用户模式：给予完全控制权
+   * 3. 数据收集：观察 FLUX 在冲突提示词下的表现
+   * 
+   * ⚠️ 风险：可能导致生成结果不可预测
+   * 默认: false（保护模式）
+   */
+  DISABLE_CONFLICT_CLEANING: process.env.NEXT_PUBLIC_DISABLE_CONFLICT_CLEANING === 'true',
 }
 
 /**
@@ -61,6 +76,7 @@ export function getAllFeatureFlags() {
     USE_DATABASE_STYLES: FEATURE_FLAGS.USE_DATABASE_STYLES,
     ENABLE_ADMIN_PANEL: FEATURE_FLAGS.ENABLE_ADMIN_PANEL,
     ENABLE_DETAILED_LOGS: FEATURE_FLAGS.ENABLE_DETAILED_LOGS,
+    DISABLE_CONFLICT_CLEANING: FEATURE_FLAGS.DISABLE_CONFLICT_CLEANING,
   }
 }
 
