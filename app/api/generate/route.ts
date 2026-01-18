@@ -609,8 +609,8 @@ export async function POST(request: NextRequest) {
       logger.featureFlag('USE_NEW_PROMPT_SYSTEM', true)
       
       try {
-        // 1. Parse user input (from petName field)
-        const userPromptResult = parseUserPrompt(petName || '')
+        // 1. Parse user input (from "Add Your Creative Touch" field)
+        const userPromptResult = parseUserPrompt(userPrompt || '')
         logger.promptBuild('User Features Parsed', userPromptResult)
         
         // 2. Parse Qwen analysis results
