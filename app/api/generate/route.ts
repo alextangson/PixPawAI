@@ -618,7 +618,7 @@ export async function POST(request: NextRequest) {
         // 6. Build final prompts
         const promptResult = buildPrompt(cleaned, {
           includeQuality: true,
-          negativePrompt: undefined
+          negativePrompt: userPromptResult.negativePrompt
         })
         
         // Construct final prompt with tier-specific strategy
