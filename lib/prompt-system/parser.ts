@@ -161,7 +161,7 @@ function detectFeatureType(phrase: string): FeatureType {
  */
 function calculatePriority(type: FeatureType, source: 'user' | 'qwen' | 'style' | 'system'): number {
   const basePriority: Record<FeatureType, number> = {
-    pet_type: 10,     // 🚨 最高优先级！宠物类型必须在最前面
+    pet_type: 15,     // 🚨 最高优先级！宠物类型必须在最前面
     breed: 9,
     color: 8,
     pattern: 8,
