@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { BRANDING } from '@/lib/constants/branding'
 import { ArtCardModal } from '@/components/art-card-modal'
-import { ShareSuccessModal } from '@/components/share-success-modal'
 import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
 import {
   DropdownMenu,
@@ -93,11 +92,6 @@ export function ResultModal({
   // Art Card Modal
   const [artCardModalOpen, setArtCardModalOpen] = useState(false)
   
-  // Share Success Modal
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [successShareCardUrl, setSuccessShareCardUrl] = useState('')
-  const [successSlogan, setSuccessSlogan] = useState('')
-  
   // Shop Fake Door Dialog
   const [shopFakeDoorOpen, setShopFakeDoorOpen] = useState(false)
 
@@ -168,12 +162,8 @@ export function ResultModal({
       setIsShared(true)
       setShowShareInput(false)
 
-      // Show success modal with share card
-      if (result.share_card_url && result.slogan) {
-        setSuccessShareCardUrl(result.share_card_url)
-        setSuccessSlogan(result.slogan)
-        setShowSuccessModal(true)
-      }
+      // Open Art Card Modal directly
+      setArtCardModalOpen(true)
 
       // Notify parent
       if (onShareSuccess) {
@@ -842,22 +832,6 @@ export function ResultModal({
           petName={petName}
           onTitleUpdate={(newTitle) => {
             setShareTitle(newTitle)
-          }}
-        />
-      )}
-
-      {/* Share Success Modal */}
-      {showSuccessModal && (
-        <ShareSuccessModal
-          isOpen={showSuccessModal}
-          onClose={() => setShowSuccessModal(false)}
-          shareCardUrl={successShareCardUrl}
-          slogan={successSlogan}
-          generationId={generationId}
-          title={shareTitle}
-          onSloganRefresh={(newUrl, newSlogan) => {
-            setSuccessShareCardUrl(newUrl)
-            setSuccessSlogan(newSlogan)
           }}
         />
       )}

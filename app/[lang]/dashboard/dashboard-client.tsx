@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GalleryTabRefactored as GalleryTab } from '@/components/dashboard/gallery-tab-refactored'
@@ -16,12 +16,24 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ user, profile, generations: initialGenerations, totalGenerationsCount }: DashboardClientProps) {
-  const [activeTab, setActiveTab] = useState('gallery')
-  const [generations, setGenerations] = useState(initialGenerations)
+  const searchParams = useSearchParams()
   const router = useRouter()
+  
+  // Read tab from URL, default to 'gallery'
+  const urlTab = searchParams.get('tab') || 'gallery'
+  const [activeTab, setActiveTab] = useState(urlTab)
+  const [generations, setGenerations] = useState(initialGenerations)
 
   // Calculate succeeded generations count (real-time)
   const succeededCount = generations.filter(g => g.status === 'succeeded').length
+
+  // Sync activeTab with URL parameter
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'gallery'
+    if (tab !== activeTab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams, activeTab])
 
   // Update local state when server data changes
   useEffect(() => {

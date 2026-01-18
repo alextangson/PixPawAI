@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
-async function resolveParams(params: Promise<{ id: string }> | { id: string }): Promise<{ id: string }> {
-  return await Promise.resolve(params)
-}
-
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await resolveParams(params)
-    const { id } = resolvedParams
+    const { id } = await params
     const supabase = createAdminClient()
 
     const { data, error } = await supabase
@@ -41,11 +36,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await resolveParams(params)
-    const { id } = resolvedParams
+    const { id } = await params
     const supabase = createAdminClient()
     const body = await request.json()
 
@@ -73,11 +67,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await resolveParams(params)
-    const { id } = resolvedParams
+    const { id } = await params
     const supabase = createAdminClient()
 
     const { error } = await supabase

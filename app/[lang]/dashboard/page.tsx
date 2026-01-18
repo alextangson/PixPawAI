@@ -21,13 +21,13 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  // Fetch user's generations (initial batch of 50)
+  // Fetch user's generations (initial batch of 20 for faster loading)
   const { data: generations } = await supabase
     .from('generations')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(20)
 
   // Get total count for pagination
   const { count: totalCount } = await supabase

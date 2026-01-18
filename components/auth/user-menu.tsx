@@ -9,9 +9,10 @@ import Link from 'next/link'
 
 interface UserMenuProps {
   user: User
+  lang?: string
 }
 
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu({ user, lang = 'en' }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [credits, setCredits] = useState<number | null>(null)
@@ -65,12 +66,6 @@ export function UserMenu({ user }: UserMenuProps) {
           <div className="w-10 h-10 bg-gradient-to-br from-coral to-orange-600 rounded-full flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform">
             {getInitials()}
           </div>
-          {/* Credits Badge (Desktop Only) */}
-          {credits !== null && (
-            <div className="hidden md:flex absolute -bottom-1 -right-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full w-5 h-5 items-center justify-center shadow-md border-2 border-white">
-              {credits > 99 ? '99+' : credits}
-            </div>
-          )}
         </div>
         {/* Credits Text (Desktop Only) */}
         {credits !== null && (
@@ -120,8 +115,9 @@ export function UserMenu({ user }: UserMenuProps) {
             {/* Menu Items */}
             <div className="py-2">
               <Link
-                href="/en/dashboard?tab=gallery"
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                href={`/${lang}/dashboard?tab=gallery`}
+                prefetch={true}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <Image className="w-4 h-4" />
@@ -129,20 +125,22 @@ export function UserMenu({ user }: UserMenuProps) {
               </Link>
 
               <Link
-                href="/en/dashboard?tab=credits"
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center justify-between group"
+                href={`/${lang}/dashboard?tab=credits`}
+                prefetch={true}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center justify-between group transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <span className="flex items-center gap-3">
-                  <CreditCard className="w-4 h-4 group-hover:text-coral" />
+                  <CreditCard className="w-4 h-4 group-hover:text-coral transition-colors" />
                   Buy Credits
                 </span>
                 <span className="text-xs text-coral font-semibold">→</span>
               </Link>
 
               <Link
-                href="/en/dashboard?tab=settings"
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                href={`/${lang}/dashboard?tab=settings`}
+                prefetch={true}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <SettingsIcon className="w-4 h-4" />

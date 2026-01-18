@@ -46,7 +46,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ lang: 
     .eq('is_public', true)
     .not('output_url', 'is', null)
     .order('created_at', { ascending: false })
-    .limit(30);  // Reduced from 100 to 30 for better initial load performance
+    .limit(12);  // Reduced to 12 for faster initial load - infinite scroll will load more
 
   if (error) {
     logger.error('Gallery', error);

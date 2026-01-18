@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
 import { Search, Sparkles, X, Eye, Heart } from 'lucide-react';
@@ -49,7 +49,7 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
   const [hasLiked, setHasLiked] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<GalleryImage[]>(initialImages);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(initialImages.length >= 30);
+  const [hasMore, setHasMore] = useState(initialImages.length >= 12);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -66,6 +66,101 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
       }
     }
   }, [lang]);
+
+  // Load more images function
+  const loadMoreImages = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      // Build filter parameter
+      let petTypeFilter = '';
+      if (activeFilter !== 'All') {
+        const categoryMap: Record<string, string> = {
+          'Dogs': 'dog',
+          'Cats': 'cat',
+          'Rabbits': 'rabbit',
+          'Small Pets': 'hamster,guinea pig,gerbil,mouse,rat,ferret,chinchilla,hedgehog',
+          'Birds': 'bird,parrot,parakeet,cockatiel,macaw,canary,finch',
+          'Reptiles': 'lizard,gecko,snake,turtle,tortoise,iguana,chameleon',
+          'Farm & Other': 'horse,pony,cow,pig,sheep,goat,chicken,duck,donkey,unknown'
+        };
+        petTypeFilter = categoryMap[activeFilter] || '';
+      }
+
+      const params = new URLSearchParams({
+        offset: images.length.toString(),
+        limit: '12',
+        ...(petTypeFilter && { petType: petTypeFilter }),
+        ...(searchQuery && { query: searchQuery })
+      });
+
+      const response = await fetch(`/api/gallery/load-more?${params}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to load more images');
+      }
+
+      const data = await response.json();
+      const newImages = data.images || [];
+
+      if (newImages.length > 0) {
+        setImages((prev) => [...prev, ...newImages]);
+      }
+
+      // If we got fewer than 12 images, we've reached the end
+      if (newImages.length < 12) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Failed to load more images:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, activeFilter, searchQuery, images.length]);
+
+  // Reset and reload when filter or search changes
+  useEffect(() => {
+    const reloadImages = async () => {
+      setIsLoadingMore(true);
+      try {
+        // Build filter parameter
+        let petTypeFilter = '';
+        if (activeFilter !== 'All') {
+          const categoryMap: Record<string, string> = {
+            'Dogs': 'dog',
+            'Cats': 'cat',
+            'Rabbits': 'rabbit',
+            'Small Pets': 'hamster,guinea pig,gerbil,mouse,rat,ferret,chinchilla,hedgehog',
+            'Birds': 'bird,parrot,parakeet,cockatiel,macaw,canary,finch',
+            'Reptiles': 'lizard,gecko,snake,turtle,tortoise,iguana,chameleon',
+            'Farm & Other': 'horse,pony,cow,pig,sheep,goat,chicken,duck,donkey,unknown'
+          };
+          petTypeFilter = categoryMap[activeFilter] || '';
+        }
+
+        const params = new URLSearchParams({
+          offset: '0',
+          limit: '12',
+          ...(petTypeFilter && { petType: petTypeFilter }),
+          ...(searchQuery && { query: searchQuery })
+        });
+
+        const response = await fetch(`/api/gallery/load-more?${params}`);
+        if (!response.ok) throw new Error('Failed to reload images');
+
+        const data = await response.json();
+        setImages(data.images || []);
+        setHasMore((data.images || []).length >= 12);
+      } catch (error) {
+        console.error('Failed to reload images:', error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    };
+
+    reloadImages();
+  }, [activeFilter, searchQuery]);
 
   useEffect(() => {
     const imageId = searchParams.get('id');
@@ -87,7 +182,7 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
           loadMoreImages();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '200px' }
     );
 
     const sentinel = document.getElementById('gallery-sentinel');
@@ -100,45 +195,16 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
         observer.unobserve(sentinel);
       }
     };
-  }, [hasMore, isLoadingMore, images.length]);
-
-  const loadMoreImages = async () => {
-    if (isLoadingMore || !hasMore) return;
-
-    setIsLoadingMore(true);
-    try {
-      const response = await fetch(
-        `/api/gallery/load-more?offset=${images.length}&limit=30`,
-        { method: 'GET' }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to load more images');
-      }
-
-      const data = await response.json();
-      const newImages = data.images || [];
-
-      if (newImages.length > 0) {
-        setImages((prev) => [...prev, ...newImages]);
-      }
-
-      // If we got fewer than 30 images, we've reached the end
-      if (newImages.length < 30) {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('Failed to load more images:', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
+  }, [hasMore, isLoadingMore, loadMoreImages]);
 
   // Helper function to detect pet category - now uses pet_type field from database
   const detectPetCategory = (item: GalleryImage): string => {
     // First, try to use the pet_type field from database (set during sharing)
     if (item.pet_type) {
       const petType = item.pet_type.toLowerCase();
+      
+      // Handle unknown or unrecognized pet types
+      if (petType === 'unknown') return 'Farm & Other';
       
       // Map pet_type to filter categories
       if (petType === 'dog') return 'Dogs';
@@ -164,18 +230,8 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
     return 'Dogs'; // Default fallback
   };
 
-  const filteredItems = images.filter(item => {
-    const matchesSearch =
-      searchQuery === '' ||
-      (item.title && item.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.alt_text && item.alt_text.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.prompt && item.prompt.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesFilter =
-      activeFilter === 'All' || detectPetCategory(item) === activeFilter;
-
-    return matchesSearch && matchesFilter;
-  });
+  // No need for client-side filtering anymore since we do it server-side
+  const filteredItems = images;
 
   const handleImageClick = async (item: GalleryImage) => {
     setSelectedImage(item);
@@ -344,10 +400,11 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
                   onClick={() => handleImageClick(item)}
                   className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer break-inside-avoid mb-4 w-full block"
                 >
-                  {/* Image */}
+                  {/* Image with lazy loading */}
                   <img
                     src={item.output_url}
                     alt={item.alt_text || item.title || 'AI generated pet portrait'}
+                    loading="lazy"
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   
@@ -376,23 +433,42 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
             </div>
           )}
 
-          {/* Infinite Scroll Sentinel */}
-          {hasMore && filteredItems.length > 0 && (
-            <div id="gallery-sentinel" className="w-full py-8 flex justify-center">
-              {isLoadingMore && (
+          {/* Load More Section */}
+          {filteredItems.length > 0 && (
+            <div className="w-full py-8 flex flex-col items-center gap-4">
+              {isLoadingMore ? (
                 <div className="flex items-center gap-2 text-gray-500">
                   <div className="w-5 h-5 border-2 border-coral border-t-transparent rounded-full animate-spin"></div>
-                  <span>Loading more...</span>
+                  <span>Loading more amazing pet portraits...</span>
                 </div>
+              ) : hasMore ? (
+                <>
+                  {/* Automatic loading sentinel */}
+                  <div id="gallery-sentinel" className="w-1 h-1"></div>
+                  
+                  {/* Manual load button */}
+                  <Button
+                    onClick={loadMoreImages}
+                    disabled={isLoadingMore}
+                    className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Load More
+                  </Button>
+                </>
+              ) : (
+                <p className="text-gray-400 text-sm">
+                  You've reached the end
+                </p>
               )}
             </div>
           )}
         </div>
       </section>
 
-      {/* Detail Modal - The Action Hub */}
+      {/* Detail Modal - Optimized Size */}
       <Dialog open={!!selectedImage} onOpenChange={handleCloseModal}>
-        <DialogContent className="sm:max-w-7xl w-full p-0 overflow-hidden bg-white rounded-3xl">
+        <DialogContent className="sm:max-w-3xl w-full p-0 overflow-hidden bg-white rounded-2xl">
           {selectedImage && (
             <>
               {/* Hidden title for accessibility */}
@@ -400,114 +476,75 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
                 {selectedImage.title || 'AI Pet Portrait'}
               </DialogTitle>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 h-auto sm:h-[85vh] max-h-[900px]">
-                {/* Left Column - The Image */}
-                <div className="relative h-[400px] sm:h-full w-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
-                  {/* Use native img tag to avoid Next.js Image Optimization API errors */}
+              {/* Compact Vertical Layout */}
+              <div className="relative max-h-[95vh] overflow-y-auto">
+                {/* Close Button */}
+                <button
+                  onClick={handleCloseModal}
+                  className="absolute top-4 right-4 z-50 bg-white/90 hover:bg-white rounded-full p-2.5 shadow-lg transition-all"
+                  aria-label="Close dialog"
+                >
+                  <X className="w-5 h-5 text-gray-700" />
+                </button>
+
+                {/* Main Image - Optimized for square images */}
+                <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-6">
                   <img
                     src={selectedImage.output_url}
                     alt={selectedImage.alt_text || selectedImage.title || 'AI generated pet portrait'}
-                    className="w-full h-full object-cover rounded-2xl shadow-2xl"
+                    className="w-full max-h-[55vh] object-contain rounded-xl shadow-lg"
                   />
-                  
-                  {/* Brand Logo Watermark */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md">
-                    <span className="text-coral font-bold text-lg">PixPaw<span className="text-orange-600">AI</span></span>
-                  </div>
                 </div>
 
-                {/* Right Column - The Content */}
-                <div className="relative p-10 lg:p-12 flex flex-col justify-center items-start text-left bg-white">
-                  {/* Close Button (Top-Right Corner) */}
-                  <button
-                    onClick={handleCloseModal}
-                    className="absolute top-6 right-6 z-50 bg-gray-100 hover:bg-gray-200 rounded-full p-3 transition-all shadow-md hover:shadow-lg"
-                    aria-label="Close dialog"
-                  >
-                    <X className="w-6 h-6 text-gray-700" />
-                  </button>
-
-                  {/* Tags */}
-                  <div className="flex gap-2 mb-6 flex-wrap">
-                    {/* Pet Category Tag */}
-                    <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                      {detectPetCategory(selectedImage)}
-                    </span>
-                    
-                    {/* Style Tag */}
-                    <span className="px-4 py-2 bg-coral/10 text-coral rounded-full text-sm font-medium">
-                      {selectedImage.style}
-                    </span>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                        <Eye className="w-5 h-5 text-blue-600" />
+                {/* Content Section */}
+                <div className="p-6 space-y-4">
+                  {/* Stats Row - Compact */}
+                  <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Eye className="w-5 h-5" />
+                        <span className="text-sm font-medium">{selectedImage.views ?? 0}</span>
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold text-gray-900">{selectedImage.views ?? 0}</p>
-                        <p className="text-xs text-gray-500">Views</p>
-                      </div>
+                      <button
+                        onClick={handleLike}
+                        disabled={hasLiked.has(selectedImage.id)}
+                        className={`flex items-center gap-2 transition-all ${
+                          hasLiked.has(selectedImage.id)
+                            ? 'text-pink-600 cursor-not-allowed'
+                            : 'text-gray-600 hover:text-pink-600 cursor-pointer'
+                        }`}
+                      >
+                        <Heart className={`w-5 h-5 ${hasLiked.has(selectedImage.id) ? 'fill-pink-600' : ''}`} />
+                        <span className="text-sm font-medium">{selectedImage.likes ?? 0}</span>
+                      </button>
                     </div>
-                    <button
-                      onClick={handleLike}
-                      disabled={hasLiked.has(selectedImage.id)}
-                      className={`flex items-center gap-2 transition-all ${
-                        hasLiked.has(selectedImage.id)
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'hover:scale-105 cursor-pointer'
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        hasLiked.has(selectedImage.id) ? 'bg-pink-100' : 'bg-pink-50'
-                      }`}>
-                        <Heart className={`w-5 h-5 ${
-                          hasLiked.has(selectedImage.id) ? 'text-pink-600 fill-pink-600' : 'text-pink-600'
-                        }`} />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-gray-900">{selectedImage.likes ?? 0}</p>
-                        <p className="text-xs text-gray-500">
-                          {hasLiked.has(selectedImage.id) ? 'Liked' : 'Likes'}
-                        </p>
-                      </div>
-                    </button>
+                    
+                    {/* Logo - Double Size */}
+                    <img 
+                      src="/brand/logo-orange.svg" 
+                      alt="PixPawAI" 
+                      className="h-16 w-auto"
+                    />
                   </div>
 
-                {/* Title */}
-                <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                  {selectedImage.title || 'AI Pet Portrait'}
-                </h2>
+                  {/* Title & Style Tag (Text Only) */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      {selectedImage.title || 'Untitled'}
+                    </h2>
+                    <p className="text-gray-500 text-sm">
+                      Style: <span className="text-orange-600 font-semibold">{selectedImage.style}</span>
+                    </p>
+                  </div>
 
-                {/* Description */}
-                <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                  {selectedImage.alt_text || selectedImage.prompt.substring(0, 150)}
-                </p>
-
-                {/* Style Features Box */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-coral rounded-xl p-6 mb-10 w-full shadow-sm">
-                  <p className="text-gray-700 text-base leading-relaxed">
-                    <strong className="text-coral">✨ Style Features:</strong> This artistic style combines soft lighting, 
-                    vibrant colors, and Pixar-like 3D rendering to transform your pet into a 
-                    stunning character. Perfect for creating memorable keepsakes.
-                  </p>
-                </div>
-
-                {/* Main Action */}
-                <button
-                  onClick={handleRemixStyle}
-                  className="w-full text-xl font-bold py-7 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3"
-                >
-                  <Sparkles className="w-6 h-6" />
-                  Remix this Style 🪄
-                </button>
-
-                {/* Trust Signal */}
-                <p className="text-center text-gray-400 text-sm mt-6 w-full">
-                  ⚡ Generated in ~30 seconds • 🎨 4K quality • 💯 Money-back guarantee
-                </p>
+                  {/* Remix Button */}
+                  <button
+                    onClick={handleRemixStyle}
+                    className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Remix this Style
+                  </button>
                 </div>
               </div>
             </>
@@ -521,6 +558,7 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
           isOpen={showUploadModal}
           onClose={() => setShowUploadModal(false)}
           selectedStyle={selectedImage?.style}
+          isRemixMode={true}
         />
       )}
     </main>

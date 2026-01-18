@@ -12,20 +12,10 @@ export interface Style {
 }
 
 export const STYLES: Style[] = [
-  {
-    id: 'Johannes Vermeer',
-    label: 'Johannes Vermeer',
-    src: 'johannes-vermeer.png',
-    promptSuffix: 'wearing a turban headscarf and a large pearl earring, in the style of Johannes Vermeer masterpiece "Girl with a Pearl Earring", classical oil painting, soft natural window light from the left, chiaroscuro, detailed brushstrokes, rich colors, baroque art style, high quality',
-    description: 'Classic Dutch Golden Age painting style'
-  },
-  {
-    id: 'Victorian-Royal',
-    label: 'Royal Portrait',
-    src: 'iShot_2026-01-16_15.16.00.png',
-    promptSuffix: ', as a majestic royal monarch, wearing an intricate golden crown with gemstones, a luxurious velvet robe with fur collar, holding a golden scepter, classical oil painting style, dark moody studio background, dramatic masterpiece, regal and dignified atmosphere.',
-    description: 'Regal royal portrait with crown and velvet robes'
-  },
+  // ============================================
+  // High-Quality Styles (Quality-Tested 2026-01-18)
+  // Only styles that passed user validation
+  // ============================================
   {
     id: 'Christmas-Vibe',
     label: 'Merry Christmas',
@@ -34,32 +24,11 @@ export const STYLES: Style[] = [
     description: 'Festive holiday look with a classic Santa hat'
   },
   {
-    id: 'Vintage-Traveler',
-    label: 'Vintage Traveler',
-    src: 'iShot_2026-01-16_15.15.06.png',
-    promptSuffix: ', dressed in a Victorian gentleman suit with a top hat and bow tie, riding in an ornate hot air balloon basket, surrounded by colorful hot air balloons and flowers in the sky, whimsical steampunk aesthetic, oil painting style, soft dreamy sunset lighting.',
-    description: 'Whimsical adventure in a vintage hot air balloon'
-  },
-  {
-    id: 'Flower-Crown',
-    label: 'Floral Elegance',
-    src: 'iShot_2026-01-16_15.14.51.png',
-    promptSuffix: ', wearing a lush crown of peonies and wildflowers, classical fine art oil painting, soft chiaroscuro lighting, textured canvas effect, romantic and peaceful mood, detailed floral elements, museum quality.',
-    description: 'Elegant portrait with a beautiful floral crown'
-  },
-  {
     id: 'Smart-Casual',
     label: 'Smart Casual',
     src: 'iShot_2026-01-16_15.15.47.png',
     promptSuffix: ', wearing a cozy textured turtleneck sweater and a herringbone newsboy flat cap, professional pet photography, solid warm background, sharp focus on eyes, clean and stylish modern aesthetic.',
     description: 'Trendy look with a sweater and newsboy cap'
-  },
-  {
-    id: 'Embroidery-Art',
-    label: 'Embroidery Art',
-    src: 'iShot_2026-01-16_15.17.04.png',
-    promptSuffix: ', created entirely with colorful embroidery thread, textured needlework art, 3D stitched texture, vibrant wool yarn details, handcrafted folk art style, intricate embroidery patterns, unique textile aesthetic.',
-    description: 'Unique handcrafted look made of embroidery thread'
   },
   {
     id: 'Birthday-Party',
@@ -76,45 +45,11 @@ export const STYLES: Style[] = [
     description: 'Cool studio portrait with silver headphones'
   },
   {
-    id: 'Fine-Sketch',
-    label: 'Master Sketch',
-    src: 'iShot_2026-01-16_15.14.43.png',
-    promptSuffix: ', ultra-detailed charcoal and graphite pencil sketch, high contrast black and white art, meticulous line work, realistic fur texture, clean white background, artistic hand-drawn masterpiece, fine art gallery style.',
-    description: 'Highly detailed black and white pencil drawing'
-  },
-  
-  // ============================================
-  // MVP Test Styles (Added 2026-01-17)
-  // Each Tier has one representative style
-  // ============================================
-  
-  {
-    id: 'Spring-Vibes',
-    label: 'Spring Vibes',
-    src: 'spring-vibes.png',
-    promptSuffix: ', surrounded by soft cherry blossom petals gently falling in the air, dreamy spring atmosphere, soft bokeh background with blurred flowers, natural soft lighting, professional pet photography, clean and fresh aesthetic, sharp focus on face, warm and cheerful spring mood, high-quality 8k resolution',
-    description: 'Dreamy spring atmosphere with cherry blossoms'
-  },
-  {
     id: 'Retro-Pop-Art',
     label: 'Retro Pop Art',
     src: 'retro-pop-art.png',
     promptSuffix: ', bold geometric shapes and flat color blocks, mid-century modern illustration style, vibrant contrasting colors, simplified features, clean outlines, playful and energetic composition, vintage poster aesthetic with subtle paper texture, trendy and eye-catching design',
     description: 'Bold retro poster with geometric shapes'
-  },
-  {
-    id: 'Watercolor-Dream',
-    label: 'Watercolor Dream',
-    src: 'watercolor-dream.png',
-    promptSuffix: ', soft transparent watercolor painting, flowing brush strokes with visible water stains, delicate color bleeding and gradients, loose expressive style, textured watercolor paper background, gentle pastel colors, artistic and dreamy atmosphere, hand-painted illustration feel, elegant and serene mood',
-    description: 'Soft watercolor painting with flowing strokes'
-  },
-  {
-    id: 'Pixel-Mosaic',
-    label: 'Pixel Mosaic',
-    src: 'pixel-mosaic.png',
-    promptSuffix: ', 8-bit pixel art style, retro video game aesthetic, square pixel grid pattern, limited color palette with solid blocks, nostalgic 90s game character design, sharp edges and geometric pixelation, bright vibrant colors, cute and playful vibe, classic arcade game art',
-    description: 'Retro 8-bit pixel art style'
   }
 ]
 

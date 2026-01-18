@@ -1,25 +1,21 @@
 /**
- * Test Lab - 基础版
+ * Test Lab - Enhanced with AI Generation
  * 
- * 功能（Phase 1）：
- * - 上传测试图片
- * - 选择风格
- * - 显示 Qwen 识别结果
- * - 显示当前系统生成的提示词
- * 
- * 后续扩展（Phase 2-5）：
- * - 显示解析器结果
- * - 显示清理器结果
- * - 显示完整构建流程
+ * Features:
+ * - Tab 1: Setup (Upload, Style, Prompt)
+ * - Tab 2: Analysis (Qwen Results)
+ * - Tab 3: Prompt Flow (Parser, Cleaner, Builder)
+ * - Tab 4: Generate (Parameters, A/B Test, Results)
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, Loader2, Code } from 'lucide-react'
+import { Upload, Loader2, Code, Download, Image as ImageIcon, Sparkles, Settings, ChevronRight, AlertCircle } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
+import { getStyleTierConfig, getDefaultTierConfig } from '@/lib/style-tiers'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
 import { cleanConflicts, sortFeatures } from '@/lib/prompt-system/conflict-cleaner'
 import { buildPrompt, buildPromptFromSources } from '@/lib/prompt-system/prompt-builder'
@@ -37,159 +33,130 @@ interface QwenResult {
   patternDetails: string
   multiplePets: number
   detectedColors: string
+  keyFeatures?: string
 }
 
+interface GeneratedImage {
+  id: string
+  imageUrl: string
+  params: {
+    strength: number
+    guidance: number
+    aspectRatio: string
+  }
+  generatedAt: Date
+  timeTaken: number
+}
+
+type TabType = 'setup' | 'analysis' | 'prompt' | 'generate'
+
 export default function TestLabPage() {
+  // Tab control
+  const [activeTab, setActiveTab] = useState<TabType>('setup')
+  
+  // Setup tab state
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
-  const [selectedStyle, setSelectedStyle] = useState<string>('Watercolor-Dream')
-  const [qwenResult, setQwenResult] = useState<QwenResult | null>(null)
+  const [selectedStyle, setSelectedStyle] = useState<string>('Johannes Vermeer')
+  const [testPrompt, setTestPrompt] = useState<string>('')
+  const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string>('')
   
-  // Parser 测试状态
-  const [testPrompt, setTestPrompt] = useState<string>('')
-  const [parsedFeatures, setParsedFeatures] = useState<ParsedFeature[]>([])
-  const [showParserTest, setShowParserTest] = useState(false)
+  // Analysis tab state
+  const [qwenResult, setQwenResult] = useState<QwenResult | null>(null)
   
-  // Conflict Cleaner 测试状态
+  // Prompt Flow tab state
+  const [parsedFeatures, setParsedFeatures] = useState<ParsedFeature[]>([])
   const [cleanedFeatures, setCleanedFeatures] = useState<ParsedFeature[]>([])
   const [conflicts, setConflicts] = useState<PromptConflict[]>([])
-  const [showCleanerTest, setShowCleanerTest] = useState(false)
-  
-  // Prompt Builder 测试状态
   const [finalPrompt, setFinalPrompt] = useState<MergedPrompt | null>(null)
-  const [showBuilderTest, setShowBuilderTest] = useState(false)
   
-  // 测试 Parser
-  function handleTestParser() {
-    if (!testPrompt.trim()) {
-      setParsedFeatures([])
-      return
+  // Generate tab state
+  const [genParams, setGenParams] = useState({
+    strength: 0.45,
+    guidance: 2.5,
+    aspectRatio: '1:1'
+  })
+  const [abTestMode, setAbTestMode] = useState(false)
+  const [selectedVariants, setSelectedVariants] = useState<string[]>(['default'])
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
+  
+  // Update generation params when style changes
+  useEffect(() => {
+    const tierConfig = getStyleTierConfig(selectedStyle) || getDefaultTierConfig()
+    setGenParams(prev => ({
+      ...prev,
+      strength: tierConfig.strength,
+      guidance: tierConfig.guidance
+    }))
+  }, [selectedStyle])
+  
+  // Auto-run prompt flow when moving to prompt tab
+  useEffect(() => {
+    if (activeTab === 'prompt' && qwenResult && !finalPrompt) {
+      handleBuildPromptFlow()
     }
+  }, [activeTab])
+  
+  // Upload and analyze image
+  async function handleImageUpload(file: File) {
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setQwenResult(null)
+    setError('')
     
-    const parsed = parseUserPrompt(testPrompt)
-    setParsedFeatures(parsed.features)
-    
-    console.log('Parser Test Result:', {
-      original: parsed.original,
-      language: parsed.detectedLanguage,
-      hasNegative: parsed.hasNegativePrompt,
-      features: parsed.features
-    })
+    await analyzeImage(file)
   }
   
-  // 测试 Qwen Features Parser
-  function handleTestQwenParser() {
-    if (!qwenResult) {
-      alert('请先上传图片并获取 Qwen 分析结果')
-      return
+  async function analyzeImage(file: File) {
+    setIsAnalyzing(true)
+    setError('')
+    
+    try {
+      const cleanFileName = file.name.replace(/[^\w\s.-]/g, '_')
+      const cleanedFile = new File([file], cleanFileName, { type: file.type })
+      
+      const formData = new FormData()
+      formData.append('file', cleanedFile)
+      
+      const uploadRes = await fetch('/api/upload-temp', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json().catch(() => ({}))
+        throw new Error(errorData.details || errorData.error || 'Upload failed')
+      }
+      
+      const { imageUrl } = await uploadRes.json()
+      
+      const analyzeRes = await fetch('/api/check-quality', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl })
+      })
+      
+      if (!analyzeRes.ok) {
+        const analyzeError = await analyzeRes.json().catch(() => ({}))
+        throw new Error(analyzeError.error || 'Analysis failed')
+      }
+      
+      const result = await analyzeRes.json()
+      setQwenResult(result)
+    } catch (err: any) {
+      setError(err.message || 'Unknown error')
+      console.error('Analysis error:', err)
+    } finally {
+      setIsAnalyzing(false)
     }
-    
-    const qwenFeatures = parseQwenFeatures(qwenResult)
-    setParsedFeatures(qwenFeatures)
-    
-    console.log('Qwen Features:', qwenFeatures)
   }
   
-  // 测试 Style Parser
-  function handleTestStyleParser() {
-    const style = STYLES.find(s => s.id === selectedStyle)
-    if (!style || !style.promptSuffix) {
-      alert('当前风格没有 promptSuffix')
-      return
-    }
-    
-    const styleFeatures = parseStylePrompt(style.promptSuffix, 'suffix')
-    setParsedFeatures(styleFeatures)
-    
-    console.log('Style Features:', styleFeatures)
-  }
-  
-  // 测试冲突清理器
-  function handleTestCleaner() {
-    if (parsedFeatures.length === 0) {
-      alert('请先解析提示词获得特征列表')
-      return
-    }
-    
-    const { cleaned, conflicts: detectedConflicts } = cleanConflicts(parsedFeatures)
-    const sorted = sortFeatures(cleaned)
-    
-    setCleanedFeatures(sorted)
-    setConflicts(detectedConflicts)
-    setShowCleanerTest(true)
-    
-    console.log('Conflict Cleaner Result:', {
-      original: parsedFeatures.length,
-      cleaned: cleaned.length,
-      conflicts: detectedConflicts.length
-    })
-  }
-  
-  // 测试完整流程（Parser + Cleaner）
-  function handleTestFullFlow() {
-    if (!testPrompt.trim() && !qwenResult) {
-      alert('请输入提示词或上传图片')
-      return
-    }
-    
-    // 收集所有特征
-    const allFeatures: ParsedFeature[] = []
-    
-    // 1. 用户提示词
-    if (testPrompt.trim()) {
-      const userParsed = parseUserPrompt(testPrompt)
-      allFeatures.push(...userParsed.features)
-    }
-    
-    // 2. Qwen 特征
-    if (qwenResult) {
-      const qwenFeatures = parseQwenFeatures(qwenResult)
-      allFeatures.push(...qwenFeatures)
-    }
-    
-    // 3. 风格特征
-    const style = STYLES.find(s => s.id === selectedStyle)
-    if (style?.promptSuffix) {
-      const styleFeatures = parseStylePrompt(style.promptSuffix, 'suffix')
-      allFeatures.push(...styleFeatures)
-    }
-    
-    // 解析
-    setParsedFeatures(allFeatures)
-    
-    // 清理
-    const { cleaned, conflicts: detectedConflicts } = cleanConflicts(allFeatures)
-    const sorted = sortFeatures(cleaned)
-    
-    setCleanedFeatures(sorted)
-    setConflicts(detectedConflicts)
-    setShowCleanerTest(true)
-    
-    console.log('Full Flow Result:', {
-      total: allFeatures.length,
-      cleaned: sorted.length,
-      conflicts: detectedConflicts.length
-    })
-  }
-  
-  // 测试 Prompt Builder
-  async function handleTestBuilder() {
-    if (cleanedFeatures.length === 0) {
-      alert('请先运行完整流程或冲突清理器')
-      return
-    }
-    
-    const prompt = buildPrompt(cleanedFeatures)
-    setFinalPrompt(prompt)
-    setShowBuilderTest(true)
-    
-    console.log('Final Prompt:', prompt)
-  }
-  
-  // 测试完整构建流程（一键）
-  async function handleTestCompleteFlow() {
+  // Build complete prompt flow
+  async function handleBuildPromptFlow() {
     try {
       const style = STYLES.find(s => s.id === selectedStyle)
       
@@ -199,91 +166,117 @@ export default function TestLabPage() {
         stylePromptSuffix: style?.promptSuffix
       })
       
-      // 更新所有状态
       setParsedFeatures(debug.parsedFeatures)
       setCleanedFeatures(debug.cleanedFeatures)
-      setConflicts([]) // buildPromptFromSources 返回的 debug 中没有 conflicts
       setFinalPrompt(prompt)
       
-      setShowCleanerTest(true)
-      setShowBuilderTest(true)
-      
-      console.log('Complete Flow Result:', { prompt, debug })
+      console.log('Prompt Flow Complete:', { prompt, debug })
     } catch (error: any) {
-      console.error('Complete flow error:', error)
-      alert(`流程执行失败: ${error.message}`)
+      console.error('Prompt flow error:', error)
+      alert(`Failed to build prompt: ${error.message}`)
     }
   }
   
-  // 上传图片
-  async function handleImageUpload(file: File) {
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
-    setQwenResult(null)
-    setError('')
-    
-    // 自动调用 Qwen 分析
-    await analyzeImage(file)
-  }
-  
-  // 调用 Qwen 分析（使用现有的 check-quality API）
-  async function analyzeImage(file: File) {
-    setIsAnalyzing(true)
-    setError('')
-    
-    try {
-      // 清理文件名（移除特殊字符）
-      const cleanFileName = file.name.replace(/[^\w\s.-]/g, '_')
-      const cleanedFile = new File([file], cleanFileName, { type: file.type })
-      
-      // 上传到 Supabase Storage
-      const formData = new FormData()
-      formData.append('file', cleanedFile)
-      
-      console.log('Uploading file:', cleanFileName, 'Size:', (file.size / 1024).toFixed(2), 'KB')
-      
-      const uploadRes = await fetch('/api/upload-temp', {
-        method: 'POST',
-        body: formData
-      })
-      
-      if (!uploadRes.ok) {
-        const errorData = await uploadRes.json().catch(() => ({}))
-        const errorMsg = errorData.details || errorData.message || errorData.error || '上传失败'
-        console.error('Upload error details:', errorData)
-        throw new Error(`上传失败: ${errorMsg}`)
-      }
-      
-      const { imageUrl } = await uploadRes.json()
-      console.log('Upload success, analyzing with Qwen...')
-      
-      // 调用 Qwen 分析
-      const analyzeRes = await fetch('/api/check-quality', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl })
-      })
-      
-      if (!analyzeRes.ok) {
-        const analyzeError = await analyzeRes.json().catch(() => ({}))
-        const analyzeMsg = analyzeError.error || analyzeError.message || '分析失败'
-        console.error('Analysis error:', analyzeMsg)
-        throw new Error(`AI分析失败: ${analyzeMsg}`)
-      }
-      
-      const result = await analyzeRes.json()
-      console.log('Analysis result:', result)
-      setQwenResult(result)
-    } catch (err: any) {
-      const errorMessage = err.message || '未知错误，请重试'
-      setError(errorMessage)
-      console.error('Complete error:', err)
-    } finally {
-      setIsAnalyzing(false)
+  // Generate images
+  async function handleGenerate() {
+    if (!imagePreview || !finalPrompt) {
+      alert('Please complete setup and prompt flow first')
+      return
     }
+    
+    setIsGenerating(true)
+    setGeneratedImages([])
+    
+    const variantsToGenerate = calculateVariants()
+    setGenerationProgress({ current: 0, total: variantsToGenerate.length })
+    
+    for (let i = 0; i < variantsToGenerate.length; i++) {
+      const params = variantsToGenerate[i]
+      const startTime = Date.now()
+      
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: imagePreview,
+            style: selectedStyle,
+            prompt: testPrompt || '',
+            petType: qwenResult?.petType || 'pet',
+            aspectRatio: params.aspectRatio,
+            strength: params.strength,
+            guidance: params.guidance,
+            testMode: true
+          })
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Generation failed')
+        }
+        
+        const data = await response.json()
+        const timeTaken = Math.round((Date.now() - startTime) / 1000)
+        
+        setGeneratedImages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          imageUrl: data.outputUrl,
+          params,
+          generatedAt: new Date(),
+          timeTaken
+        }])
+        
+        setGenerationProgress(prev => ({ ...prev, current: prev.current + 1 }))
+      } catch (error: any) {
+        console.error('Generation error:', error)
+        alert(`Variant ${i + 1} failed: ${error.message}`)
+      }
+    }
+    
+    setIsGenerating(false)
   }
   
-  // 文件拖拽上传
+  function calculateVariants() {
+    if (!abTestMode) {
+      return [genParams]
+    }
+    
+    const variants: typeof genParams[] = []
+    
+    if (selectedVariants.includes('default')) {
+      variants.push(genParams)
+    }
+    if (selectedVariants.includes('lower_strength')) {
+      variants.push({ ...genParams, strength: genParams.strength - 0.05 })
+    }
+    if (selectedVariants.includes('higher_strength')) {
+      variants.push({ ...genParams, strength: genParams.strength + 0.05 })
+    }
+    if (selectedVariants.includes('lower_guidance')) {
+      variants.push({ ...genParams, guidance: genParams.guidance - 0.5 })
+    }
+    
+    return variants
+  }
+  
+  function toggleVariant(variant: string) {
+    setSelectedVariants(prev => 
+      prev.includes(variant) 
+        ? prev.filter(v => v !== variant)
+        : [...prev, variant]
+    )
+  }
+  
+  function downloadImage(imageUrl: string) {
+    const link = document.createElement('a')
+    link.href = imageUrl
+    link.download = `test-generation-${Date.now()}.png`
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+  
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
@@ -292,237 +285,321 @@ export default function TestLabPage() {
     }
   }
   
+  const tierConfig = getStyleTierConfig(selectedStyle) || getDefaultTierConfig()
+  const canProceedToAnalysis = qwenResult !== null
+  const canProceedToPrompt = canProceedToAnalysis && finalPrompt !== null
+  const canProceedToGenerate = canProceedToPrompt
+  
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">Test Lab - 基础版</h1>
+        <h1 className="text-3xl font-bold mb-2">Test Lab - AI Generation</h1>
         <p className="text-gray-600">
-          测试提示词构建流程的每一步（Phase 1: 基础功能）
+          Test prompt optimization and AI generation with parameter tuning
         </p>
       </div>
       
-      {/* Step 1: 上传图片 */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">1. 上传测试图片</h2>
-        
-        {!imagePreview ? (
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 transition-colors cursor-pointer"
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            onClick={() => document.getElementById('file-input')?.click()}
-          >
-            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 mb-2">点击或拖拽图片到此处上传</p>
-            <p className="text-sm text-gray-400">支持 JPG, PNG, WebP（最大 10MB）</p>
-            <input
-              id="file-input"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
-            />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="relative inline-block">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                className="max-w-xs rounded-lg border"
-              />
-              <Button
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => {
-                  setImagePreview('')
-                  setImageFile(null)
-                  setQwenResult(null)
-                }}
-              >
-                删除
-              </Button>
-            </div>
-            <div className="text-sm text-gray-600">
-              <p>文件名: {imageFile?.name}</p>
-              <p>大小: {((imageFile?.size || 0) / 1024 / 1024).toFixed(2)} MB</p>
-            </div>
-          </div>
-        )}
-        
-        {isAnalyzing && (
-          <div className="mt-4 flex items-center gap-2 text-blue-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>正在使用 Qwen AI 分析图片...</span>
-          </div>
-        )}
-        
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            错误: {error}
-          </div>
-        )}
-      </Card>
-      
-      {/* Step 2: 选择风格 */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">2. 选择风格</h2>
-        <select
-          value={selectedStyle}
-          onChange={(e) => setSelectedStyle(e.target.value)}
-          className="w-full p-3 border rounded-lg"
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('setup')}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'setup'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
         >
-          {STYLES.map((style) => (
-            <option key={style.id} value={style.id}>
-              {style.label}
-            </option>
-          ))}
-        </select>
-        <p className="mt-2 text-sm text-gray-500">
-          当前选择: <strong>{STYLES.find(s => s.id === selectedStyle)?.label}</strong>
-        </p>
-      </Card>
+          <Upload className="w-4 h-4" />
+          1. Setup
+        </button>
+        <button
+          onClick={() => canProceedToAnalysis && setActiveTab('analysis')}
+          disabled={!canProceedToAnalysis}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'analysis'
+              ? 'border-blue-600 text-blue-600'
+              : canProceedToAnalysis
+              ? 'border-transparent text-gray-600 hover:text-gray-900'
+              : 'border-transparent text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          2. Analysis
+        </button>
+        <button
+          onClick={() => canProceedToPrompt && setActiveTab('prompt')}
+          disabled={!canProceedToPrompt}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'prompt'
+              ? 'border-blue-600 text-blue-600'
+              : canProceedToPrompt
+              ? 'border-transparent text-gray-600 hover:text-gray-900'
+              : 'border-transparent text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Code className="w-4 h-4" />
+          3. Prompt Flow
+        </button>
+        <button
+          onClick={() => canProceedToGenerate && setActiveTab('generate')}
+          disabled={!canProceedToGenerate}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'generate'
+              ? 'border-blue-600 text-blue-600'
+              : canProceedToGenerate
+              ? 'border-transparent text-gray-600 hover:text-gray-900'
+              : 'border-transparent text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          4. Generate
+        </button>
+      </div>
       
-      {/* Step 3: Qwen 识别结果 */}
-      {qwenResult && (
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Qwen AI 识别结果</h2>
-          
-          <div className="space-y-4">
-            {/* 基础信息 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">宠物类型</div>
-                <div className="text-lg font-semibold">{qwenResult.petType}</div>
-              </div>
+      {/* Tab Content */}
+      <div className="min-h-[600px]">
+        {/* TAB 1: Setup */}
+        {activeTab === 'setup' && (
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Upload Test Image</h2>
               
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">图片质量</div>
-                <div className={`text-lg font-semibold ${
-                  qwenResult.quality === 'good' ? 'text-green-600' : 'text-orange-600'
-                }`}>
-                  {qwenResult.quality}
+              {!imagePreview ? (
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  onClick={() => document.getElementById('file-input')?.click()}
+                >
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600 mb-2">Click or drag image to upload</p>
+                  <p className="text-sm text-gray-400">JPG, PNG, WebP (max 10MB)</p>
+                  <input
+                    id="file-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative inline-block">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="max-w-md rounded-lg border"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => {
+                        setImagePreview('')
+                        setImageFile(null)
+                        setQwenResult(null)
+                        setFinalPrompt(null)
+                        setGeneratedImages([])
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {isAnalyzing && (
+                <div className="mt-4 flex items-center gap-2 text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Analyzing with Qwen AI...</span>
+                </div>
+              )}
+              
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-medium">Error</div>
+                    <div className="text-sm">{error}</div>
+                  </div>
+                </div>
+              )}
+            </Card>
+            
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Select Style</h2>
+              <select
+                value={selectedStyle}
+                onChange={(e) => setSelectedStyle(e.target.value)}
+                className="w-full p-3 border rounded-lg"
+              >
+                {STYLES.map((style) => (
+                  <option key={style.id} value={style.id}>
+                    {style.label}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
+                <div className="font-medium text-blue-900 mb-1">Style Info</div>
+                <div className="text-blue-700 space-y-1">
+                  <div>Tier: {tierConfig.tier} ({tierConfig.description})</div>
+                  <div>Default Strength: {tierConfig.strength.toFixed(2)}</div>
+                  <div>Default Guidance: {tierConfig.guidance.toFixed(1)}</div>
+                  <div>Expected Similarity: {tierConfig.expectedSimilarity}</div>
                 </div>
               </div>
-            </div>
+            </Card>
             
-            {/* 详细特征 */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="font-semibold mb-3">详细特征</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <strong>品种:</strong> {qwenResult.breed || '未识别'}
-                </div>
-                <div>
-                  <strong>毛色:</strong> {qwenResult.detectedColors || '未识别'}
-                </div>
-                <div>
-                  <strong>异瞳:</strong> {
-                    qwenResult.hasHeterochromia 
-                      ? `是 (${qwenResult.heterochromiaDetails})` 
-                      : '否'
-                  }
-                </div>
-                <div>
-                  <strong>复杂花纹:</strong> {
-                    qwenResult.complexPattern 
-                      ? `是 (${qwenResult.patternDetails})` 
-                      : '否'
-                  }
-                </div>
-                <div>
-                  <strong>宠物数量:</strong> {qwenResult.multiplePets}
-                </div>
-              </div>
-            </div>
-            
-            {/* JSON 原始数据（可折叠） */}
-            <details className="p-4 bg-gray-50 rounded-lg">
-              <summary className="cursor-pointer font-medium text-sm text-gray-700">
-                查看完整 JSON 数据
-              </summary>
-              <pre className="mt-2 text-xs overflow-auto">
-                {JSON.stringify(qwenResult, null, 2)}
-              </pre>
-            </details>
-          </div>
-        </Card>
-      )}
-      
-      {/* Phase 1: Prompt Parser 测试 */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">3. Prompt Parser 测试 (Phase 1)</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowParserTest(!showParserTest)}
-          >
-            <Code className="w-4 h-4 mr-2" />
-            {showParserTest ? '隐藏' : '显示'} Parser
-          </Button>
-        </div>
-        
-        {showParserTest && (
-          <div className="space-y-4">
-            {/* 测试输入 */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                输入测试提示词（支持中英文）
-              </label>
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Custom Prompt (Optional)</h2>
               <textarea
                 value={testPrompt}
                 onChange={(e) => setTestPrompt(e.target.value)}
-                placeholder="例如: golden retriever, blue eyes, running in garden, negative: blurry"
+                placeholder="Add custom enhancements like 'wearing sunglasses, at the beach'..."
                 className="w-full h-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </Card>
             
-            {/* 测试按钮 */}
-            <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleTestParser} variant="default">
-                解析用户提示词
-              </Button>
-              <Button 
-                onClick={handleTestQwenParser} 
-                variant="outline"
-                disabled={!qwenResult}
-              >
-                解析 Qwen 结果
-              </Button>
-              <Button 
-                onClick={handleTestStyleParser} 
-                variant="outline"
-              >
-                解析风格提示词
-              </Button>
-              <Button 
-                onClick={handleTestCompleteFlow} 
-                variant="default"
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                测试完整流程 (All-in-One + Builder)
-              </Button>
-            </div>
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Aspect Ratio</h2>
+              <div className="grid grid-cols-5 gap-3">
+                {['1:1', '3:4', '4:3', '16:9', '9:16'].map((ratio) => (
+                  <button
+                    key={ratio}
+                    onClick={() => setAspectRatio(ratio)}
+                    className={`p-4 border-2 rounded-lg font-medium transition-colors ${
+                      aspectRatio === ratio
+                        ? 'border-blue-600 bg-blue-50 text-blue-600'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    {ratio}
+                  </button>
+                ))}
+              </div>
+            </Card>
             
-            {/* 解析结果 */}
-            {parsedFeatures.length > 0 && (
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4 bg-blue-50">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">解析结果（共 {parsedFeatures.length} 个特征）</h3>
-                    <Button 
-                      onClick={handleTestCleaner}
-                      size="sm"
-                      variant="default"
-                      className="bg-orange-600 hover:bg-orange-700"
-                    >
-                      运行冲突清理器
-                    </Button>
+            {qwenResult && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setActiveTab('analysis')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Next: View Analysis
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* TAB 2: Analysis */}
+        {activeTab === 'analysis' && qwenResult && (
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Qwen AI Analysis Results</h2>
+              
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-sm text-green-600 font-medium">Pet Type</div>
+                  <div className="text-2xl font-bold text-green-900">{qwenResult.petType}</div>
+                </div>
+                
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-sm text-blue-600 font-medium">Quality</div>
+                  <div className={`text-2xl font-bold ${
+                    qwenResult.quality === 'good' ? 'text-green-600' : 'text-orange-600'
+                  }`}>
+                    {qwenResult.quality}
                   </div>
-                  <div className="space-y-2">
+                </div>
+              </div>
+              
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <h3 className="font-semibold mb-3">Detected Features</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <strong>Breed:</strong> {qwenResult.breed || 'Unknown'}
+                  </div>
+                  <div>
+                    <strong>Colors:</strong> {qwenResult.detectedColors || 'Unknown'}
+                  </div>
+                  <div>
+                    <strong>Heterochromia:</strong> {
+                      qwenResult.hasHeterochromia 
+                        ? `Yes (${qwenResult.heterochromiaDetails})` 
+                        : 'No'
+                    }
+                  </div>
+                  <div>
+                    <strong>Complex Pattern:</strong> {
+                      qwenResult.complexPattern 
+                        ? `Yes (${qwenResult.patternDetails})` 
+                        : 'No'
+                    }
+                  </div>
+                  <div>
+                    <strong>Multiple Pets:</strong> {qwenResult.multiplePets}
+                  </div>
+                  {qwenResult.keyFeatures && (
+                    <div className="col-span-2">
+                      <strong>Key Features:</strong> {qwenResult.keyFeatures}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <details className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <summary className="cursor-pointer font-medium text-sm text-gray-700">
+                  View Raw JSON Data
+                </summary>
+                <pre className="mt-2 text-xs overflow-auto">
+                  {JSON.stringify(qwenResult, null, 2)}
+                </pre>
+              </details>
+            </Card>
+            
+            <div className="flex justify-between">
+              <Button
+                onClick={() => setActiveTab('setup')}
+                variant="outline"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={() => {
+                  handleBuildPromptFlow()
+                  setActiveTab('prompt')
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Next: Build Prompts
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* TAB 3: Prompt Flow */}
+        {activeTab === 'prompt' && (
+          <div className="space-y-6">
+            {!finalPrompt && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <span className="ml-3 text-gray-600">Building prompt flow...</span>
+              </div>
+            )}
+            
+            {finalPrompt && (
+              <>
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Step 1: Parsed Features</h2>
+                  <div className="text-sm text-gray-600 mb-4">
+                    Total: {parsedFeatures.length} features from all sources
+                  </div>
+                  
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
                     {parsedFeatures.map((feature, index) => (
                       <div 
                         key={index}
@@ -535,9 +612,7 @@ export default function TestLabPage() {
                         }}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-sm">
-                            {feature.type}
-                          </span>
+                          <span className="font-medium text-sm">{feature.type}</span>
                           <div className="flex items-center gap-2">
                             <span className={`text-xs px-2 py-1 rounded ${
                               feature.source === 'user' ? 'bg-blue-100 text-blue-700' :
@@ -548,205 +623,326 @@ export default function TestLabPage() {
                               {feature.source}
                             </span>
                             <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
-                              优先级: {feature.priority}
+                              Priority: {feature.priority}
                             </span>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-700">
-                          <span className="text-gray-500">原始:</span> {feature.value}
-                        </div>
-                        <div className="text-sm text-gray-700">
-                          <span className="text-gray-500">标准化:</span> {feature.normalized}
-                        </div>
+                        <div className="text-sm text-gray-700">{feature.normalized}</div>
                       </div>
                     ))}
                   </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Step 2: Cleaned Features</h2>
+                  <div className="text-sm text-gray-600 mb-4">
+                    After conflict resolution: {cleanedFeatures.length} features
+                    {conflicts.length > 0 && ` (${conflicts.length} conflicts resolved)`}
+                  </div>
+                  
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {cleanedFeatures.map((feature, index) => (
+                      <div 
+                        key={index}
+                        className="p-3 bg-white rounded border-l-4"
+                        style={{
+                          borderLeftColor: 
+                            feature.source === 'user' ? '#3b82f6' :
+                            feature.source === 'qwen' ? '#10b981' :
+                            feature.source === 'style' ? '#f59e0b' : '#6b7280'
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{feature.type}</span>
+                          <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
+                            {feature.priority}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-700 mt-1">{feature.normalized}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Step 3: Final Prompts</h2>
+                  
+                  <div className="mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-300">
+                    <h4 className="font-semibold mb-2 text-sm text-green-700">
+                      Positive Prompt:
+                    </h4>
+                    <div className="text-sm text-gray-800 leading-relaxed">
+                      {finalPrompt.positive}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Length: {finalPrompt.positive.length} characters
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4 p-4 bg-red-50 rounded-lg border-2 border-red-200">
+                    <h4 className="font-semibold mb-2 text-sm text-red-700">
+                      Negative Prompt:
+                    </h4>
+                    <div className="text-sm text-gray-800">
+                      {finalPrompt.negative}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-50 rounded-lg border">
+                    <h4 className="font-semibold mb-2 text-sm">Metadata:</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-600">User Features:</span>
+                        <span className="ml-2 font-semibold text-blue-600">
+                          {finalPrompt.metadata.userFeaturesCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Qwen Features:</span>
+                        <span className="ml-2 font-semibold text-green-600">
+                          {finalPrompt.metadata.qwenFeaturesCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Style Features:</span>
+                        <span className="ml-2 font-semibold text-yellow-600">
+                          {finalPrompt.metadata.styleFeaturesCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Conflicts Resolved:</span>
+                        <span className="ml-2 font-semibold text-red-600">
+                          {finalPrompt.metadata.conflictsResolved}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                
+                <div className="flex justify-between">
+                  <Button
+                    onClick={() => setActiveTab('analysis')}
+                    variant="outline"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('generate')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Next: Generate Images
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        
+        {/* TAB 4: Generate */}
+        {activeTab === 'generate' && (
+          <div className="grid grid-cols-3 gap-6">
+            {/* Left: Parameters */}
+            <div className="col-span-1 space-y-4">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-4">Generation Parameters</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="flex justify-between text-sm font-medium mb-2">
+                      <span>Strength</span>
+                      <span className="text-blue-600">{genParams.strength.toFixed(2)}</span>
+                    </label>
+                    <input 
+                      type="range" 
+                      min={Math.max(0.25, tierConfig.strength - 0.10)} 
+                      max={Math.min(0.80, tierConfig.strength + 0.10)} 
+                      step={0.01}
+                      value={genParams.strength}
+                      onChange={(e) => setGenParams({...genParams, strength: parseFloat(e.target.value)})}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>{(tierConfig.strength - 0.10).toFixed(2)}</span>
+                      <span className="font-medium">{tierConfig.strength.toFixed(2)}</span>
+                      <span>{(tierConfig.strength + 0.10).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="flex justify-between text-sm font-medium mb-2">
+                      <span>Guidance</span>
+                      <span className="text-blue-600">{genParams.guidance.toFixed(1)}</span>
+                    </label>
+                    <input 
+                      type="range" 
+                      min={Math.max(1.5, tierConfig.guidance - 1.0)} 
+                      max={Math.min(4.0, tierConfig.guidance + 1.0)} 
+                      step={0.1}
+                      value={genParams.guidance}
+                      onChange={(e) => setGenParams({...genParams, guidance: parseFloat(e.target.value)})}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>{(tierConfig.guidance - 1.0).toFixed(1)}</span>
+                      <span className="font-medium">{tierConfig.guidance.toFixed(1)}</span>
+                      <span>{(tierConfig.guidance + 1.0).toFixed(1)}</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
+                    <div className="text-lg font-semibold text-blue-600">{aspectRatio}</div>
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className="p-4 border-2 border-purple-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold">A/B Test Mode</h3>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={abTestMode}
+                      onChange={(e) => setAbTestMode(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
                 
-                {/* 冲突清理结果 */}
-                {showCleanerTest && (
-                  <div className="border rounded-lg p-4 bg-green-50">
-                    <h3 className="font-semibold mb-3">
-                      清理后结果（共 {cleanedFeatures.length} 个特征，解决了 {conflicts.length} 个冲突）
-                    </h3>
-                    
-                    {/* 冲突详情 */}
-                    {conflicts.length > 0 && (
-                      <div className="mb-4 p-3 bg-red-50 rounded border border-red-200">
-                        <h4 className="font-semibold text-red-800 mb-2">检测到的冲突:</h4>
-                        <div className="space-y-2">
-                          {conflicts.map((conflict, index) => (
-                            <div key={index} className="p-2 bg-white rounded text-sm">
-                              <div className="font-medium text-red-700">
-                                {conflict.conflictType} 冲突
-                              </div>
-                              <div className="text-gray-700 mt-1">
-                                <span className="line-through">{conflict.feature1.value}</span>
-                                {' vs '}
-                                {conflict.winner === conflict.feature1 ? (
-                                  <span className="font-semibold text-green-600">{conflict.feature2.value}</span>
-                                ) : (
-                                  <span className="line-through">{conflict.feature2.value}</span>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                胜出: {conflict.winner.value} (优先级: {conflict.winner.priority}, {conflict.resolution})
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* 清理后的特征 */}
-                    <div className="space-y-2">
-                      {cleanedFeatures.map((feature, index) => (
-                        <div 
-                          key={index}
-                          className="p-3 bg-white rounded border-l-4"
-                          style={{
-                            borderLeftColor: 
-                              feature.source === 'user' ? '#3b82f6' :
-                              feature.source === 'qwen' ? '#10b981' :
-                              feature.source === 'style' ? '#f59e0b' : '#6b7280'
-                          }}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm">
-                              {feature.type}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                feature.source === 'user' ? 'bg-blue-100 text-blue-700' :
-                                feature.source === 'qwen' ? 'bg-green-100 text-green-700' :
-                                feature.source === 'style' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {feature.source}
-                              </span>
-                              <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
-                                优先级: {feature.priority}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-700">
-                            {feature.normalized}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* 构建最终提示词按钮 */}
-                    <div className="mt-4 flex justify-center">
-                      <Button 
-                        onClick={handleTestBuilder}
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        构建最终提示词 (Prompt Builder)
-                      </Button>
-                    </div>
+                {abTestMode && (
+                  <div className="space-y-2">
+                    <label className="flex items-center text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedVariants.includes('default')}
+                        onChange={() => toggleVariant('default')}
+                        className="mr-2"
+                      />
+                      <span>Default (str={genParams.strength.toFixed(2)})</span>
+                    </label>
+                    <label className="flex items-center text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedVariants.includes('lower_strength')}
+                        onChange={() => toggleVariant('lower_strength')}
+                        className="mr-2"
+                      />
+                      <span>Lower Strength (-0.05)</span>
+                    </label>
+                    <label className="flex items-center text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedVariants.includes('higher_strength')}
+                        onChange={() => toggleVariant('higher_strength')}
+                        className="mr-2"
+                      />
+                      <span>Higher Strength (+0.05)</span>
+                    </label>
+                    <label className="flex items-center text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedVariants.includes('lower_guidance')}
+                        onChange={() => toggleVariant('lower_guidance')}
+                        className="mr-2"
+                      />
+                      <span>Lower Guidance (-0.5)</span>
+                    </label>
+                  </div>
+                )}
+              </Card>
+              
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating {generationProgress.current}/{generationProgress.total}...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Generate {abTestMode ? `${selectedVariants.length} Variants` : 'Image'}
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {/* Right: Results */}
+            <div className="col-span-2">
+              <Card className="p-6">
+                <h3 className="font-semibold mb-4">Generated Results</h3>
+                
+                {generatedImages.length === 0 && !isGenerating && (
+                  <div className="text-center py-12 text-gray-500">
+                    <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p>No images generated yet</p>
+                    <p className="text-sm">Configure parameters and click Generate</p>
                   </div>
                 )}
                 
-                {/* Prompt Builder 结果 */}
-                {showBuilderTest && finalPrompt && (
-                  <div className="mt-4 border rounded-lg p-4 bg-purple-50">
-                    <h3 className="font-semibold mb-3 text-purple-900">
-                      最终构建结果 (Phase 4: Prompt Builder)
-                    </h3>
-                    
-                    {/* 正面提示词 */}
-                    <div className="mb-4 p-4 bg-white rounded border-2 border-purple-300">
-                      <h4 className="font-semibold mb-2 text-sm text-purple-700">
-                        正面提示词 (Positive Prompt):
-                      </h4>
-                      <div className="text-sm text-gray-800 leading-relaxed">
-                        {finalPrompt.positive}
+                <div className="grid grid-cols-2 gap-4">
+                  {generatedImages.map((img) => (
+                    <Card key={img.id} className="p-4 bg-gray-50">
+                      <div className="relative group">
+                        <img 
+                          src={img.imageUrl} 
+                          alt="Generated" 
+                          className="w-full h-auto rounded-lg cursor-pointer"
+                        />
+                        <Button 
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"
+                          size="sm"
+                          onClick={() => downloadImage(img.imageUrl)}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <div className="mt-2 text-xs text-gray-500">
-                        长度: {finalPrompt.positive.length} 字符
-                      </div>
-                    </div>
-                    
-                    {/* 负面提示词 */}
-                    <div className="mb-4 p-4 bg-white rounded border-2 border-red-200">
-                      <h4 className="font-semibold mb-2 text-sm text-red-700">
-                        负面提示词 (Negative Prompt):
-                      </h4>
-                      <div className="text-sm text-gray-800">
-                        {finalPrompt.negative}
-                      </div>
-                    </div>
-                    
-                    {/* 元数据 */}
-                    <div className="p-4 bg-white rounded border">
-                      <h4 className="font-semibold mb-2 text-sm">构建统计:</h4>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">用户特征:</span>
-                          <span className="ml-2 font-semibold text-blue-600">
-                            {finalPrompt.metadata.userFeaturesCount}
-                          </span>
+                      
+                      <div className="mt-3 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Strength:</span>
+                          <span className="font-semibold">{img.params.strength.toFixed(2)}</span>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Qwen 特征:</span>
-                          <span className="ml-2 font-semibold text-green-600">
-                            {finalPrompt.metadata.qwenFeaturesCount}
-                          </span>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Guidance:</span>
+                          <span className="font-semibold">{img.params.guidance.toFixed(1)}</span>
                         </div>
-                        <div>
-                          <span className="text-gray-600">风格特征:</span>
-                          <span className="ml-2 font-semibold text-yellow-600">
-                            {finalPrompt.metadata.styleFeaturesCount}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">冲突解决:</span>
-                          <span className="ml-2 font-semibold text-red-600">
-                            {finalPrompt.metadata.conflictsResolved}
-                          </span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-gray-600">总优先级得分:</span>
-                          <span className="ml-2 font-semibold text-purple-600">
-                            {finalPrompt.metadata.totalPriority}
-                          </span>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Time:</span>
+                          <span className="font-semibold">{img.timeTaken}s</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* 提示信息 */}
-            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-              <strong>说明:</strong>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>蓝色标签 = 用户输入（优先级最高）</li>
-                <li>绿色标签 = Qwen 识别（优先级中等）</li>
-                <li>黄色标签 = 风格模板（优先级较低）</li>
-                <li>优先级数值越高，冲突时越优先保留</li>
-              </ul>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
             </div>
           </div>
         )}
-      </Card>
+      </div>
       
-      {/* 占位：后续Phase会添加的功能 */}
-      {qwenResult && (
-        <Card className="p-6 border-dashed">
-          <h2 className="text-xl font-semibold mb-4 text-gray-400">
-            Phase 2-5 功能预览（即将上线）
-          </h2>
-          <div className="space-y-2 text-sm text-gray-500">
-            <p>Phase 2: Conflict Cleaner - 冲突清理器</p>
-            <p>Phase 3: Style Library Database - 风格库数据库集成</p>
-            <p>Phase 4: Prompt Builder - 最终提示词构建器</p>
-            <p>Phase 5: API Integration - 完整生成流程集成</p>
+      {/* Legend */}
+      <Card className="p-4 bg-gray-50">
+        <div className="flex items-center gap-6 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <span>User Input</span>
           </div>
-        </Card>
-      )}
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded"></div>
+            <span>Qwen Analysis</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+            <span>Style Template</span>
+          </div>
+        </div>
+      </Card>
     </div>
   )
 }

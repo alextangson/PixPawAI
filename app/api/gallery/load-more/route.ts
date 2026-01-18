@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
-    const limit = parseInt(searchParams.get('limit') || '30', 10);
+    const limit = parseInt(searchParams.get('limit') || '12', 10);
+    const petTypeFilter = searchParams.get('petType') || '';
+    const searchQuery = searchParams.get('query') || '';
 
     // Validate parameters
     if (offset < 0 || limit < 1 || limit > 100) {
@@ -22,12 +24,27 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    const { data: images, error } = await supabase
+    let query = supabase
       .from('generations')
       .select('id, output_url, title, alt_text, style, style_category, prompt, created_at, views, likes, is_public, pet_type')
       .eq('status', 'succeeded')
       .eq('is_public', true)
-      .not('output_url', 'is', null)
+      .not('output_url', 'is', null);
+
+    // Apply pet type filter if provided
+    if (petTypeFilter) {
+      const petTypes = petTypeFilter.split(',').map(pt => pt.trim());
+      query = query.in('pet_type', petTypes);
+    }
+
+    // Apply search query if provided
+    if (searchQuery) {
+      query = query.or(
+        `title.ilike.%${searchQuery}%,alt_text.ilike.%${searchQuery}%,prompt.ilike.%${searchQuery}%,style.ilike.%${searchQuery}%`
+      );
+    }
+
+    const { data: images, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -39,12 +56,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      images: images || [],
-      offset,
-      limit,
-      count: images?.length || 0,
-    });
+    return NextResponse.json(
+      {
+        images: images || [],
+        offset,
+        limit,
+        count: images?.length || 0,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Gallery load more error:', error);
     return NextResponse.json(

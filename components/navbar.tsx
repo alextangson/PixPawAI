@@ -118,7 +118,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                     {dict.nav.cta}
                   </Button>
                   {/* User Menu */}
-                  <UserMenu user={user} />
+                  <UserMenu user={user} lang={lang} />
                 </>
               ) : (
                 <>

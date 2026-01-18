@@ -75,150 +75,179 @@ export async function POST(request: NextRequest) {
     }
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer())
 
-    // 6. Get image metadata and ensure minimum size
-    const imageMetadata = await sharp(imageBuffer).metadata()
-    let targetWidth = imageMetadata.width || 1024
-    let targetHeight = imageMetadata.height || 1024
-    
-    // Ensure minimum width of 2000px for high-quality output
-    if (targetWidth < 2000) {
-      const scaleFactor = 2000 / targetWidth
-      targetWidth = 2000
-      targetHeight = Math.round(targetHeight * scaleFactor)
-    }
+    // 6. Fixed dimensions - 1:1 image, Polaroid style
+    const imageSize = 1150 // Square image (balanced size)
+    const cardWidth = 1200 // Card width (unchanged)
+    const cardHeight = 1600 // Card height (3:4 ratio)
 
-    // 7. Design Parameters (Golden Ratio Leica/Polaroid Style)
-    const borderSize = Math.round(targetWidth * 0.08) // 8% of image width
-    const footerHeight = Math.round(targetWidth * 0.25) // 25% of image width
-    const canvasWidth = targetWidth + (borderSize * 2)
-    const canvasHeight = targetHeight + borderSize + footerHeight
+    // 7. Design Parameters (Polaroid-style Compact Layout)
+    const padding = 80
+    const canvasWidth = 1360 // Fixed canvas width
+    const canvasHeight = 1780 // Polaroid ratio (reduced from 2080)
+    const imageRadius = 20 // Rounded corners for image (subtle)
+    const cardRadius = 12 // Rounded corners for entire card (subtle)
 
-    // 8. Prepare the main image with high-quality resize
+    // 8. Prepare the main image - smart crop to 1:1 square
     const resizedImage = await sharp(imageBuffer)
-      .resize(targetWidth, targetHeight, { 
-        fit: 'cover',
-        kernel: sharp.kernel.lanczos3 
+      .resize(imageSize, imageSize, { 
+        fit: 'cover', // Smart crop to fill square
+        position: 'attention', // AI-powered smart cropping
+        kernel: sharp.kernel.lanczos3
       })
       .toBuffer()
 
-    // 9. Create text overlays using SVG (Refined Typography)
+    // 9. Create SINGLE SVG with all text and lines (Performance Optimized)
     const currentDate = new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     })
 
-    // Calculate font sizes proportionally
-    const titleFontSize = Math.round(targetWidth * 0.022) // ~44px for 2000px width
-    const dateFontSize = Math.round(targetWidth * 0.015) // ~30px
-    const urlFontSize = Math.round(targetWidth * 0.013) // ~26px
-    const sloganFontSize = Math.round(targetWidth * 0.016) // ~32px
-    const logoFontSize = Math.round(targetWidth * 0.015) // ~30px (reduced by 40%)
+    // Font sizes (Refined for compact Polaroid style)
+    const titleFontSize = 44 // Title (reduced from 52)
+    const dateFontSize = 30 // Date (reduced from 36)
+    const sloganFontSize = 48 // Prominent slogan
+    const urlFontSize = 24 // Clear URL
+    const logoHeight = 100 // Compact logo for Polaroid style
 
-    // SVG for text layout (3-section footer, refined design)
-    const textSVG = `
-      <svg width="${canvasWidth}" height="${footerHeight}">
-        <!-- Left Section: Title + Date -->
+    // Single unified SVG for entire canvas (1360x1780) - Polaroid compact layout
+    // Image bottom at y=1230 (80+1150), equal spacing: 70px between image-title and title group-line1
+    const unifiedSVG = `
+      <svg width="${canvasWidth}" height="${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
+        <!-- Title: y=1300 (70px below image, left-aligned) -->
         <text 
-          x="${borderSize}" 
-          y="${footerHeight * 0.3}" 
+          x="110" 
+          y="1300" 
           font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" 
           font-size="${titleFontSize}" 
           font-weight="700" 
-          fill="#333333"
+          fill="#1F2937"
         >${finalTitle}</text>
+        
+        <!-- Date: y=1350 (50px below title) -->
         <text 
-          x="${borderSize}" 
-          y="${footerHeight * 0.45}" 
+          x="110" 
+          y="1350" 
           font-family="Inter, -apple-system, sans-serif" 
           font-size="${dateFontSize}" 
-          fill="#888888"
+          fill="#666666"
         >${currentDate}</text>
 
-        <!-- Center: Separator line -->
-        <line 
-          x1="${borderSize}" 
-          y1="${footerHeight * 0.55}" 
-          x2="${canvasWidth - borderSize}" 
-          y2="${footerHeight * 0.55}" 
-          stroke="#E5E5E5" 
+        <!-- First Separator Line: y=1420 (70px below date, matching image-to-title spacing) -->
+        <path 
+          d="M 80 1420 L 1280 1420" 
+          stroke="#EEEEEE" 
           stroke-width="2"
         />
 
-        <!-- Center Section: URL + Slogan -->
+        <!-- Slogan: y=1495 (Vertically centered between 1420-1570, Italic) -->
         <text 
-          x="${borderSize}" 
-          y="${footerHeight * 0.7}" 
-          font-family="Inter, sans-serif" 
+          x="680" 
+          y="1495" 
+          text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif" 
+          font-size="${sloganFontSize}" 
+          font-weight="400"
+          font-style="italic"
+          fill="#374151"
+        >${selectedSlogan}</text>
+
+        <!-- Second Separator Line: y=1570 (150px spacing for slogan area) -->
+        <path 
+          d="M 80 1570 L 1280 1570" 
+          stroke="#EEEEEE" 
+          stroke-width="2"
+        />
+
+        <!-- URL: y=1720 (Right-aligned, Below Logo) -->
+        <text 
+          x="1280" 
+          y="1720" 
+          text-anchor="end"
+          font-family="Inter, -apple-system, sans-serif" 
           font-size="${urlFontSize}" 
           font-weight="500" 
-          fill="#888888"
+          fill="#999999"
         >PixPawAI.com</text>
-        <text 
-          x="${canvasWidth / 2}" 
-          y="${footerHeight * 0.85}" 
-          text-anchor="middle"
-          font-family="'Pacifico', cursive, Georgia, serif" 
-          font-size="${sloganFontSize * 1.1}" 
-          fill="#666666"
-        >"${selectedSlogan}"</text>
       </svg>
     `
 
-    // 10. Load and prepare logo image
-    const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-128.png')
+    // 10. Load and prepare logo image (using high-res 256px logo)
+    const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-256.png')
     const logoBuffer = await readFile(logoPath)
     
-    // Resize logo to fit in the card (height proportional to footer)
-    const logoHeight = Math.floor(footerHeight * 0.3) // Logo takes ~30% of footer height
+    // Resize logo
     const resizedLogo = await sharp(logoBuffer)
       .resize({ height: logoHeight, fit: 'contain' })
       .toBuffer()
     
-    // Get logo dimensions to position it correctly
+    // Get logo dimensions for positioning
     const logoMetadata = await sharp(resizedLogo).metadata()
     const logoWidth = logoMetadata.width || 0
     
-    // Position logo at bottom-right of the card
-    const logoX = canvasWidth - borderSize - logoWidth - 20 // 20px from right edge
-    const logoY = targetHeight + borderSize + Math.floor(footerHeight * 0.65) // Aligned with slogan
+    // Logo position: x=1280 (right-aligned with separator line), y=1600 (above URL)
+    const logoX = 1280 - logoWidth // Right aligned to match URL and separator
+    const logoY = 1600 // Positioned below second separator line (1570)
     
-    // 10. Composite the final share card
-    const shareCardBuffer = await sharp({
-      create: {
-        width: canvasWidth,
-        height: canvasHeight,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
-      }
-    })
+    // 11. Composite the final share card (Single SVG Approach - Performance Optimized)
+    
+    // Create rounded rectangle background
+    const roundedBg = Buffer.from(`
+      <svg width="${canvasWidth}" height="${canvasHeight}">
+        <rect x="0" y="0" width="${canvasWidth}" height="${canvasHeight}" rx="${cardRadius}" ry="${cardRadius}" fill="white"/>
+      </svg>
+    `)
+    
+    // Create rounded mask for square image
+    const imageMask = Buffer.from(`
+      <svg width="${imageSize}" height="${imageSize}">
+        <rect x="0" y="0" width="${imageSize}" height="${imageSize}" rx="${imageRadius}" ry="${imageRadius}" fill="white"/>
+      </svg>
+    `)
+    
+    // Apply rounded corners to image
+    const roundedImage = await sharp(resizedImage)
+      .composite([{
+        input: imageMask,
+        blend: 'dest-in'
+      }])
+      .png()
+      .toBuffer()
+    
+    // Image position: left-aligned with title/date (x=110)
+    const imageX = 110 // Left-aligned with title and date
+    const imageY = 80 // Top padding
+    // Image bottom: imageY + imageSize = 80 + 1150 = 1230
+    
+    // Single composite operation (Performance: 3 layers in one pass)
+    const shareCardBuffer = await sharp(roundedBg)
       .composite([
         {
-          input: resizedImage,
-          top: borderSize,
-          left: borderSize
+          input: roundedImage,
+          top: imageY,
+          left: imageX
         },
         {
-          input: Buffer.from(textSVG),
-          top: targetHeight + borderSize,
+          input: Buffer.from(unifiedSVG), // All text and lines in one SVG
+          top: 0,
           left: 0
         },
         {
           input: resizedLogo,
-          top: logoY,
+          top: logoY, // y=1830
           left: logoX
         }
       ])
-      .jpeg({ quality: 90 })
+      .png({ quality: 95 })
       .toBuffer()
 
     // 11. Upload to Supabase Storage (shared-cards bucket)
-    const fileName = `${generation_id}-${Date.now()}-custom.jpg`
+    const fileName = `${generation_id}-${Date.now()}-custom.png`
     const { data: uploadData, error: uploadError } = await supabase
       .storage
       .from('shared-cards')
       .upload(fileName, shareCardBuffer, {
-        contentType: 'image/jpeg',
+        contentType: 'image/png',
         cacheControl: '3600',
         upsert: false
       })

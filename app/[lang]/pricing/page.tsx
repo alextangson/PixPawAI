@@ -7,7 +7,7 @@ import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
 import { useParams, useRouter } from 'next/navigation';
 import { PricingComparisonTable } from '@/components/pricing-comparison-table';
-import { FloatingNotification, StatsBadges, TestimonialCarousel } from '@/components/pricing-social-proof';
+import { StatsBadges, TestimonialCarousel } from '@/components/pricing-social-proof';
 import { UpgradeModal } from '@/components/pricing-upgrade-modal';
 import { PricingCountdown, LimitedSlots } from '@/components/pricing-countdown';
 import { PricingFakeDoorModal } from '@/components/pricing-fake-door-modal';
@@ -69,9 +69,6 @@ export default function PricingPage() {
 
   return (
     <main className="min-h-screen bg-cream">
-      {/* Floating Social Proof Notification */}
-      <FloatingNotification />
-
       {/* Header Section */}
       <section className="relative py-20 bg-gradient-to-br from-orange-50 via-cream to-white overflow-hidden">
         {/* Decorative Background Elements */}

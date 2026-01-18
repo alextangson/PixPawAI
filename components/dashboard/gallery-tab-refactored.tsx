@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
-import { ShareSuccessModal } from '@/components/share-success-modal'
 import { ArtCardModal } from '@/components/art-card-modal'
 import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
 import { createClient } from '@/lib/supabase/client'
@@ -34,12 +33,6 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
   const [shareTitle, setShareTitle] = useState('')
   const [isSharing, setIsSharing] = useState(false)
   const [shareError, setShareError] = useState('')
-  
-  // Success Modal States
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [successGenerationId, setSuccessGenerationId] = useState('')
-  const [successShareCardUrl, setSuccessShareCardUrl] = useState('')
-  const [successSlogan, setSuccessSlogan] = useState('')
   
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -113,13 +106,9 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
       // Close input dialog
       setShareDialogOpen(false)
 
-      // Show Success Modal with share card data
-      setSuccessGenerationId(selectedGeneration.id)
-      if (result.share_card_url && result.slogan) {
-        setSuccessShareCardUrl(result.share_card_url)
-        setSuccessSlogan(result.slogan)
-      }
-      setShowSuccessModal(true)
+      // Open Art Card Modal directly
+      setSelectedGenerationForCard(selectedGeneration)
+      setArtCardModalOpen(true)
 
       // Update local state immediately (instant UI feedback)
       if (onLocalUpdate) {
@@ -293,22 +282,6 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
 
   return (
     <>
-      {/* Share Success Modal */}
-      {showSuccessModal && (
-        <ShareSuccessModal
-          isOpen={showSuccessModal}
-          onClose={() => setShowSuccessModal(false)}
-          shareCardUrl={successShareCardUrl}
-          slogan={successSlogan}
-          generationId={successGenerationId}
-          title={shareTitle}
-          onSloganRefresh={(newUrl, newSlogan) => {
-            setSuccessShareCardUrl(newUrl)
-            setSuccessSlogan(newSlogan)
-          }}
-        />
-      )}
-
       {/* Share Input Dialog - Redesigned */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl">
@@ -552,6 +525,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                 alt={generation.title || 'Generated portrait'}
                 fill
                 className="object-cover"
+                loading="lazy"
                 unoptimized
               />
               

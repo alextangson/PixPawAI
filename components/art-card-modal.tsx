@@ -136,7 +136,7 @@ export function ArtCardModal({
         // Trigger download
         const link = document.createElement('a')
         link.href = blobUrl
-        link.download = `pixpaw-${customTitle.replace(/\s+/g, '-')}-card.jpg`
+        link.download = `pixpaw-${customTitle.replace(/\s+/g, '-')}-card.png`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -200,9 +200,9 @@ export function ArtCardModal({
                   {/* Separator */}
                   <div className="border-t border-gray-200"></div>
 
-                  {/* Slogan - Larger and More Artistic with Pacifico */}
-                  <div className="text-gray-700 text-xl leading-relaxed font-pacifico min-h-[3rem] flex items-center justify-center text-center">
-                    "{selectedSlogan}"
+                  {/* Slogan - Georgia Italic (matches downloaded card exactly) */}
+                  <div className="text-gray-700 text-xl leading-relaxed italic min-h-[3rem] flex items-center justify-center text-center" style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}>
+                    {selectedSlogan}
                   </div>
 
                   {/* Separator */}
@@ -229,19 +229,19 @@ export function ArtCardModal({
             <div></div> {/* Top spacer for vertical centering */}
             <div className="p-6">
             
-              {/* Header - Compressed */}
-              <div className="mb-3">
-                <h2 className="text-lg font-bold text-gray-900 mb-1">
+              {/* Header */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
                   Customize Your Art Card
               </h2>
-                <p className="text-xs text-gray-600">
+                <p className="text-sm text-gray-600">
                 Personalize before downloading
               </p>
             </div>
 
-            {/* Title Input - Compressed */}
-            <div className="mb-3">
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            {/* Title Input */}
+            <div className="mb-6">
+              <label className="block text-base font-semibold text-gray-700 mb-1.5">
                 Artwork Title
               </label>
               <input
@@ -257,15 +257,15 @@ export function ArtCardModal({
               </p>
             </div>
 
-            {/* Slogan Selector - Compressed */}
-            <div className="mb-3">
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            {/* Slogan Selector */}
+            <div className="mb-6">
+              <label className="block text-base font-semibold text-gray-700 mb-1.5">
                 Cinematic Slogan
               </label>
               <div className="relative">
                 <div className="p-3 bg-gray-50 border-2 border-gray-200 rounded-lg min-h-[50px] flex items-center">
                   <p className="text-sm text-gray-700 italic font-serif">
-                    "{selectedSlogan}"
+                    {selectedSlogan}
                   </p>
                 </div>
                 <Button
@@ -282,12 +282,41 @@ export function ArtCardModal({
               </p>
             </div>
 
-            {/* Social Share Icons */}
-            <div className="mb-4">
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Share Your Creation
-              </label>
-              <div className="flex items-center gap-3">
+            {/* Flexible spacer to push content to bottom */}
+            <div className="flex-1 min-h-8"></div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 mb-20">
+              <Button
+                onClick={handleDownload}
+                disabled={isDownloading || !customTitle.trim()}
+                className="w-full h-10 text-sm bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold rounded-lg shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating Card...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Social Card
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={onClose}
+                disabled={isDownloading}
+                variant="outline"
+                className="w-full h-9 text-sm border-2 hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </Button>
+            </div>
+
+            {/* Social Share Section - Below Cancel Button with spacing */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-3 mb-4">
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
@@ -328,40 +357,14 @@ export function ArtCardModal({
                   <Share2 className="w-5 h-5 text-gray-600 group-hover:text-red-600" />
                 </button>
               </div>
+              <p className="text-xs font-semibold text-gray-700">
+                Share Your PixPaw Star
+              </p>
               {isCopied && (
-                <p className="text-xs text-green-600 mt-1.5 animate-in fade-in">
+                <p className="text-xs text-green-600 mt-1 animate-in fade-in">
                   Link copied to clipboard!
                 </p>
               )}
-            </div>
-
-            {/* Action Buttons - Compressed */}
-            <div className="space-y-2 mt-4">
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading || !customTitle.trim()}
-                className="w-full h-10 text-sm bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold rounded-lg shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating Card...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Social Card
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={onClose}
-                disabled={isDownloading}
-                variant="outline"
-                className="w-full h-9 text-sm border-2 hover:bg-gray-50 font-medium"
-              >
-                Cancel
-              </Button>
             </div>
             
             </div> {/* Close content container */}

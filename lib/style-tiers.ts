@@ -26,6 +26,9 @@ export interface StyleTierConfig {
 /**
  * Style Tier Mapping
  * 每个风格ID对应其 Tier 配置
+ * 
+ * Quality-Tested Styles (Updated 2026-01-18)
+ * Total: 5 styles (4 Tier 1 + 1 Tier 2)
  */
 export const STYLE_TIER_MAP: Record<string, StyleTierConfig> = {
   // ============================================
@@ -72,84 +75,6 @@ export const STYLE_TIER_MAP: Record<string, StyleTierConfig> = {
   // Tier 2: 轻艺术 (Light Artistic)
   // 相似度目标: 75-80%
   // ============================================
-  'Victorian-Royal': {
-    tier: 2,
-    strength: 0.32,  // 降低以保留毛色
-    guidance: 2.3,
-    description: '复杂服装 + 道具 + 油画质感',
-    expectedSimilarity: '75-80%',
-    numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-  },
-  
-  'Vintage-Traveler': {
-    tier: 2,
-    strength: 0.40,
-    guidance: 2.5,
-    description: '复杂场景 + 蒸汽朋克 + 油画',
-    expectedSimilarity: '75-80%',
-    numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-  },
-
-  // ============================================
-  // Tier 3: 强艺术 (Strong Artistic)
-  // 相似度目标: 65-75%
-  // ============================================
-  'Johannes Vermeer': {
-    tier: 3,
-    strength: 0.52,  // 提高回去，异瞳降低后 0.52 × 0.95 = 0.494
-    guidance: 2.8,
-    description: '经典油画风格 + 戏剧性光影',
-    expectedSimilarity: '65-75%',
-    numVariants: { free: 1, starter: 1, pro: 4, master: 6 }
-  },
-  
-  'Flower-Crown': {
-    tier: 3,
-    strength: 0.54,  // 提高，异瞳降低后 0.54 × 0.95 = 0.513
-    guidance: 3.0,
-    description: '艺术油画 + 细腻笔触',
-    expectedSimilarity: '65-75%',
-    numVariants: { free: 1, starter: 1, pro: 4, master: 6 }
-  },
-  
-  'Embroidery-Art': {
-    tier: 3,
-    strength: 0.55,
-    guidance: 3.0,
-    description: '刺绣材质 + 纹理完全改变',
-    expectedSimilarity: '65-75%',
-    numVariants: { free: 1, starter: 1, pro: 4, master: 6 }
-  },
-
-  // ============================================
-  // Tier 4: 极致艺术 (Extreme Artistic)
-  // 相似度目标: 55-65%
-  // ============================================
-  'Fine-Sketch': {
-    tier: 4,
-    strength: 0.68,
-    guidance: 3.5,
-    description: '精细素描 + 完全手绘效果',
-    expectedSimilarity: '55-65%',
-    numVariants: { free: 1, starter: 1, pro: 5, master: 7 }
-  },
-
-  // ============================================
-  // MVP Test Styles (Added 2026-01-17)
-  // 每个 Tier 一个代表性风格用于快速测试
-  // ============================================
-  
-  // Tier 1: Spring Vibes - 春天主题（樱花飘落）
-  'Spring-Vibes': {
-    tier: 1,
-    strength: 0.28,
-    guidance: 2.0,
-    description: '写实摄影 + 樱花元素',
-    expectedSimilarity: '85-90%',
-    numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-  },
-  
-  // Tier 2: Retro Pop Art - 扁平插画
   'Retro-Pop-Art': {
     tier: 2,
     strength: 0.35,
@@ -157,26 +82,6 @@ export const STYLE_TIER_MAP: Record<string, StyleTierConfig> = {
     description: '扁平插画 + 几何撞色',
     expectedSimilarity: '75-80%',
     numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-  },
-  
-  // Tier 3: Watercolor Dream - 水彩艺术
-  'Watercolor-Dream': {
-    tier: 3,
-    strength: 0.50,
-    guidance: 3.0,
-    description: '水彩艺术 + 透明笔触',
-    expectedSimilarity: '65-75%',
-    numVariants: { free: 1, starter: 1, pro: 4, master: 6 }
-  },
-  
-  // Tier 4: Pixel Mosaic - 像素艺术
-  'Pixel-Mosaic': {
-    tier: 4,
-    strength: 0.68,
-    guidance: 3.5,
-    description: '像素艺术 + 8-bit 风格',
-    expectedSimilarity: '55-65%',
-    numVariants: { free: 1, starter: 1, pro: 5, master: 7 }
   }
 }
 

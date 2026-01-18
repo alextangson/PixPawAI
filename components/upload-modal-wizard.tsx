@@ -21,6 +21,7 @@ interface UploadModalWizardProps {
   isOpen: boolean
   onClose: () => void
   selectedStyle?: string | null
+  isRemixMode?: boolean  // ✨ New: Indicates Remix flow from Gallery
 }
 
 type Step = 'upload' | 'quality-check' | 'configure' | 'generating'
@@ -38,7 +39,7 @@ interface QualityCheckResult {
   detectedColors: string
 }
 
-export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle }: UploadModalWizardProps) {
+export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle, isRemixMode = false }: UploadModalWizardProps) {
   const router = useRouter()
   
   // State
@@ -49,6 +50,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null)
   const [userPrompt, setUserPrompt] = useState('')
   const [selectedStyle, setSelectedStyle] = useState<string>(initialStyle || '')
+  const [isStyleLocked, setIsStyleLocked] = useState<boolean>(isRemixMode)  // Lock style in Remix mode
   const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string>('')
   const [errorType, setErrorType] = useState<'credits' | 'storage' | 'api' | 'general' | 'auth'>('general')
@@ -221,21 +223,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
   ]
   
-  // Get 4 hot styles based on rotation index
-  const getDisplayedStyles = () => {
-    // Define hot style sets (4 styles per set)
-    const styleSets = [
-      ['Johannes Vermeer', 'Victorian-Royal', 'Watercolor-Dream', 'Christmas-Vibe'],
-      ['Spring-Vibes', 'Retro-Pop-Art', 'Flower-Crown', 'Birthday-Party'],
-      ['Smart-Casual', 'Embroidery-Art', 'Music-Lover', 'Fine-Sketch'],
-      ['Vintage-Traveler', 'Pixel-Mosaic', 'Johannes Vermeer', 'Watercolor-Dream']
-    ]
-    
-    const currentSet = styleSets[styleRotationIndex % styleSets.length]
-    return STYLES.filter(style => currentSet.includes(style.id))
-  }
-  
-  const displayedStyles = getDisplayedStyles()
+  // Display all available styles (no rotation needed for 5 styles)
+  const displayedStyles = STYLES
 
   // Animate progress bar from 0% to 90% over 25 seconds
   useEffect(() => {
@@ -1098,58 +1087,72 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
               {/* Style Selector */}
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold">Choose a Style</h3>
-                    <div className="flex items-center gap-2">
-                      {/* Shuffle button */}
-                    <button
-                        onClick={() => setStyleRotationIndex(prev => prev + 1)}
-                        className="text-xs text-coral hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        Shuffle
-                    </button>
-                  
-                      {/* Divider */}
-                      <span className="text-gray-300">|</span>
-                      
-                      {/* More Styles button */}
-                  <button
-                    onClick={() => {
-                      onClose()
-                      router.push('/en/gallery')
-                    }}
-                        className="text-xs text-gray-600 hover:text-coral font-medium flex items-center gap-1 transition-colors"
-                  >
-                        More Styles
-                        <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {displayedStyles.map((style) => (
-                    <button
-                        key={style.id}
-                        onClick={() => setSelectedStyle(style.id)}
-                        className={cn(
-                          "relative rounded-xl overflow-hidden border-2 transition-all aspect-[4/3]",
-                          selectedStyle === style.id 
-                            ? "border-coral ring-2 ring-coral/20 scale-105" 
-                            : "border-gray-200 hover:border-gray-300"
-                        )}
-                    >
-                        <img src={style.src} className="w-full h-full object-cover" alt={style.label} />
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                          <p className="text-white text-xs font-medium truncate">{style.label}</p>
-                          </div>
-                        {selectedStyle === style.id && (
-                          <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
-                            <CheckCircle className="w-4 h-4" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                  {isStyleLocked && selectedStyle ? (
+                    // Remix Mode: Show locked style with elegant display
+                    <div>
+                      <h3 className="text-lg font-bold mb-3">Selected Style (Locked for Remix)</h3>
+                      <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4">
+                        {(() => {
+                          const style = STYLES.find(s => s.id === selectedStyle);
+                          return style ? (
+                            <div className="flex items-center gap-4">
+                              <div className="relative w-24 h-24 rounded-lg overflow-hidden shadow-lg flex-shrink-0">
+                                <img 
+                                  src={style.src} 
+                                  className="w-full h-full object-cover" 
+                                  alt={style.label}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-lg font-bold text-gray-900 mb-1">
+                                  {style.label}
+                                </p>
+                                <p className="text-sm text-gray-600 flex items-center gap-2">
+                                  <CheckCircle className="w-4 h-4 text-orange-600" />
+                                  Style locked for remix
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-gray-600">Style not found</p>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  ) : (
+                    // Normal Mode: Full style selector
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-bold">Choose a Style</h3>
+                        {/* Removed Shuffle button - only 5 styles, all visible */}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {displayedStyles.map((style) => (
+                          <button
+                            key={style.id}
+                            onClick={() => setSelectedStyle(style.id)}
+                            className={cn(
+                              "relative rounded-xl overflow-hidden border-2 transition-all aspect-[4/3]",
+                              selectedStyle === style.id 
+                                ? "border-coral ring-2 ring-coral/20 scale-105" 
+                                : "border-gray-200 hover:border-gray-300"
+                            )}
+                          >
+                            <img src={style.src} className="w-full h-full object-cover" alt={style.label} />
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                              <p className="text-white text-xs font-medium truncate">{style.label}</p>
+                            </div>
+                            {selectedStyle === style.id && (
+                              <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
+                                <CheckCircle className="w-4 h-4" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
               </div>
 
                 {/* Aspect Ratio Selector - 3x2 Grid */}

@@ -487,12 +487,14 @@ export async function POST(request: NextRequest) {
       petType = 'pet', 
       aspectRatio = '1:1', // Default to square
       strength, // Accept from frontend but don't set default here
-      petName = '' // Pet name for Art Card title generation
+      guidance, // Accept guidance from frontend
+      petName = '', // Pet name for Art Card title generation
+      testMode = false // Test mode: skip DB operations
     } = body
 
-    if (!style || !userPrompt) {
+    if (!style) {
       return NextResponse.json(
-        { error: 'Missing required fields: style, prompt' },
+        { error: 'Missing required field: style' },
         { status: 400 }
       )
     }
@@ -698,12 +700,19 @@ export async function POST(request: NextRequest) {
         })
         
         // Construct final prompt with tier-specific strategy
+        // Add aspect ratio guidance for better composition
+        const aspectRatioGuide = aspectRatio === '1:1' ? 'square composition' :
+                                 aspectRatio === '3:4' ? 'vertical portrait composition' :
+                                 aspectRatio === '4:3' ? 'horizontal landscape composition' :
+                                 aspectRatio === '16:9' ? 'wide cinematic composition' :
+                                 aspectRatio === '9:16' ? 'tall vertical composition' : 'centered composition'
+        
         if (tierConfig.tier <= 2) {
           // Tier 1-2: Feature preservation priority
-          finalPrompt = `${promptResult.positive}. Preserve exact features from reference image. Apply ${styleName} style.`
+          finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. Preserve exact features from reference image. Apply ${styleName} style.`
         } else {
           // Tier 3-4: Artistic style priority
-          finalPrompt = `${promptResult.positive}. ${styleName} style interpretation. Based on reference image.`
+          finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. ${styleName} style interpretation. Based on reference image.`
         }
         
         finalNegativePrompt = promptResult.negative
@@ -731,6 +740,13 @@ export async function POST(request: NextRequest) {
       // ========== OLD PROMPT SYSTEM (FALLBACK) ==========
       logger.info('PromptGeneration', 'Using OLD prompt system (fallback)')
       
+      // Add aspect ratio guidance for better composition
+      const aspectRatioGuide = aspectRatio === '1:1' ? 'square composition' :
+                               aspectRatio === '3:4' ? 'vertical portrait composition' :
+                               aspectRatio === '4:3' ? 'horizontal landscape composition' :
+                               aspectRatio === '16:9' ? 'wide cinematic composition' :
+                               aspectRatio === '9:16' ? 'tall vertical composition' : 'centered composition'
+      
       if (imageUrl) {
         // Build feature preservation prefix
         let featurePrefix = ''
@@ -756,7 +772,7 @@ export async function POST(request: NextRequest) {
             .replace(/orange turtleneck/gi, 'turtleneck')
             .replace(/olive green background/gi, 'solid background')
           
-          finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}. Keep original appearance, only apply ${styleName} artistic style.`
+          finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}, ${aspectRatioGuide}. Keep original appearance, only apply ${styleName} artistic style.`
         } else {
           // Tier 3-4: 强艺术 - 平衡风格和特征
           // 清理可能冲突的颜色/特征描述，保留艺术风格
@@ -772,7 +788,7 @@ export async function POST(request: NextRequest) {
             .replace(/orange turtleneck/gi, 'turtleneck')
             .replace(/olive green background/gi, 'solid background')
           
-          finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}. Based on reference image, maintain core breed characteristics and distinctive features.`
+          finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}, ${aspectRatioGuide}. Based on reference image, maintain core breed characteristics and distinctive features.`
         }
         
         // Add complexity-specific reminders
@@ -784,12 +800,54 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // TEXT-TO-IMAGE MODE
-        finalPrompt = `${userPrompt}${styleConfig.promptSuffix}. Professional quality, highly detailed.`
+        finalPrompt = `${userPrompt}${styleConfig.promptSuffix}, ${aspectRatioGuide}. Professional quality, highly detailed.`
       }
       
       console.log('📝 OLD SYSTEM - Final Prompt:', finalPrompt.substring(0, 150) + '...')
     }
 
+    // TEST MODE: Skip database operations and credits
+    if (testMode) {
+      console.log('🧪 TEST MODE: Skipping credits and database operations')
+      
+      try {
+        // Use frontend params or calculated params
+        const finalStrength = strength !== undefined ? strength : adjustedStrength
+        const finalGuidance = guidance !== undefined ? guidance : tierConfig.guidance
+        
+        const { publicUrl } = await generateWithReplicate(
+          finalPrompt,
+          user.id,
+          'test-' + crypto.randomUUID(),
+          processedImageUrl,
+          finalStrength,
+          finalGuidance,
+          finalNegativePrompt || undefined
+        )
+        
+        console.log(`🎨 TEST MODE - Generation complete: strength=${finalStrength.toFixed(2)}, guidance=${finalGuidance}`)
+        
+        return NextResponse.json({
+          success: true,
+          outputUrl: publicUrl,
+          testMode: true,
+          message: 'Test generation - not saved to database',
+          params: {
+            strength: finalStrength,
+            guidance: finalGuidance,
+            aspectRatio
+          }
+        })
+      } catch (error: any) {
+        console.error('❌ Test generation failed:', error)
+        return NextResponse.json(
+          { error: 'Test generation failed', message: error.message },
+          { status: 500 }
+        )
+      }
+    }
+
+    // NORMAL MODE: Check credits and create records
     // 5. Check user credits
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -870,6 +928,7 @@ export async function POST(request: NextRequest) {
       // STEP F: Call Replicate API with tier-optimized parameters
       // Use frontend strength if provided, otherwise use tier-based calculation
       const finalStrength = strength || adjustedStrength
+      const finalGuidance = guidance || tierConfig.guidance
       
       const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
         finalPrompt, 
@@ -877,11 +936,11 @@ export async function POST(request: NextRequest) {
         generation.id,
         processedImageUrl,  // Pre-processed image (already correct dimensions)
         finalStrength,  // Use frontend or calculated strength
-        tierConfig.guidance,  // Dynamic guidance based on tier
+        finalGuidance,  // Use frontend or calculated guidance
         finalNegativePrompt || undefined  // Negative prompt from new system
       )
       
-      console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'calculated'}), guidance=${tierConfig.guidance}`)
+      console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'calculated'}), guidance=${finalGuidance} (${guidance ? 'frontend' : 'calculated'})`)
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
@@ -905,7 +964,7 @@ export async function POST(request: NextRequest) {
               tier: tierConfig.tier,
               baseStrength: baseStrength,
               adjustedStrength: adjustedStrength,
-              guidance: tierConfig.guidance
+              guidance: finalGuidance
             },
           },
         })
