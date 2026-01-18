@@ -588,6 +588,13 @@ export async function POST(request: NextRequest) {
     let finalNegativePrompt = ''
     const styleName = styleConfig.label || '3D Pixar'
     
+    // 🔍 DEBUG: Force log environment variable status
+    console.log('🔍 DEBUG - Environment Check:', {
+      envVar: process.env.NEXT_PUBLIC_USE_NEW_PROMPT_SYSTEM,
+      featureFlag: FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM,
+      nodeEnv: process.env.NODE_ENV,
+    })
+    
     if (FEATURE_FLAGS.USE_NEW_PROMPT_SYSTEM) {
       // ========== NEW PROMPT SYSTEM ==========
       logger.info('PromptGeneration', 'Using NEW prompt system')
