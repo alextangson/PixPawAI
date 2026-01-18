@@ -25,14 +25,16 @@ function Button({
   variant = 'default', 
   size = 'default',
   className = '',
-  disabled = false 
+  disabled = false,
+  title
 }: { 
   children: React.ReactNode
-  onClick?: () => void
+  onClick?: () => void | Promise<void>
   variant?: 'default' | 'outline' | 'destructive'
   size?: 'default' | 'sm'
   className?: string
   disabled?: boolean
+  title?: string
 }) {
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
   
@@ -51,6 +53,7 @@ function Button({
     <button
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
     >
       {children}
