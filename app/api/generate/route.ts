@@ -14,7 +14,7 @@ import Replicate from 'replicate'
 import sharp from 'sharp'
 import { FEATURE_FLAGS } from '@/lib/feature-flags'
 import { logger } from '@/lib/logger'
-import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompts } from '@/lib/prompt-system'
+import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompt } from '@/lib/prompt-system'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -625,16 +625,21 @@ export async function POST(request: NextRequest) {
         logger.promptBuild('Cleaned Features', { count: cleanedFeatures.length })
         
         // 6. Build final prompts
-        const promptResult = buildPrompts({
-          features: cleanedFeatures,
-          tierConfig,
-          imageUrl: imageUrl || undefined,
-          userPrompt: userPrompt || undefined,
-          styleName
+        const promptResult = buildPrompt(cleanedFeatures, {
+          includeQuality: true,
+          negativePrompt: undefined
         })
         
-        finalPrompt = promptResult.positivePrompt
-        finalNegativePrompt = promptResult.negativePrompt
+        // Construct final prompt with tier-specific strategy
+        if (tierConfig.tier <= 2) {
+          // Tier 1-2: Feature preservation priority
+          finalPrompt = `${promptResult.positive}. Preserve exact features from reference image. Apply ${styleName} style.`
+        } else {
+          // Tier 3-4: Artistic style priority
+          finalPrompt = `${promptResult.positive}. ${styleName} style interpretation. Based on reference image.`
+        }
+        
+        finalNegativePrompt = promptResult.negative
         
         logger.promptBuild('Final Prompts Built', {
           positive: finalPrompt.substring(0, 150) + '...',
