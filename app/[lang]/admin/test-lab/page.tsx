@@ -22,7 +22,8 @@ import { Upload, Loader2, Code } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
 import { cleanConflicts, sortFeatures } from '@/lib/prompt-system/conflict-cleaner'
-import { ParsedFeature, PromptConflict } from '@/lib/prompt-system/types'
+import { buildPrompt, buildPromptFromSources } from '@/lib/prompt-system/prompt-builder'
+import { ParsedFeature, PromptConflict, MergedPrompt } from '@/lib/prompt-system/types'
 
 interface QwenResult {
   hasPet: boolean
@@ -55,6 +56,10 @@ export default function TestLabPage() {
   const [cleanedFeatures, setCleanedFeatures] = useState<ParsedFeature[]>([])
   const [conflicts, setConflicts] = useState<PromptConflict[]>([])
   const [showCleanerTest, setShowCleanerTest] = useState(false)
+  
+  // Prompt Builder 测试状态
+  const [finalPrompt, setFinalPrompt] = useState<MergedPrompt | null>(null)
+  const [showBuilderTest, setShowBuilderTest] = useState(false)
   
   // 测试 Parser
   function handleTestParser() {
@@ -167,6 +172,47 @@ export default function TestLabPage() {
       cleaned: sorted.length,
       conflicts: detectedConflicts.length
     })
+  }
+  
+  // 测试 Prompt Builder
+  async function handleTestBuilder() {
+    if (cleanedFeatures.length === 0) {
+      alert('请先运行完整流程或冲突清理器')
+      return
+    }
+    
+    const prompt = buildPrompt(cleanedFeatures)
+    setFinalPrompt(prompt)
+    setShowBuilderTest(true)
+    
+    console.log('Final Prompt:', prompt)
+  }
+  
+  // 测试完整构建流程（一键）
+  async function handleTestCompleteFlow() {
+    try {
+      const style = STYLES.find(s => s.id === selectedStyle)
+      
+      const { prompt, debug } = await buildPromptFromSources({
+        userPrompt: testPrompt || undefined,
+        qwenResult: qwenResult || undefined,
+        stylePromptSuffix: style?.promptSuffix
+      })
+      
+      // 更新所有状态
+      setParsedFeatures(debug.parsedFeatures)
+      setCleanedFeatures(debug.cleanedFeatures)
+      setConflicts([]) // buildPromptFromSources 返回的 debug 中没有 conflicts
+      setFinalPrompt(prompt)
+      
+      setShowCleanerTest(true)
+      setShowBuilderTest(true)
+      
+      console.log('Complete Flow Result:', { prompt, debug })
+    } catch (error: any) {
+      console.error('Complete flow error:', error)
+      alert(`流程执行失败: ${error.message}`)
+    }
   }
   
   // 上传图片
@@ -453,11 +499,11 @@ export default function TestLabPage() {
                 解析风格提示词
               </Button>
               <Button 
-                onClick={handleTestFullFlow} 
+                onClick={handleTestCompleteFlow} 
                 variant="default"
                 className="bg-purple-600 hover:bg-purple-700"
               >
-                测试完整流程 (All-in-One)
+                测试完整流程 (All-in-One + Builder)
               </Button>
             </div>
             
@@ -590,11 +636,82 @@ export default function TestLabPage() {
                       ))}
                     </div>
                     
-                    {/* 最终提示词预览 */}
-                    <div className="mt-4 p-3 bg-white rounded border-2 border-green-300">
-                      <h4 className="font-semibold mb-2">最终提示词预览:</h4>
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {cleanedFeatures.map(f => f.normalized).join(', ')}
+                    {/* 构建最终提示词按钮 */}
+                    <div className="mt-4 flex justify-center">
+                      <Button 
+                        onClick={handleTestBuilder}
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        构建最终提示词 (Prompt Builder)
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Prompt Builder 结果 */}
+                {showBuilderTest && finalPrompt && (
+                  <div className="mt-4 border rounded-lg p-4 bg-purple-50">
+                    <h3 className="font-semibold mb-3 text-purple-900">
+                      最终构建结果 (Phase 4: Prompt Builder)
+                    </h3>
+                    
+                    {/* 正面提示词 */}
+                    <div className="mb-4 p-4 bg-white rounded border-2 border-purple-300">
+                      <h4 className="font-semibold mb-2 text-sm text-purple-700">
+                        正面提示词 (Positive Prompt):
+                      </h4>
+                      <div className="text-sm text-gray-800 leading-relaxed">
+                        {finalPrompt.positive}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        长度: {finalPrompt.positive.length} 字符
+                      </div>
+                    </div>
+                    
+                    {/* 负面提示词 */}
+                    <div className="mb-4 p-4 bg-white rounded border-2 border-red-200">
+                      <h4 className="font-semibold mb-2 text-sm text-red-700">
+                        负面提示词 (Negative Prompt):
+                      </h4>
+                      <div className="text-sm text-gray-800">
+                        {finalPrompt.negative}
+                      </div>
+                    </div>
+                    
+                    {/* 元数据 */}
+                    <div className="p-4 bg-white rounded border">
+                      <h4 className="font-semibold mb-2 text-sm">构建统计:</h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">用户特征:</span>
+                          <span className="ml-2 font-semibold text-blue-600">
+                            {finalPrompt.metadata.userFeaturesCount}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Qwen 特征:</span>
+                          <span className="ml-2 font-semibold text-green-600">
+                            {finalPrompt.metadata.qwenFeaturesCount}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">风格特征:</span>
+                          <span className="ml-2 font-semibold text-yellow-600">
+                            {finalPrompt.metadata.styleFeaturesCount}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">冲突解决:</span>
+                          <span className="ml-2 font-semibold text-red-600">
+                            {finalPrompt.metadata.conflictsResolved}
+                          </span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-gray-600">总优先级得分:</span>
+                          <span className="ml-2 font-semibold text-purple-600">
+                            {finalPrompt.metadata.totalPriority}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
