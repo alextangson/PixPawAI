@@ -606,7 +606,13 @@ export async function POST(request: NextRequest) {
         logger.promptBuild('User Features Parsed', userPromptResult)
         
         // 2. Parse Qwen analysis results
-        const qwenFeatures = parseQwenFeatures(petComplexity)
+        // 🚨 CRITICAL: Inject petType from request body (from quick-quality-check)
+        const qwenFeaturesWithPetType = {
+          ...petComplexity,
+          petType: petType // Use petType from request body (cat, dog, bird, etc.)
+        }
+        logger.info('PetType Injection', `Adding petType: ${petType} to Qwen features`)
+        const qwenFeatures = parseQwenFeatures(qwenFeaturesWithPetType)
         logger.promptBuild('Qwen Features Parsed', qwenFeatures)
         
         // 3. Parse style template (using 'suffix' as source type)
