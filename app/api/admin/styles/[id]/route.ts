@@ -33,15 +33,16 @@ async function checkAdmin() {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     
     const { data, error } = await supabase
       .from('styles')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
     
     if (error) {
@@ -60,9 +61,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     // 验证管理员
     const authCheck = await checkAdmin()
     if (!authCheck.isAdmin) {
@@ -114,7 +117,7 @@ export async function PUT(
     const { data, error } = await adminSupabase
       .from('styles')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
     
@@ -138,9 +141,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     // 验证管理员
     const authCheck = await checkAdmin()
     if (!authCheck.isAdmin) {
@@ -152,7 +157,7 @@ export async function DELETE(
     const { error } = await adminSupabase
       .from('styles')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
     
     if (error) {
       console.error('Error deleting style:', error)

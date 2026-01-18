@@ -102,6 +102,12 @@ export function createTimer(operation: string) {
 }
 
 /**
+ * 快捷导出函数（用于 prompt-system）
+ */
+export const logPromptBuild = logger.promptBuild
+export const logError = logger.error
+
+/**
  * 示例用法：
  * 
  * // 提示词构建
