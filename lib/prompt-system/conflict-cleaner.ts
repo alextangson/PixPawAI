@@ -67,6 +67,25 @@ function detectCompositionConflict(f1: ParsedFeature, f2: ParsedFeature): boolea
 }
 
 /**
+ * 检测品种冲突
+ * 例如: "Samoyed" vs "Dalmatian"
+ * 一个宠物不可能同时是两个品种
+ */
+function detectBreedConflict(f1: ParsedFeature, f2: ParsedFeature): boolean {
+  if (f1.type !== 'breed' || f2.type !== 'breed') return false
+  
+  // 不同的品种互斥（除非明确说明是混血）
+  if (f1.normalized === f2.normalized) return false
+  
+  // 如果包含 "mix" 或 "cross" 可能是混血，不算冲突
+  if (f1.normalized.includes('mix') || f1.normalized.includes('cross')) return false
+  if (f2.normalized.includes('mix') || f2.normalized.includes('cross')) return false
+  
+  // 不同品种 = 冲突
+  return true
+}
+
+/**
  * 检测风格修饰冲突
  * 例如: "dreamy soft" vs "bold dramatic"
  */
@@ -99,6 +118,16 @@ function detectStyleModifierConflict(f1: ParsedFeature, f2: ParsedFeature): bool
  * 冲突规则列表
  */
 const CONFLICT_RULES: ConflictRule[] = [
+  {
+    types: ['breed'],
+    detector: detectBreedConflict,
+    resolver: (f1, f2) => {
+      // 品种冲突：优先保留用户输入，其次保留高优先级
+      if (f1.source === 'user' && f2.source !== 'user') return f1
+      if (f2.source === 'user' && f1.source !== 'user') return f2
+      return f1.priority >= f2.priority ? f1 : f2
+    }
+  },
   {
     types: ['color'],
     detector: detectColorConflict,
