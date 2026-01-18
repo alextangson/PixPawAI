@@ -611,12 +611,12 @@ export async function POST(request: NextRequest) {
         logger.promptBuild('All Features Before Cleaning', { count: allFeatures.length })
         
         // 5. Clean conflicts based on priority
-        const { cleanedFeatures, conflicts } = cleanConflicts(allFeatures)
+        const { cleaned, conflicts } = cleanConflicts(allFeatures)
         logger.promptBuild('Conflicts Detected', conflicts)
-        logger.promptBuild('Cleaned Features', { count: cleanedFeatures.length })
+        logger.promptBuild('Cleaned Features', { count: cleaned.length })
         
         // 6. Build final prompts
-        const promptResult = buildPrompt(cleanedFeatures, {
+        const promptResult = buildPrompt(cleaned, {
           includeQuality: true,
           negativePrompt: undefined
         })
