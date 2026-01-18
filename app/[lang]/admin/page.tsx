@@ -59,7 +59,7 @@ export default async function AdminDashboardPage({
       
       {/* 功能开关状态 */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">🎛️ 功能开关状态</h2>
+        <h2 className="text-xl font-semibold mb-4">功能开关状态</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>
@@ -71,7 +71,7 @@ export default async function AdminDashboardPage({
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-gray-200 text-gray-700'
             }`}>
-              {featureFlags.USE_NEW_PROMPT_SYSTEM ? '✅ ON' : '⚪ OFF'}
+              {featureFlags.USE_NEW_PROMPT_SYSTEM ? 'ON' : 'OFF'}
             </div>
           </div>
           
@@ -85,7 +85,7 @@ export default async function AdminDashboardPage({
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-gray-200 text-gray-700'
             }`}>
-              {featureFlags.USE_DATABASE_STYLES ? '✅ ON' : '⚪ OFF'}
+              {featureFlags.USE_DATABASE_STYLES ? 'ON' : 'OFF'}
             </div>
           </div>
           
@@ -99,21 +99,21 @@ export default async function AdminDashboardPage({
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-gray-200 text-gray-700'
             }`}>
-              {featureFlags.ENABLE_DETAILED_LOGS ? '✅ ON' : '⚪ OFF'}
+              {featureFlags.ENABLE_DETAILED_LOGS ? 'ON' : 'OFF'}
             </div>
           </div>
         </div>
         
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-800">
-            💡 提示：功能开关默认关闭，测试通过后再在 Vercel 环境变量中开启。
+            提示：功能开关默认关闭，测试通过后再在 Vercel 环境变量中开启。
           </p>
         </div>
       </Card>
       
       {/* 快速入口 */}
       <div>
-        <h2 className="text-2xl font-semibold mb-4">🚀 快速入口</h2>
+        <h2 className="text-2xl font-semibold mb-4">快速入口</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {quickLinks.map((link) => {
             const Icon = link.icon
@@ -140,7 +140,7 @@ export default async function AdminDashboardPage({
       
       {/* 开发指南 */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">📚 开发指南</h2>
+        <h2 className="text-xl font-semibold mb-4">开发指南</h2>
         <div className="space-y-3 text-sm">
           <div>
             <strong>Phase 1 (当前)：</strong> Test Lab 基础版 - 搭建测试工具

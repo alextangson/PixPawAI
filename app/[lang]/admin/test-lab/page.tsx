@@ -70,7 +70,8 @@ export default function TestLabPage() {
       })
       
       if (!uploadRes.ok) {
-        throw new Error('上传失败')
+        const errorData = await uploadRes.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || '上传失败')
       }
       
       const { imageUrl } = await uploadRes.json()
@@ -109,7 +110,7 @@ export default function TestLabPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">🧪 Test Lab - 基础版</h1>
+        <h1 className="text-3xl font-bold mb-2">Test Lab - 基础版</h1>
         <p className="text-gray-600">
           测试提示词构建流程的每一步（Phase 1: 基础功能）
         </p>
@@ -117,7 +118,7 @@ export default function TestLabPage() {
       
       {/* Step 1: 上传图片 */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">1️⃣ 上传测试图片</h2>
+        <h2 className="text-xl font-semibold mb-4">1. 上传测试图片</h2>
         
         {!imagePreview ? (
           <div
@@ -174,14 +175,14 @@ export default function TestLabPage() {
         
         {error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            ❌ {error}
+            错误: {error}
           </div>
         )}
       </Card>
       
       {/* Step 2: 选择风格 */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">2️⃣ 选择风格</h2>
+        <h2 className="text-xl font-semibold mb-4">2. 选择风格</h2>
         <select
           value={selectedStyle}
           onChange={(e) => setSelectedStyle(e.target.value)}
@@ -201,7 +202,7 @@ export default function TestLabPage() {
       {/* Step 3: Qwen 识别结果 */}
       {qwenResult && (
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">📊 Qwen AI 识别结果</h2>
+          <h2 className="text-xl font-semibold mb-4">Qwen AI 识别结果</h2>
           
           <div className="space-y-4">
             {/* 基础信息 */}
@@ -223,7 +224,7 @@ export default function TestLabPage() {
             
             {/* 详细特征 */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="font-semibold mb-3">🔍 详细特征</h3>
+              <h3 className="font-semibold mb-3">详细特征</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
                   <strong>品种:</strong> {qwenResult.breed || '未识别'}
@@ -234,15 +235,15 @@ export default function TestLabPage() {
                 <div>
                   <strong>异瞳:</strong> {
                     qwenResult.hasHeterochromia 
-                      ? `✅ 是 (${qwenResult.heterochromiaDetails})` 
-                      : '❌ 否'
+                      ? `是 (${qwenResult.heterochromiaDetails})` 
+                      : '否'
                   }
                 </div>
                 <div>
                   <strong>复杂花纹:</strong> {
                     qwenResult.complexPattern 
-                      ? `✅ 是 (${qwenResult.patternDetails})` 
-                      : '❌ 否'
+                      ? `是 (${qwenResult.patternDetails})` 
+                      : '否'
                   }
                 </div>
                 <div>
@@ -268,13 +269,13 @@ export default function TestLabPage() {
       {qwenResult && (
         <Card className="p-6 border-dashed">
           <h2 className="text-xl font-semibold mb-4 text-gray-400">
-            🚧 Phase 2-5 功能预览（即将上线）
+            Phase 2-5 功能预览（即将上线）
           </h2>
           <div className="space-y-2 text-sm text-gray-500">
-            <p>✓ Phase 2: 用户提示词解析器</p>
-            <p>✓ Phase 3: promptSuffix 冲突清理器</p>
-            <p>✓ Phase 4: 风格库数据库管理</p>
-            <p>✓ Phase 5: 完整提示词构建流程展示</p>
+            <p>Phase 2: 用户提示词解析器</p>
+            <p>Phase 3: promptSuffix 冲突清理器</p>
+            <p>Phase 4: 风格库数据库管理</p>
+            <p>Phase 5: 完整提示词构建流程展示</p>
           </div>
         </Card>
       )}
