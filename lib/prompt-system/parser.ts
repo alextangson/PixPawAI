@@ -287,10 +287,18 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
   if (qwenResult.hasHeterochromia) {
     // 如果有具体的眼睛颜色描述，使用详细信息
     if (qwenResult.heterochromiaDetails && qwenResult.heterochromiaDetails.trim() !== '') {
+      // 🔄 镜像翻转：Qwen 的左右需要翻转才能匹配 AI 模型的视角
+      // Qwen: "left eye blue, right eye brown"
+      // AI需要: "right eye blue, left eye brown"
+      const mirroredDetails = qwenResult.heterochromiaDetails
+        .replace(/\bleft\b/gi, 'TEMP_LEFT')   // 临时标记 left
+        .replace(/\bright\b/gi, 'left')        // right → left
+        .replace(/TEMP_LEFT/gi, 'right')       // TEMP_LEFT → right
+      
       features.push({
         type: 'color',
-        value: `heterochromia (${qwenResult.heterochromiaDetails})`,
-        normalized: `heterochromia, ${qwenResult.heterochromiaDetails}`,
+        value: `heterochromia (${mirroredDetails})`,
+        normalized: `heterochromia, ${mirroredDetails}`,
         priority: calculatePriority('color', 'qwen') + 3, // 异瞳是最独特的特征，最高优先级
         source: 'qwen'
       })
