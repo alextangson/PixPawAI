@@ -9,8 +9,20 @@ import { logPromptBuild } from '@/lib/logger'
 // 特征关键词映射
 const FEATURE_KEYWORDS: Record<FeatureType, string[]> = {
   pet_type: [
+    // Common pets
     'cat', 'dog', 'bird', 'rabbit', 'hamster', 'guinea pig',
-    'kitten', 'puppy', 'feline', 'canine', 'pet'
+    'kitten', 'puppy', 'feline', 'canine',
+    // Reptiles & Amphibians
+    'snake', 'lizard', 'gecko', 'iguana', 'turtle', 'tortoise', 'chameleon', 'bearded dragon',
+    'frog', 'toad', 'salamander',
+    // Small mammals
+    'ferret', 'chinchilla', 'hedgehog', 'mouse', 'rat', 'gerbil',
+    // Birds
+    'parrot', 'cockatiel', 'parakeet', 'budgie', 'canary', 'finch', 'lovebird',
+    // Fish & Aquatic
+    'fish', 'goldfish', 'betta', 'koi', 'axolotl',
+    // Other
+    'pet', 'animal'
   ],
   color: [
     'blue', 'golden', 'white', 'black', 'brown', 'orange', 'gray', 'grey',

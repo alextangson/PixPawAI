@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 interface QuickQualityCheckResult {
   hasPet: boolean
   isClear: boolean
-  petType: 'dog' | 'cat' | 'other'
+  petType: string  // Can be any pet type: dog, cat, snake, lizard, etc.
   quality: 'good' | 'poor'
 }
 
@@ -49,13 +49,13 @@ export async function POST(request: NextRequest) {
     const prompt = `Quick image check (answer in 3 seconds):
 1. Is this a pet (dog/cat/animal)? YES/NO
 2. Is the image clear and not blurry? YES/NO
-3. Pet type? dog/cat/other
+3. Pet type? (be specific: dog, cat, snake, lizard, bird, rabbit, hamster, fish, turtle, etc.)
 
 Output ONLY this JSON (no explanations):
 {
   "hasPet": true/false,
   "isClear": true/false,
-  "petType": "dog"/"cat"/"other",
+  "petType": "specific_pet_type",
   "quality": "good"/"poor"
 }`
 

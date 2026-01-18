@@ -24,7 +24,7 @@ async function analyzeImageQuality(imageUrl: string): Promise<QualityCheckResult
 
 STEP 1: Photo Quality Check
 - Is there a pet in this photo? (yes/no)
-- If yes, what type? (dog/cat/rabbit/bird/other)
+- If yes, what type? (be specific: dog, cat, rabbit, bird, hamster, guinea pig, snake, lizard, turtle, fish, ferret, chinchilla, hedgehog, parrot, etc.)
 - Photo quality? (excellent/good/poor/unusable)
 - Issues? (blurry, too_small, poor_lighting, obstructed, no_pet)
 
