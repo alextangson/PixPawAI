@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { BeforeAfterSlider } from '@/components/before-after-slider'
 import { InfiniteMarquee } from '@/components/infinite-marquee'
@@ -33,9 +34,10 @@ interface HeroSectionProps {
     }
   }
   onOpenUpload: () => void
+  lang?: string
 }
 
-export function HeroSection({ dict, onOpenUpload }: HeroSectionProps) {
+export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden pt-16">
       {/* Background Pattern - Brand paw prints */}
@@ -112,10 +114,12 @@ export function HeroSection({ dict, onOpenUpload }: HeroSectionProps) {
                   {dict.hero.cta.primary}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button size="xl" variant="outline" className="group">
-                  <PawIcon size={20} className="group-hover:scale-110 transition-transform" />
-                  {dict.hero.cta.secondary}
-                </Button>
+                <Link href={`/${lang}/gallery`}>
+                  <Button size="xl" variant="outline" className="group">
+                    <PawIcon size={20} className="group-hover:scale-110 transition-transform" />
+                    {dict.hero.cta.secondary}
+                  </Button>
+                </Link>
               </div>
 
               {/* Trust Badges - Refactored to Simple Icons + Text */}

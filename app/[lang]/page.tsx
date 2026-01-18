@@ -62,7 +62,7 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <HeroSection dict={dict} onOpenUpload={() => handleOpenUpload()} />
+      <HeroSection dict={dict} onOpenUpload={() => handleOpenUpload()} lang={lang} />
       
       {/* How It Works Section */}
       <HowItWorks dict={dict} onOpenUpload={() => handleOpenUpload()} />

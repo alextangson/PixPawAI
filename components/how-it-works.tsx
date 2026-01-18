@@ -81,7 +81,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
             {/* Visual: Processing Animation */}
             <div className="relative h-48 mb-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&h=300&fit=crop"
+                src="/how-it-works/after.jpg"
                 alt="AI Processing"
                 className="w-full h-full object-cover opacity-30"
               />
@@ -118,7 +118,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
               <div className="w-32 h-48 bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border-4 border-gray-800 relative">
                 {/* Phone Screen */}
                 <img
-                  src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=300&fit=crop"
+                  src="/how-it-works/Preview-Customize.jpg"
                   alt="Result preview"
                   className="w-full h-full object-cover"
                 />
