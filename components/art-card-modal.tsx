@@ -48,7 +48,10 @@ export function ArtCardModal({
   useEffect(() => {
     const title = artCardTitle || (petName ? `${petName} - Portrait` : originalTitle || 'My Pet Portrait')
     setCustomTitle(title)
-    setSelectedSlogan(currentSlogan || PREMIUM_SLOGANS[0])
+    // Only override random slogan if currentSlogan is explicitly provided
+    if (currentSlogan) {
+      setSelectedSlogan(currentSlogan)
+    }
   }, [petName, artCardTitle, originalTitle, currentSlogan])
 
   const handleRefreshSlogan = () => {
@@ -197,8 +200,8 @@ export function ArtCardModal({
                   {/* Separator */}
                   <div className="border-t border-gray-200"></div>
 
-                  {/* Slogan - Larger and More Artistic */}
-                  <div className="text-gray-700 italic text-lg leading-relaxed font-serif min-h-[3rem] flex items-center">
+                  {/* Slogan - Larger and More Artistic with Caveat */}
+                  <div className="text-gray-700 italic text-xl leading-relaxed font-caveat min-h-[3rem] flex items-center justify-center text-center">
                     "{selectedSlogan}"
                   </div>
 
@@ -222,8 +225,9 @@ export function ArtCardModal({
           </div>
 
           {/* Right Panel: Controls & Actions (40% on desktop) */}
-          <div className="md:w-[40%] flex flex-col bg-white overflow-y-auto h-full">
-            <div className="flex-1 flex flex-col justify-center p-6">
+          <div className="md:w-[40%] bg-white h-full grid grid-rows-[1fr_auto_1fr] overflow-y-auto">
+            <div></div> {/* Top spacer for vertical centering */}
+            <div className="p-6">
             
               {/* Header - Compressed */}
               <div className="mb-3">
@@ -331,9 +335,6 @@ export function ArtCardModal({
               )}
             </div>
 
-            {/* Spacer - Pushes buttons to bottom */}
-            <div className="flex-1 min-h-2"></div>
-
             {/* Action Buttons - Compressed */}
             <div className="space-y-2 mt-4">
               <Button
@@ -363,7 +364,8 @@ export function ArtCardModal({
               </Button>
             </div>
             
-            </div> {/* Close inner centering container */}
+            </div> {/* Close content container */}
+            <div></div> {/* Bottom spacer for vertical centering */}
           </div> {/* Close outer right panel container */}
         </div>
       </DialogContent>

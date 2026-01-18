@@ -1,8 +1,18 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Dancing_Script, Caveat } from "next/font/google"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
+const dancingScript = Dancing_Script({ 
+  subsets: ["latin"],
+  variable: '--font-dancing-script',
+  weight: ['400', '700']
+})
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: '--font-caveat',
+  weight: ['400', '700']
+})
 
 export const metadata: Metadata = {
   title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
@@ -50,7 +60,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${inter.className} ${dancingScript.variable} ${caveat.variable}`} suppressHydrationWarning>
         {children}
       </body>
     </html>

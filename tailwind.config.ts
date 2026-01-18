@@ -22,6 +22,8 @@ const config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
+        'dancing-script': ['var(--font-dancing-script)', 'cursive'],
+        'caveat': ['var(--font-caveat)', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",

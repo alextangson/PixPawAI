@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
 import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 
 export async function POST(request: NextRequest) {
   try {
@@ -153,28 +155,35 @@ export async function POST(request: NextRequest) {
           fill="#888888"
         >PixPawAI.com</text>
         <text 
-          x="${borderSize}" 
+          x="${canvasWidth / 2}" 
           y="${footerHeight * 0.85}" 
-          font-family="Georgia, 'Times New Roman', serif" 
-          font-size="${sloganFontSize}" 
+          text-anchor="middle"
+          font-family="'Caveat', cursive, Georgia, serif" 
+          font-size="${sloganFontSize * 1.1}" 
           font-style="italic" 
           fill="#666666"
         >"${selectedSlogan}"</text>
-
-        <!-- Right Section: Logo (40% smaller) -->
-        <text 
-          x="${canvasWidth - borderSize - 10}" 
-          y="${footerHeight * 0.8}" 
-          text-anchor="end" 
-          font-family="Inter, sans-serif" 
-          font-size="${logoFontSize}" 
-          font-weight="900" 
-          letter-spacing="2" 
-          fill="#FF8C42"
-        >PIXPAW AI</text>
       </svg>
     `
 
+    // 10. Load and prepare logo image
+    const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-128.png')
+    const logoBuffer = await readFile(logoPath)
+    
+    // Resize logo to fit in the card (height proportional to footer)
+    const logoHeight = Math.floor(footerHeight * 0.3) // Logo takes ~30% of footer height
+    const resizedLogo = await sharp(logoBuffer)
+      .resize({ height: logoHeight, fit: 'contain' })
+      .toBuffer()
+    
+    // Get logo dimensions to position it correctly
+    const logoMetadata = await sharp(resizedLogo).metadata()
+    const logoWidth = logoMetadata.width || 0
+    
+    // Position logo at bottom-right of the card
+    const logoX = canvasWidth - borderSize - logoWidth - 20 // 20px from right edge
+    const logoY = targetHeight + borderSize + Math.floor(footerHeight * 0.65) // Aligned with slogan
+    
     // 10. Composite the final share card
     const shareCardBuffer = await sharp({
       create: {
@@ -194,6 +203,11 @@ export async function POST(request: NextRequest) {
           input: Buffer.from(textSVG),
           top: targetHeight + borderSize,
           left: 0
+        },
+        {
+          input: resizedLogo,
+          top: logoY,
+          left: logoX
         }
       ])
       .jpeg({ quality: 90 })
