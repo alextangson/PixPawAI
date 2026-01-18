@@ -294,14 +294,56 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
     })
   }
   
-  // 花纹
-  if (qwenResult.pattern && qwenResult.pattern !== 'solid') {
+  // 🆕 detectedColors (多个颜色)
+  if (qwenResult.detectedColors && typeof qwenResult.detectedColors === 'string') {
+    features.push({
+      type: 'color',
+      value: qwenResult.detectedColors,
+      normalized: normalizeFeatureValue(qwenResult.detectedColors, 'color'),
+      priority: calculatePriority('color', 'qwen'),
+      source: 'qwen'
+    })
+  }
+  
+  // 🆕 patternDetails (具体花纹描述，如"stripes", "spots")
+  if (qwenResult.patternDetails && qwenResult.patternDetails.trim() !== '') {
+    features.push({
+      type: 'pattern',
+      value: qwenResult.patternDetails,
+      normalized: normalizeFeatureValue(qwenResult.patternDetails, 'pattern'),
+      priority: calculatePriority('pattern', 'qwen') + 1, // 具体花纹优先级高于通用pattern
+      source: 'qwen'
+    })
+  }
+  
+  // 花纹（保留通用pattern支持）
+  if (qwenResult.pattern && qwenResult.pattern !== 'solid' && qwenResult.pattern !== qwenResult.patternDetails) {
     features.push({
       type: 'pattern',
       value: qwenResult.pattern,
       normalized: normalizeFeatureValue(qwenResult.pattern, 'pattern'),
       priority: calculatePriority('pattern', 'qwen'),
       source: 'qwen'
+    })
+  }
+  
+  // 🆕 keyFeatures (关键特征，如"striped pattern, large eyes")
+  if (qwenResult.keyFeatures && qwenResult.keyFeatures.trim() !== '') {
+    // 将keyFeatures分割为多个特征
+    const keyPhrases = qwenResult.keyFeatures
+      .split(/[,，]/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+    
+    keyPhrases.forEach(phrase => {
+      const type = detectFeatureType(phrase)
+      features.push({
+        type,
+        value: phrase,
+        normalized: normalizeFeatureValue(phrase, type),
+        priority: calculatePriority(type, 'qwen'),
+        source: 'qwen'
+      })
     })
   }
   
@@ -322,6 +364,17 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
       type: 'composition',
       value: `${qwenResult.petCount} pets`,
       normalized: `${qwenResult.petCount} pets`,
+      priority: calculatePriority('composition', 'qwen') + 1,
+      source: 'qwen'
+    })
+  }
+  
+  // multiplePets 兼容性支持
+  if (!qwenResult.petCount && qwenResult.multiplePets && qwenResult.multiplePets > 1) {
+    features.push({
+      type: 'composition',
+      value: `${qwenResult.multiplePets} pets`,
+      normalized: `${qwenResult.multiplePets} pets`,
       priority: calculatePriority('composition', 'qwen') + 1,
       source: 'qwen'
     })

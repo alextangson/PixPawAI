@@ -1351,7 +1351,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <img 
                     src="/brand/logo-orange.svg" 
                     alt="PixPaw AI"
-                    className="h-10 opacity-90"
+                    className="h-20 opacity-90"
                   />
                 </div>
                 
