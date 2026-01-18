@@ -137,8 +137,8 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               {/* Before/After Slider - Sole Visual Element */}
               <div className="relative">
                 <BeforeAfterSlider
-                  beforeImage="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&h=600&fit=crop"
-                  afterImage="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&h=600&fit=crop"
+                  beforeImage="/styles/before.jpg"
+                  afterImage="/how-it-works/after.jpg"
                   beforeAlt={dict.hero.slider.beforeAlt}
                   afterAlt={dict.hero.slider.afterAlt}
                 />

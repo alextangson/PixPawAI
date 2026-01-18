@@ -53,7 +53,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
     {
       name: 'Watercolor Dream',
       description: 'Soft watercolor painting - Coming Soon',
-      image: '/watercolor-dream.png',
+      image: '/originals/iShot_2026-01-16_15.14.03.png',
       badge: 'Coming Soon',
       aspectRatio: 'standard',
       isComingSoon: true,
@@ -61,7 +61,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
     {
       name: 'Oil Painting',
       description: 'Classic oil painting masterpiece - Coming Soon',
-      image: '/johannes-vermeer.png',
+      image: '/originals/iShot_2026-01-16_15.14.51.png',
       badge: 'Coming Soon',
       aspectRatio: 'standard',
       isComingSoon: true,
@@ -69,7 +69,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
     {
       name: 'Vintage Traveler',
       description: 'Whimsical steampunk adventure - Coming Soon',
-      image: '/iShot_2026-01-16_15.15.06.png',
+      image: '/originals/iShot_2026-01-16_15.15.06.png',
       badge: 'Coming Soon',
       aspectRatio: 'standard',
       isComingSoon: true,
