@@ -224,16 +224,16 @@ export function ArtCardModal({
           {/* Right Panel: Controls & Actions (40% on desktop) */}
           <div className="md:w-[40%] flex flex-col bg-white overflow-y-auto h-full">
             <div className="flex-1 flex flex-col justify-center p-6">
-              
+            
               {/* Header - Compressed */}
               <div className="mb-3">
                 <h2 className="text-lg font-bold text-gray-900 mb-1">
                   Customize Your Art Card
-                </h2>
+              </h2>
                 <p className="text-xs text-gray-600">
-                  Personalize before downloading
-                </p>
-              </div>
+                Personalize before downloading
+              </p>
+            </div>
 
             {/* Title Input - Compressed */}
             <div className="mb-3">

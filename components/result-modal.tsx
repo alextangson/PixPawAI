@@ -305,8 +305,8 @@ export function ResultModal({
     if (generationMetadata?.preGeneratedCardUrl) {
       window.open(generationMetadata.preGeneratedCardUrl, '_blank')
     } else {
-      setArtCardModalOpen(true)
-    }
+    setArtCardModalOpen(true)
+  }
   }
 
   // Handle "Not quite" click - trigger credit refund
@@ -404,7 +404,7 @@ export function ResultModal({
       {/* Main Result Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
         <div className="bg-white w-full h-full lg:h-[90vh] lg:max-w-7xl lg:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
-
+          
           {/* Close Button (Top Right) */}
           <button
             onClick={onClose}
@@ -454,48 +454,48 @@ export function ResultModal({
 
             {/* Action Bar - Only show when Love it */}
             {userChoice === 'love' && (
-              <div className="bg-white p-4 lg:p-6 border-t border-gray-200 flex-shrink-0">
-                <div className="max-w-2xl mx-auto space-y-3">
-                  
-                  {/* Share Input (Conditional) */}
-                  {showShareInput && !isShared && (
-                    <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-xl p-4 space-y-3 animate-in slide-in-from-bottom border-2 border-coral/20">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-base font-semibold text-gray-800">
+            <div className="bg-white p-4 lg:p-6 border-t border-gray-200 flex-shrink-0">
+              <div className="max-w-2xl mx-auto space-y-3">
+                
+                {/* Share Input (Conditional) */}
+                {showShareInput && !isShared && (
+                  <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-xl p-4 space-y-3 animate-in slide-in-from-bottom border-2 border-coral/20">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-base font-semibold text-gray-800">
                           Name Your PixPaw Star
-                        </label>
-                        <span className="text-xs text-gray-500 font-medium">
-                          {shareTitle.length}/100
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        value={shareTitle}
-                        onChange={(e) => setShareTitle(e.target.value)}
-                        placeholder={randomPlaceholder}
-                        className="w-full px-4 py-3 border-2 border-coral/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral bg-white shadow-sm transition-all"
-                        maxLength={100}
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleShareConfirm}
-                          disabled={isSharing}
-                          className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
-                        >
-                          {isSharing ? 'Sharing...' : 'Confirm Share'}
-                        </Button>
-                        <Button
-                          onClick={() => setShowShareInput(false)}
-                          disabled={isSharing}
-                          variant="outline"
-                          className="px-6"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+                      </label>
+                      <span className="text-xs text-gray-500 font-medium">
+                        {shareTitle.length}/100
+                      </span>
                     </div>
-                  )}
+                    <input
+                      type="text"
+                      value={shareTitle}
+                      onChange={(e) => setShareTitle(e.target.value)}
+                      placeholder={randomPlaceholder}
+                      className="w-full px-4 py-3 border-2 border-coral/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral bg-white shadow-sm transition-all"
+                      maxLength={100}
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleShareConfirm}
+                        disabled={isSharing}
+                        className="flex-1 bg-coral hover:bg-orange-600 text-white font-semibold"
+                      >
+                        {isSharing ? 'Sharing...' : 'Confirm Share'}
+                      </Button>
+                      <Button
+                        onClick={() => setShowShareInput(false)}
+                        disabled={isSharing}
+                        variant="outline"
+                        className="px-6"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                   {/* Heterochromia Alert */}
                   {generationMetadata?.hasHeterochromia && (
@@ -517,76 +517,76 @@ export function ResultModal({
                   
                   {/* Action Buttons */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {!isShared ? (
-                      <Button
-                        onClick={handleShareClick}
-                        disabled={showShareInput}
-                        className="sm:col-span-2 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-12 text-base shadow-lg"
-                      >
-                        <Sparkles className="w-5 h-5 mr-2" />
+                  {!isShared ? (
+                    <Button
+                      onClick={handleShareClick}
+                      disabled={showShareInput}
+                      className="sm:col-span-2 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-12 text-base shadow-lg"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2" />
                         Share to Gallery (+1 Credit)
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleCreateArtCard}
-                        className="sm:col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 text-white font-bold h-12 text-base shadow-lg"
-                      >
-                        <Sparkles className="w-5 h-5 mr-2" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleCreateArtCard}
+                      className="sm:col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 text-white font-bold h-12 text-base shadow-lg"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2" />
                         Create Art Card
-                      </Button>
-                    )}
-
-                    {!isShared ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                            <ChevronDown className="w-4 h-4 ml-2" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-56">
-                          <DropdownMenuItem onClick={handleDownloadOriginal}>
-                            <Download className="w-4 h-4 mr-2" />
-                            Original High-Res
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleCreateArtCard}>
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            Create Art Card
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <Button
-                        onClick={handleDownloadOriginal}
-                        variant="outline"
-                        className="sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Original
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {/* Success Message */}
-                  {isShared && (
-                    <div className="flex items-center justify-center py-2 text-sm text-green-700 font-medium animate-in fade-in">
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Shared to PixPaw Gallery ✓
-                    </div>
+                    </Button>
                   )}
 
-                  {/* Credits Display */}
-                  {remainingCredits !== null && (
-                    <p className="text-center text-sm text-gray-500">
-                      {remainingCredits} credits remaining
-                    </p>
+                  {!isShared ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuItem onClick={handleDownloadOriginal}>
+                          <Download className="w-4 h-4 mr-2" />
+                          Original High-Res
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleCreateArtCard}>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                            Create Art Card
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Button
+                      onClick={handleDownloadOriginal}
+                      variant="outline"
+                      className="sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Original
+                    </Button>
                   )}
                 </div>
+                
+                  {/* Success Message */}
+                {isShared && (
+                  <div className="flex items-center justify-center py-2 text-sm text-green-700 font-medium animate-in fade-in">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Shared to PixPaw Gallery ✓
+                  </div>
+                )}
+
+                {/* Credits Display */}
+                {remainingCredits !== null && (
+                  <p className="text-center text-sm text-gray-500">
+                    {remainingCredits} credits remaining
+                  </p>
+                )}
               </div>
+            </div>
             )}
           </div>
 
@@ -640,70 +640,70 @@ export function ResultModal({
                 
                 {/* Main Content - Centered */}
                 <div className="flex-1 flex flex-col justify-center space-y-6">
-                  {/* Header */}
+            {/* Header */}
                   <div className="text-center lg:text-left">
-                    <h2 className="text-3xl lg:text-4xl font-serif text-gray-900 mb-3 leading-tight">
-                      Your PixPaw Star is Born
-                    </h2>
-                    <p className="text-gray-600 text-lg">
-                      See your masterpiece come to life.
-                    </p>
-                  </div>
+              <h2 className="text-3xl lg:text-4xl font-serif text-gray-900 mb-3 leading-tight">
+                Your PixPaw Star is Born
+              </h2>
+              <p className="text-gray-600 text-lg">
+                See your masterpiece come to life.
+              </p>
+            </div>
 
                   {/* Wall Art Mockup */}
-                  <button
-                    onClick={handleShopClick}
+            <button
+              onClick={handleShopClick}
                     className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 group cursor-pointer border-2 border-transparent hover:border-coral/30"
-                  >
-                    <div className="absolute inset-0 bg-[#E5E5E5]"></div>
-                    <div className="absolute inset-0 flex items-center justify-center p-8">
-                      <div className="w-2/5 aspect-square bg-white border-4 border-white rounded shadow-2xl overflow-hidden transform group-hover:scale-105 transition-transform duration-300">
-                        <img
-                          src={generatedImageUrl}
-                          alt="Wall preview mockup"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                    <div className="absolute inset-0 bg-coral/0 group-hover:bg-coral/10 transition-colors duration-300 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/95 rounded-lg px-4 py-2 shadow-lg">
-                        <span className="text-coral font-semibold">Bring your PixPaw Star home →</span>
-                      </div>
-                    </div>
-                  </button>
+            >
+              <div className="absolute inset-0 bg-[#E5E5E5]"></div>
+              <div className="absolute inset-0 flex items-center justify-center p-8">
+                <div className="w-2/5 aspect-square bg-white border-4 border-white rounded shadow-2xl overflow-hidden transform group-hover:scale-105 transition-transform duration-300">
+                  <img
+                    src={generatedImageUrl}
+                    alt="Wall preview mockup"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-coral/0 group-hover:bg-coral/10 transition-colors duration-300 flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/95 rounded-lg px-4 py-2 shadow-lg">
+                  <span className="text-coral font-semibold">Bring your PixPaw Star home →</span>
+                </div>
+              </div>
+            </button>
 
-                  {/* CTA Text */}
-                  <div className="text-center lg:text-left">
-                    <p className="text-gray-700 text-base leading-relaxed">
-                      Transform your PixPaw creation into premium merchandise. From custom pillows to museum-quality prints.
-                    </p>
-                  </div>
+            {/* CTA Text */}
+            <div className="text-center lg:text-left">
+              <p className="text-gray-700 text-base leading-relaxed">
+                Transform your PixPaw creation into premium merchandise. From custom pillows to museum-quality prints.
+              </p>
+            </div>
 
                   {/* Unlock Button */}
-                  <Button
-                    onClick={handleShopClick}
-                    className="w-full bg-black hover:bg-gray-800 text-white font-semibold h-12 shadow-lg"
-                  >
-                    <ShoppingBag className="w-5 h-5 mr-2" />
-                    Unlock PixPaw Merch
-                  </Button>
+            <Button
+              onClick={handleShopClick}
+              className="w-full bg-black hover:bg-gray-800 text-white font-semibold h-12 shadow-lg"
+            >
+              <ShoppingBag className="w-5 h-5 mr-2" />
+              Unlock PixPaw Merch
+            </Button>
                 </div>
 
                 {/* Trust Badges - Bottom Fixed */}
                 <div className="border-t border-gray-200 pt-4 space-y-2 mt-6">
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className="text-green-600 text-lg">✓</span>
-                    <span>Premium quality materials</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className="text-green-600 text-lg">✓</span>
-                    <span>Fast worldwide shipping</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className="text-green-600 text-lg">✓</span>
-                    <span>Money-back guarantee</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <span className="text-green-600 text-lg">✓</span>
+                <span>Premium quality materials</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <span className="text-green-600 text-lg">✓</span>
+                <span>Fast worldwide shipping</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <span className="text-green-600 text-lg">✓</span>
+                <span>Money-back guarantee</span>
+              </div>
+            </div>
               </div>
             ) : (
               /* Not quite: Feedback Form */

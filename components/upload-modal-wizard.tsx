@@ -131,7 +131,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       return () => clearTimeout(timer)
     }
   }, [uploadCooldown])
-  
+
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -317,7 +317,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
     // Update last upload time
     setLastUploadTime(now)
-    
+
     setUploadedFile(file)
     const objectUrl = URL.createObjectURL(file)
     setPreviewUrl(objectUrl)
@@ -517,10 +517,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       if (!imageUrl && uploadedFile) {
         console.log('📤 Uploading file...')
-        const uploadResult = await uploadUserImage(uploadedFile, user.id)
+      const uploadResult = await uploadUserImage(uploadedFile, user.id)
 
-        if ('error' in uploadResult) {
-          throw new Error(uploadResult.error)
+      if ('error' in uploadResult) {
+        throw new Error(uploadResult.error)
         }
         
         imageUrl = uploadResult.url
@@ -543,22 +543,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       let result
       try {
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
             imageUrl: imageUrl,
-            style: selectedStyle,
-            prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
-            petType: 'pet',
-            aspectRatio: aspectRatio,
-            strength: strength,
+          style: selectedStyle,
+          prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
+          petType: 'pet',
+          aspectRatio: aspectRatio,
+          strength: strength,
             petName: petName.trim(), // Pet name for Art Card title
-          }),
+        }),
           signal: controller.signal
-        })
+      })
 
         clearTimeout(timeoutId)
 
@@ -570,17 +570,17 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           hasResult: !!result
         })
 
-        if (!response.ok) {
-          if (response.status === 402) {
-            setErrorType('credits')
-            throw new Error('Insufficient credits')
-          }
-          if (result.error?.includes('storage') || result.error?.includes('upload')) {
-            setErrorType('storage')
-          } else if (result.error?.includes('API') || result.error?.includes('Replicate')) {
-            setErrorType('api')
-          }
-          throw new Error(result.error || result.message || 'Generation failed')
+      if (!response.ok) {
+        if (response.status === 402) {
+          setErrorType('credits')
+          throw new Error('Insufficient credits')
+        }
+        if (result.error?.includes('storage') || result.error?.includes('upload')) {
+          setErrorType('storage')
+        } else if (result.error?.includes('API') || result.error?.includes('Replicate')) {
+          setErrorType('api')
+        }
+        throw new Error(result.error || result.message || 'Generation failed')
         }
         
       } catch (fetchError) {
@@ -930,8 +930,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       {/* Left: Image Preview */}
                       <div className="relative bg-gray-50 p-4">
                         <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-100 relative">
-                          <img 
-                            src={previewUrl} 
+                <img
+                  src={previewUrl}
                             className="w-full h-full object-cover" 
                             alt="Uploaded photo" 
                           />
@@ -1026,8 +1026,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <div className="mt-4 text-center">
                     <p className="text-xs text-gray-500">
                       Continuing will use 1 credit, but generation quality may be significantly affected
-                    </p>
-                  </div>
+                  </p>
+                </div>
                 </div>
               )}
 
@@ -1065,14 +1065,14 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   )}
                   
                   {/* Change Photo Button */}
-                  <button
-                    onClick={() => setStep('upload')}
+                <button
+                  onClick={() => setStep('upload')}
                     className="absolute bottom-3 left-3 bg-white/90 hover:bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg"
-                  >
+                >
                     Change Photo
-                  </button>
-                </div>
-                
+                </button>
+              </div>
+
                 {/* Pet Name Input */}
                 <div className="w-full max-w-md">
                   <label className="block mb-2">
@@ -1080,55 +1080,55 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       Your Pet's Name
                       <span className="text-xs font-normal text-gray-500">(Optional)</span>
                     </span>
-                  </label>
+                </label>
                   <Input
                     value={petName}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPetName(e.target.value)}
                     placeholder="e.g., Max, Luna, Bella..."
                     className="text-lg h-12"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
+                />
+                <p className="text-xs text-gray-500 mt-2">
                     This name will appear on your art card
-                  </p>
+                </p>
                 </div>
               </div>
               
               {/* RIGHT PANEL: Style + Configuration (50%) */}
               <div className="lg:w-1/2 bg-white p-6 lg:p-8 overflow-y-auto max-h-[700px]">
-                
-                {/* Style Selector */}
+
+              {/* Style Selector */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-bold">Choose a Style</h3>
                     <div className="flex items-center gap-2">
                       {/* Shuffle button */}
-                      <button
+                    <button
                         onClick={() => setStyleRotationIndex(prev => prev + 1)}
                         className="text-xs text-coral hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
                       >
                         <Sparkles className="w-3 h-3" />
                         Shuffle
-                      </button>
-                      
+                    </button>
+                  
                       {/* Divider */}
                       <span className="text-gray-300">|</span>
                       
                       {/* More Styles button */}
-                      <button
-                        onClick={() => {
-                          onClose()
-                          router.push('/en/gallery')
-                        }}
+                  <button
+                    onClick={() => {
+                      onClose()
+                      router.push('/en/gallery')
+                    }}
                         className="text-xs text-gray-600 hover:text-coral font-medium flex items-center gap-1 transition-colors"
-                      >
+                  >
                         More Styles
                         <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
+                  </button>
+                </div>
+              </div>
                   <div className="grid grid-cols-2 gap-2">
                     {displayedStyles.map((style) => (
-                      <button
+                    <button
                         key={style.id}
                         onClick={() => setSelectedStyle(style.id)}
                         className={cn(
@@ -1137,27 +1137,27 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                             ? "border-coral ring-2 ring-coral/20 scale-105" 
                             : "border-gray-200 hover:border-gray-300"
                         )}
-                      >
+                    >
                         <img src={style.src} className="w-full h-full object-cover" alt={style.label} />
                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
                           <p className="text-white text-xs font-medium truncate">{style.label}</p>
-                        </div>
+                          </div>
                         {selectedStyle === style.id && (
                           <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
                             <CheckCircle className="w-4 h-4" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
                 {/* Aspect Ratio Selector - 3x2 Grid */}
                 <div className="mb-6">
                   <h3 className="text-lg font-bold mb-3">Output Size</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {aspectRatios.map((ratio) => (
-                      <button
+                <button
                         key={ratio.value}
                         onClick={() => setAspectRatio(ratio.value)}
                         className={cn(
@@ -1179,11 +1179,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                           aspectRatio === ratio.value ? "text-coral" : "text-gray-700"
                         )}>
                           {ratio.label}
-                        </span>
+                  </span>
                         <span className="text-[10px] text-gray-500 mt-0.5">
                           {ratio.dimensions}
-                        </span>
-                      </button>
+                  </span>
+                </button>
                     ))}
                   </div>
                 </div>
@@ -1196,7 +1196,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       Add Your Creative Touch
                     </span>
                     <span className="text-xs text-gray-500 font-normal">(Optional)</span>
-                  </label>
+                      </label>
                   <Input
                     value={userPrompt}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
@@ -1205,8 +1205,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   />
                   <p className="text-xs text-gray-500 mt-2">
                     Describe what you'd like to add or change
-                  </p>
-                </div>
+                    </p>
+                  </div>
                 
                 {/* Style Strength - Prominent (not hidden in Advanced) */}
                 <div className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
@@ -1218,7 +1218,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     <span className="text-lg font-bold text-coral bg-white px-3 py-1 rounded-full shadow-sm">
                       {Math.round(strength * 100)}%
                     </span>
-                  </div>
+              </div>
                   
                   {/* Quick Preset Buttons */}
                   <div className="flex gap-2 mb-3">
@@ -1251,7 +1251,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   <div className="flex justify-between text-xs text-gray-600 px-1">
                     <span className="font-medium">More Creative</span>
                     <span className="font-medium">More Realistic</span>
-                  </div>
+                </div>
                   
                   {/* Dynamic Recommendation */}
                   <div className={cn(
@@ -1285,9 +1285,9 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                         <p className="text-xs text-blue-600 mt-1 italic">
                           Tip: Use 95% strength for best preservation
                         </p>
-                      </div>
-                    </div>
                   </div>
+                </div>
+              </div>
                 )}
               </div>
             </div>
@@ -1299,45 +1299,45 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             <div className="flex flex-col lg:flex-row gap-8 py-8">
               {/* LEFT PANEL: Original Image with Magic Effect */}
               <div className="lg:w-1/2 flex items-center justify-center">
-                <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
-                  <div 
-                    className="relative overflow-hidden"
-                    style={{
-                      aspectRatio: aspectRatio === '1:1' ? '1/1' : 
-                                  aspectRatio === '3:4' ? '3/4' : 
-                                  aspectRatio === '9:16' ? '9/16' : 
-                                  aspectRatio === '4:3' ? '4/3' : 
-                                  aspectRatio === '16:9' ? '16/9' : '1/1'
-                    }}
-                  >
-                    {/* User's Original Photo */}
-                    <img 
-                      src={previewUrl} 
-                      alt="Your pet" 
-                      className="w-full h-full object-cover opacity-70"
-                    />
-                    
-                    {/* Magic Overlay Effect - Animated Scan */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-coral/30 to-transparent animate-shimmer" 
-                         style={{
-                           backgroundSize: '200% 100%',
-                           animation: 'shimmer 2s infinite'
-                         }}
-                    />
-                    
-                    {/* Sparkle Particles */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-ping" />
-                      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-                      <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-coral rounded-full animate-ping" style={{ animationDelay: '0.6s' }} />
-                      <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }} />
-                    </div>
-                    
-                    {/* Center Icon with Glow */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-coral rounded-full blur-xl opacity-60 animate-pulse" />
-                        <Sparkles className="w-16 h-16 text-white relative z-10 animate-bounce" />
+              <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
+                <div 
+                  className="relative overflow-hidden"
+                  style={{
+                    aspectRatio: aspectRatio === '1:1' ? '1/1' : 
+                                aspectRatio === '3:4' ? '3/4' : 
+                                aspectRatio === '9:16' ? '9/16' : 
+                                aspectRatio === '4:3' ? '4/3' : 
+                                aspectRatio === '16:9' ? '16/9' : '1/1'
+                  }}
+                >
+                  {/* User's Original Photo */}
+                  <img 
+                    src={previewUrl} 
+                    alt="Your pet" 
+                    className="w-full h-full object-cover opacity-70"
+                  />
+                  
+                  {/* Magic Overlay Effect - Animated Scan */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-coral/30 to-transparent animate-shimmer" 
+                       style={{
+                         backgroundSize: '200% 100%',
+                         animation: 'shimmer 2s infinite'
+                       }}
+                  />
+                  
+                  {/* Sparkle Particles */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-ping" />
+                    <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                    <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-coral rounded-full animate-ping" style={{ animationDelay: '0.6s' }} />
+                    <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }} />
+                  </div>
+                  
+                  {/* Center Icon with Glow */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-coral rounded-full blur-xl opacity-60 animate-pulse" />
+                      <Sparkles className="w-16 h-16 text-white relative z-10 animate-bounce" />
                       </div>
                     </div>
                   </div>
@@ -1409,25 +1409,25 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               <p className="text-sm text-amber-800 text-center">
                 ⚠️ <strong>Please keep this tab open.</strong> Good art takes time!
               </p>
-            </div>
-            
-            {/* Add keyframe animation for shimmer */}
-            <style jsx>{`
-              @keyframes shimmer {
-                0% { background-position: -200% 0; }
-                100% { background-position: 200% 0; }
-              }
-              .animate-shimmer {
-                animation: shimmer 2s infinite;
-                background: linear-gradient(
-                  90deg,
-                  transparent 0%,
-                  rgba(255, 140, 66, 0.3) 50%,
-                  transparent 100%
-                );
-                background-size: 200% 100%;
-              }
-            `}</style>
+              </div>
+              
+              {/* Add keyframe animation for shimmer */}
+              <style jsx>{`
+                @keyframes shimmer {
+                  0% { background-position: -200% 0; }
+                  100% { background-position: 200% 0; }
+                }
+                .animate-shimmer {
+                  animation: shimmer 2s infinite;
+                  background: linear-gradient(
+                    90deg,
+                    transparent 0%,
+                    rgba(255, 140, 66, 0.3) 50%,
+                    transparent 100%
+                  );
+                  background-size: 200% 100%;
+                }
+              `}</style>
             </>
           )}
 

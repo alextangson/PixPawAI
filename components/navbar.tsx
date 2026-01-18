@@ -133,8 +133,8 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                     className="bg-coral hover:bg-orange-600 text-white font-semibold px-6"
                     onClick={handleCreateClick}
                   >
-                    {dict.nav.cta}
-                  </Button>
+                      {dict.nav.cta}
+                    </Button>
                 </>
               )}
             </div>
@@ -216,8 +216,8 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                       handleCreateClick();
                     }}
                   >
-                    {dict.nav.cta}
-                  </Button>
+                      {dict.nav.cta}
+                    </Button>
                 </>
               )}
             </div>

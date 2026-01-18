@@ -50,14 +50,14 @@ export function ShopFakeDoorDialog({
       const data = await response.json()
       console.log('✅ Successfully added to merch waitlist:', data)
 
-      setSubmitted(true)
-      
-      // Auto-close after 3 seconds
-      setTimeout(() => {
-        onClose()
-        setSubmitted(false)
-        setEmail('')
-      }, 3000)
+    setSubmitted(true)
+
+    // Auto-close after 3 seconds
+    setTimeout(() => {
+      onClose()
+      setSubmitted(false)
+      setEmail('')
+    }, 3000)
     } catch (error) {
       console.error('Failed to join waitlist:', error)
       alert('Failed to join waitlist. Please try again.')
@@ -108,38 +108,38 @@ export function ShopFakeDoorDialog({
                   </div>
                   <p className="text-xs text-gray-600">Mugs</p>
                 </div>
-              </div>
+            </div>
 
               {/* Email Input - Clean */}
               <div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-coral focus:ring-2 focus:ring-coral/20 transition-all"
-                  disabled={isSubmitting}
-                />
+                disabled={isSubmitting}
+              />
               </div>
 
               {/* CTA */}
-              <Button 
-                onClick={handleNotifyMe}
-                disabled={isSubmitting || !email.trim()}
+                <Button
+                  onClick={handleNotifyMe}
+                  disabled={isSubmitting || !email.trim()}
                 className="w-full h-12 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold"
-              >
-                {isSubmitting ? 'Submitting...' : 'Notify Me'}
-              </Button>
+                >
+                  {isSubmitting ? 'Submitting...' : 'Notify Me'}
+                </Button>
 
               {/* Close */}
-              <Button 
-                onClick={onClose}
-                disabled={isSubmitting}
+                <Button
+                  onClick={onClose}
+                  disabled={isSubmitting}
                 variant="ghost"
                 className="w-full h-10 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200"
-              >
-                Close
-              </Button>
+                >
+                  Close
+                </Button>
 
               {/* Trust Message */}
               <p className="text-xs text-gray-500 text-center">
