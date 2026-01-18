@@ -4,45 +4,45 @@
  */
 
 import Link from 'next/link'
-import { ArrowRight, Flask, Palette, FileText, Search } from 'lucide-react'
+import { ArrowRight, Beaker, Palette, FileText, Search } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { getAllFeatureFlags } from '@/lib/feature-flags'
 
-export default function AdminDashboardPage({
+export default async function AdminDashboardPage({
   params,
 }: {
-  params: { lang: string }
+  params: Promise<{ lang: string }>
 }) {
+  const { lang } = await params
   const featureFlags = getAllFeatureFlags()
   
   const quickLinks = [
     {
-      icon: Flask,
+      icon: Beaker,
       title: 'Test Lab',
       description: '测试提示词构建流程',
-      href: `/${params.lang}/admin/test-lab`,
+      href: `/${lang}/admin/test-lab`,
       color: 'text-blue-500',
     },
     {
       icon: Palette,
       title: 'Style Library',
       description: '管理风格库和上传图片',
-      href: `/${params.lang}/admin/styles`,
+      href: `/${lang}/admin/styles`,
       color: 'text-purple-500',
     },
     {
       icon: FileText,
       title: 'Prompts',
       description: '编辑提示词模板',
-      href: `/${params.lang}/admin/prompts`,
+      href: `/${lang}/admin/prompts`,
       color: 'text-green-500',
     },
     {
       icon: Search,
       title: 'Qwen Config',
       description: '配置AI识别参数',
-      href: `/${params.lang}/admin/qwen-config`,
+      href: `/${lang}/admin/qwen-config`,
       color: 'text-orange-500',
     },
   ]

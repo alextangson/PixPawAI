@@ -17,11 +17,13 @@ export default async function AdminLayout({
   params,
 }: {
   children: React.ReactNode
-  params: { lang: string }
+  params: Promise<{ lang: string }>
 }) {
+  const { lang } = await params
+  
   // 检查功能开关
   if (!FEATURE_FLAGS.ENABLE_ADMIN_PANEL) {
-    redirect(`/${params.lang}`)
+    redirect(`/${lang}`)
   }
   
   // 验证用户身份
@@ -29,7 +31,7 @@ export default async function AdminLayout({
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   
   if (authError || !user) {
-    redirect(`/${params.lang}/auth`)
+    redirect(`/${lang}/auth`)
   }
   
   // 检查管理员权限
@@ -41,7 +43,7 @@ export default async function AdminLayout({
   
   if (profile?.role !== 'admin') {
     console.log(`[Admin Access Denied] User ${user.email} is not an admin`)
-    redirect(`/${params.lang}`)
+    redirect(`/${lang}`)
   }
   
   console.log(`[Admin Access] User ${user.email} accessed admin panel`)
@@ -49,7 +51,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* 侧边栏 */}
-      <AdminSidebar lang={params.lang} userEmail={user.email || ''} />
+      <AdminSidebar lang={lang} userEmail={user.email || ''} />
       
       {/* 主内容区 */}
       <main className="flex-1 p-4 md:p-8 overflow-auto">

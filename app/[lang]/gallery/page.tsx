@@ -1,7 +1,7 @@
 import { type Locale } from '@/lib/i18n-config';
 import { createClient } from '@/lib/supabase/server';
 import { GalleryGridClient } from '@/components/gallery/gallery-grid-client';
-import { devError } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 
 interface GalleryImage {
@@ -48,7 +48,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ lang: 
     .limit(100);
 
   if (error) {
-    devError('Error fetching gallery images:', error);
+    logger.error('Gallery', error);
   }
 
   return <GalleryGridClient initialImages={(images as GalleryImage[]) || []} lang={lang} />;

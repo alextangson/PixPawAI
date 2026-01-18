@@ -11,7 +11,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Flask, Palette, FileText, Search, Home, LogOut } from 'lucide-react'
+import { Beaker, Palette, FileText, Search, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AdminSidebarProps {
@@ -24,7 +24,7 @@ export function AdminSidebar({ lang, userEmail }: AdminSidebarProps) {
   
   const navItems = [
     { 
-      icon: Flask, 
+      icon: Beaker, 
       label: 'Test Lab', 
       href: `/${lang}/admin/test-lab`,
       description: '测试工具'
