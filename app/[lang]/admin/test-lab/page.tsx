@@ -60,9 +60,15 @@ export default function TestLabPage() {
     setError('')
     
     try {
+      // 清理文件名（移除特殊字符）
+      const cleanFileName = file.name.replace(/[^\w\s.-]/g, '_')
+      const cleanedFile = new File([file], cleanFileName, { type: file.type })
+      
       // 上传到 Supabase Storage
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', cleanedFile)
+      
+      console.log('Uploading file:', cleanFileName, 'Size:', (file.size / 1024).toFixed(2), 'KB')
       
       const uploadRes = await fetch('/api/upload-temp', {
         method: 'POST',
@@ -71,10 +77,13 @@ export default function TestLabPage() {
       
       if (!uploadRes.ok) {
         const errorData = await uploadRes.json().catch(() => ({}))
-        throw new Error(errorData.message || errorData.error || '上传失败')
+        const errorMsg = errorData.message || errorData.error || '上传失败'
+        console.error('Upload error:', errorMsg)
+        throw new Error(`上传失败: ${errorMsg}`)
       }
       
       const { imageUrl } = await uploadRes.json()
+      console.log('Upload success, analyzing with Qwen...')
       
       // 调用 Qwen 分析
       const analyzeRes = await fetch('/api/check-quality', {
@@ -84,14 +93,19 @@ export default function TestLabPage() {
       })
       
       if (!analyzeRes.ok) {
-        throw new Error('分析失败')
+        const analyzeError = await analyzeRes.json().catch(() => ({}))
+        const analyzeMsg = analyzeError.error || analyzeError.message || '分析失败'
+        console.error('Analysis error:', analyzeMsg)
+        throw new Error(`AI分析失败: ${analyzeMsg}`)
       }
       
       const result = await analyzeRes.json()
+      console.log('Analysis result:', result)
       setQwenResult(result)
     } catch (err: any) {
-      setError(err.message || '分析失败，请重试')
-      console.error('Qwen analysis error:', err)
+      const errorMessage = err.message || '未知错误，请重试'
+      setError(errorMessage)
+      console.error('Complete error:', err)
     } finally {
       setIsAnalyzing(false)
     }
