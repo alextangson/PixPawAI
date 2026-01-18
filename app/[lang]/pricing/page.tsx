@@ -12,6 +12,7 @@ import { UpgradeModal } from '@/components/pricing-upgrade-modal';
 import { PricingCountdown, LimitedSlots } from '@/components/pricing-countdown';
 import { PricingFakeDoorModal } from '@/components/pricing-fake-door-modal';
 import { trackPricingPageView, trackPricingCTAClick } from '@/lib/pricing-analytics';
+import { ReferralLinkModal } from '@/components/referral-link-modal';
 
 export default function PricingPage() {
   const params = useParams();
@@ -21,6 +22,7 @@ export default function PricingPage() {
   const [dict, setDict] = useState<any>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showFakeDoor, setShowFakeDoor] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<{tier: 'starter' | 'pro' | 'master', price: string} | null>(null);
 
   useEffect(() => {
@@ -176,13 +178,13 @@ export default function PricingPage() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all"
-                onClick={() => handleStartCreating()}
+                onClick={() => setShowReferralModal(true)}
               >
                 {dict.pricing.referral.button}
               </Button>
               
               <p className="text-sm text-gray-500 mt-4">
-                🎁 Unlimited referrals • No cap on free credits
+                🎁 Refer up to 50 friends • Both get 5 free credits
               </p>
             </div>
           </div>
@@ -261,6 +263,12 @@ export default function PricingPage() {
           price={selectedTier.price}
         />
       )}
+
+      {/* Referral Link Modal */}
+      <ReferralLinkModal
+        isOpen={showReferralModal}
+        onClose={() => setShowReferralModal(false)}
+      />
     </main>
   );
 }

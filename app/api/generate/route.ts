@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
+import { getStyleConfigWithFallback } from '@/lib/supabase/styles'
 import { getStyleTierConfig, getDefaultTierConfig, adjustStrengthForComplexity } from '@/lib/style-tiers'
 import Replicate from 'replicate'
 import sharp from 'sharp'
@@ -525,8 +526,8 @@ export async function POST(request: NextRequest) {
         targetHeight = 1024
     }
 
-    // 3. Get style configuration
-    const styleConfig = getStyleById(style)
+    // 3. Get style configuration (Database-first with fallback)
+    const styleConfig = await getStyleConfigWithFallback(style)
     if (!styleConfig) {
       return NextResponse.json(
         { error: `Invalid style: ${style}` },

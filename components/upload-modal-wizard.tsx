@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { STYLES } from '@/lib/styles'
+import { useStyles } from '@/lib/hooks/use-styles'
 import { FUN_FACTS } from '@/lib/constants/fun-facts'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -223,8 +224,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     }
   ]
   
-  // Display all available styles (no rotation needed for 5 styles)
-  const displayedStyles = STYLES
+  // Fetch styles from database
+  const { styles: databaseStyles, loading: stylesLoading } = useStyles()
+  
+  // Display all available styles from database
+  const displayedStyles = databaseStyles
 
   // Animate progress bar from 0% to 90% over 25 seconds
   useEffect(() => {

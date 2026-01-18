@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useStyles } from '@/lib/hooks/use-styles';
 
 interface StyleShowcaseProps {
   dict: {
@@ -34,49 +35,21 @@ interface StyleShowcaseProps {
 }
 
 export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) {
-  const styles = [
-    // Real Available Styles
-    {
-      name: 'Merry Christmas',
-      description: 'Festive holiday look with a classic Santa hat',
-      image: '/iShot_2026-01-16_15.15.27.png',
-      badge: 'Most Popular',
-      aspectRatio: 'standard', // Unified height
-      isComingSoon: false,
-    },
-    {
-      name: 'Birthday Party',
-      description: 'Cheerful birthday celebration with cake and hat',
-      image: '/iShot_2026-01-16_15.16.22.png',
-      badge: null,
-      aspectRatio: 'standard',
-      isComingSoon: false,
-    },
-    {
-      name: 'Retro Pop Art',
-      description: 'Bold retro poster with geometric shapes',
-      image: '/retro-pop-art.png',
-      badge: 'Trending',
-      aspectRatio: 'standard',
-      isComingSoon: false,
-    },
-    {
-      name: 'Smart Casual',
-      description: 'Trendy look with a sweater and newsboy cap',
-      image: '/iShot_2026-01-16_15.15.47.png',
-      badge: null,
-      aspectRatio: 'standard',
-      isComingSoon: false,
-    },
-    {
-      name: 'Music Lover',
-      description: 'Cool studio portrait with silver headphones',
-      image: '/iShot_2026-01-16_15.17.26.png',
-      badge: null,
-      aspectRatio: 'standard',
-      isComingSoon: false,
-    },
-    // Coming Soon Placeholders
+  // Fetch styles from database
+  const { styles: databaseStyles, loading: stylesLoading } = useStyles()
+  
+  // Convert database styles to showcase format
+  const styles = databaseStyles.map((style, index) => ({
+    name: style.label,
+    description: style.description || '',
+    image: style.src,
+    badge: index === 0 ? 'Most Popular' : (index === 2 ? 'Trending' : null),
+    aspectRatio: 'standard',
+    isComingSoon: false,
+  }))
+  
+  // Add "Coming Soon" placeholders if less than 8 styles
+  const comingSoonPlaceholders = [
     {
       name: 'Watercolor Dream',
       description: 'Soft watercolor painting - Coming Soon',
@@ -101,7 +74,13 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
       aspectRatio: 'standard',
       isComingSoon: true,
     },
-  ];
+  ]
+  
+  // Only add "Coming Soon" if we have less than 8 total
+  if (styles.length < 8) {
+    const neededPlaceholders = Math.min(3, 8 - styles.length)
+    styles.push(...comingSoonPlaceholders.slice(0, neededPlaceholders))
+  }
 
   return (
     <section className="py-20 bg-cream">

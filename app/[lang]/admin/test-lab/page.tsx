@@ -14,7 +14,8 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Upload, Loader2, Code, Download, Image as ImageIcon, Sparkles, Settings, ChevronRight, AlertCircle } from 'lucide-react'
-import { STYLES } from '@/lib/styles'
+import { STYLES, type Style } from '@/lib/styles'
+import { useStyles } from '@/lib/hooks/use-styles'
 import { getStyleTierConfig, getDefaultTierConfig } from '@/lib/style-tiers'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
 import { cleanConflicts, sortFeatures } from '@/lib/prompt-system/conflict-cleaner'
@@ -54,10 +55,13 @@ export default function TestLabPage() {
   // Tab control
   const [activeTab, setActiveTab] = useState<TabType>('setup')
   
+  // Fetch styles from database
+  const { styles: availableStyles, loading: loadingStyles } = useStyles()
+  
   // Setup tab state
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
-  const [selectedStyle, setSelectedStyle] = useState<string>('Johannes Vermeer')
+  const [selectedStyle, setSelectedStyle] = useState<string>('')
   const [testPrompt, setTestPrompt] = useState<string>('')
   const [aspectRatio, setAspectRatio] = useState<string>('1:1')
   const [isAnalyzing, setIsAnalyzing] = useState(false)

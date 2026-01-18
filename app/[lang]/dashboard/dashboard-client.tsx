@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GalleryTabRefactored as GalleryTab } from '@/components/dashboard/gallery-tab-refactored'
 import { CreditsTab } from '@/components/dashboard/credits-tab'
 import { SettingsTab } from '@/components/dashboard/settings-tab'
+import { LowCreditsReferralBanner } from '@/components/low-credits-referral-banner'
 
 interface DashboardClientProps {
   user: User
@@ -70,6 +71,11 @@ export function DashboardClient({ user, profile, generations: initialGenerations
               <p className="text-2xl font-bold">{succeededCount}</p>
             </div>
           </div>
+        </div>
+
+        {/* Low Credits Referral Banner */}
+        <div className="mb-8">
+          <LowCreditsReferralBanner credits={profile?.credits || 0} />
         </div>
 
         {/* Tabs */}

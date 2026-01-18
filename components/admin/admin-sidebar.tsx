@@ -11,7 +11,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Beaker, Palette, FileText, Search, Home } from 'lucide-react'
+import { Beaker, Palette, FileText, Search, Home, Gift } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AdminSidebarProps {
@@ -46,6 +46,12 @@ export function AdminSidebar({ lang, userEmail }: AdminSidebarProps) {
       label: 'Qwen Config', 
       href: `/${lang}/admin/qwen-config`,
       description: 'AI配置'
+    },
+    { 
+      icon: Gift, 
+      label: 'Referral Codes', 
+      href: `/${lang}/admin/referral-codes`,
+      description: '推荐码管理'
     },
   ]
   

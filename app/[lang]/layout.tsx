@@ -6,6 +6,7 @@ import { getDictionary } from '@/lib/dictionary'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { getUser } from '@/lib/auth/actions'
+import { ReferralWelcomeToast } from '@/components/referral-welcome-toast'
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -73,6 +74,7 @@ export default async function RootLayout({
         <Navbar dict={dict} lang={lang} user={user} />
         {children}
         <Footer dict={dict} lang={lang} />
+        <ReferralWelcomeToast />
       </body>
     </html>
   )

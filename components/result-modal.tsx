@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { X, Download, Sparkles, ShoppingBag, CheckCircle, ChevronDown, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
+import { X, Download, Sparkles, ShoppingBag, CheckCircle, ChevronDown, AlertCircle, ArrowLeft, Loader2, Gift, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { BRANDING } from '@/lib/constants/branding'
 import { ArtCardModal } from '@/components/art-card-modal'
 import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
+import { ReferralLinkModal } from '@/components/referral-link-modal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +95,9 @@ export function ResultModal({
   
   // Shop Fake Door Dialog
   const [shopFakeDoorOpen, setShopFakeDoorOpen] = useState(false)
+  
+  // Referral Modal
+  const [showReferralPrompt, setShowReferralPrompt] = useState(false)
 
   // User satisfaction choice
   const [userChoice, setUserChoice] = useState<'love' | 'not_quite' | null>(null)
@@ -677,6 +681,30 @@ export function ResultModal({
               <ShoppingBag className="w-5 h-5 mr-2" />
               Unlock PixPaw Merch
             </Button>
+
+                  {/* Referral Prompt Card - Share with Friends */}
+                  <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-2xl p-5 border-2 border-coral/20 shadow-md">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-coral to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                        <Gift className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-gray-900 mb-1">
+                          Love this result?
+                        </h4>
+                        <p className="text-sm text-gray-700 mb-3">
+                          Share with friends and <span className="font-bold text-coral">both get 5 free credits!</span>
+                        </p>
+                        <Button
+                          onClick={() => setShowReferralPrompt(true)}
+                          className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold h-10 text-sm shadow-md"
+                        >
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Get Your Referral Link
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Trust Badges - Bottom Fixed */}
@@ -843,6 +871,14 @@ export function ResultModal({
         generationId={generationId}
         petName={shareTitle || 'your pet'}
       />
+
+      {/* Referral Link Modal */}
+      {showReferralPrompt && (
+        <ReferralLinkModal
+          isOpen={showReferralPrompt}
+          onClose={() => setShowReferralPrompt(false)}
+        />
+      )}
     </>
   )
 }

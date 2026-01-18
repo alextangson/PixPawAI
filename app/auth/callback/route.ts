@@ -3,6 +3,111 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
+// Helper function to process referral code for new users
+async function processReferralCode(
+  userId: string,
+  userEmail: string,
+  referralCode: string,
+  userIp: string
+) {
+  try {
+    // Import admin client dynamically to avoid circular dependencies
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminSupabase = createAdminClient()
+
+    // 0. Check if user already has a referral code associated
+    const { data: existingProfile, error: profileCheckError } = await adminSupabase
+      .from('profiles')
+      .select('referred_by_code')
+      .eq('id', userId)
+      .single()
+
+    if (profileCheckError) {
+      console.error('❌ Failed to check existing profile:', profileCheckError)
+      return
+    }
+
+    // If user already has a referral code, don't process again
+    if (existingProfile?.referred_by_code) {
+      console.log('ℹ️ User already associated with referral code:', existingProfile.referred_by_code, '- Skipping')
+      return
+    }
+
+    // 1. Validate referral code
+    const { data: codeData, error: codeError } = await adminSupabase
+      .from('referral_codes')
+      .select('*')
+      .eq('code', referralCode.toUpperCase())
+      .single()
+
+    if (codeError || !codeData) {
+      console.error('⚠️ Invalid referral code:', referralCode)
+      return
+    }
+
+    // 2. Check if code is active and not expired
+    if (!codeData.is_active) {
+      console.log('⚠️ Referral code is inactive:', referralCode)
+      return
+    }
+
+    if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+      console.log('⚠️ Referral code has expired:', referralCode)
+      return
+    }
+
+    if (codeData.max_uses !== null && codeData.current_uses >= codeData.max_uses) {
+      console.log('⚠️ Referral code has reached max uses:', referralCode)
+      return
+    }
+
+    // 3. Update user profile with referral information
+    const { error: profileError } = await adminSupabase
+      .from('profiles')
+      .update({
+        referred_by_code: codeData.code,
+        referred_by_user_id: codeData.created_by, // NULL for beta invites
+      })
+      .eq('id', userId)
+
+    if (profileError) {
+      console.error('❌ Failed to update profile with referral:', profileError)
+      return
+    }
+
+    // 4. Create referral claim record (status: pending, will be granted on first generation)
+    const { error: claimError } = await adminSupabase
+      .from('referral_claims')
+      .insert({
+        referral_code_id: codeData.id,
+        code: codeData.code,
+        new_user_id: userId,
+        new_user_email: userEmail,
+        new_user_ip: userIp,
+        referrer_id: codeData.created_by,
+        new_user_reward: codeData.new_user_reward,
+        referrer_reward: codeData.referrer_reward,
+        reward_status: 'pending',
+      })
+
+    if (claimError) {
+      console.error('❌ Failed to create referral claim:', claimError)
+      return
+    }
+
+    console.log('✅ Referral claim created successfully:', {
+      userId,
+      code: codeData.code,
+      type: codeData.type,
+      newUserReward: codeData.new_user_reward,
+      referrerReward: codeData.referrer_reward,
+    })
+
+  } catch (error) {
+    console.error('❌ Error processing referral code:', error)
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -49,6 +154,28 @@ export async function GET(request: Request) {
     if (data.session) {
       console.log('✅ Session created successfully for user:', data.user?.email)
       
+      // ============================================
+      // REFERRAL SYSTEM: Check for referral code cookie
+      // ============================================
+      const referralCodeCookie = cookieStore.get('referral_code')
+      
+      if (referralCodeCookie?.value) {
+        console.log('🔗 Referral code detected in cookie:', referralCodeCookie.value)
+        
+        // Process referral code asynchronously (don't block redirect)
+        // The function will check if user already has a referral code associated
+        processReferralCode(
+          data.user.id,
+          data.user.email || '',
+          referralCodeCookie.value,
+          request.headers.get('x-forwarded-for') || 
+          request.headers.get('x-real-ip') || 
+          'unknown'
+        ).catch(err => {
+          console.error('❌ Failed to process referral code:', err)
+        })
+      }
+      
       // Create response with proper cookie settings
       const response = NextResponse.redirect(`${origin}${next}`)
       
@@ -63,6 +190,11 @@ export async function GET(request: Request) {
           maxAge: 60 * 60 * 24 * 7, // 7 days
         })
       })
+      
+      // Clear referral code cookie after processing
+      if (referralCodeCookie) {
+        response.cookies.delete('referral_code')
+      }
       
       console.log('🍪 Cookies set:', allCookies.map(c => c.name))
       

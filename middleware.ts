@@ -29,6 +29,58 @@ export async function middleware(request: NextRequest) {
   const supabaseResponse = await updateSession(request)
   
   const pathname = request.nextUrl.pathname
+  const { searchParams } = request.nextUrl
+
+  // ============================================
+  // REFERRAL SYSTEM: Capture ref/invite params
+  // ============================================
+  // Check for referral code in URL: ?ref=XXX (user referral) or ?invite=XXX (beta invite)
+  const refCode = searchParams.get('ref') || searchParams.get('invite')
+  
+  if (refCode) {
+    // Store referral code in cookie (valid for 7 days)
+    const response = supabaseResponse || NextResponse.next()
+    response.cookies.set('referral_code', refCode.toUpperCase(), {
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    })
+    
+    console.log('🔗 Referral code captured in middleware:', refCode)
+    
+    // Continue with i18n redirect if needed, but return modified response
+    const pathnameIsMissingLocale = i18n.locales.every(
+      (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
+    )
+    
+    if (pathnameIsMissingLocale && !pathname.startsWith('/auth/')) {
+      const locale = getLocale(request)
+      const redirectUrl = new URL(
+        `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`,
+        request.url
+      )
+      
+      // Preserve query params in redirect (but remove ref/invite to clean URL)
+      searchParams.delete('ref')
+      searchParams.delete('invite')
+      searchParams.forEach((value, key) => {
+        redirectUrl.searchParams.set(key, value)
+      })
+      
+      const redirectResponse = NextResponse.redirect(redirectUrl)
+      redirectResponse.cookies.set('referral_code', refCode.toUpperCase(), {
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
+      
+      return redirectResponse
+    }
+    
+    return response
+  }
 
   // Skip i18n redirect for /auth routes (API routes)
   if (pathname.startsWith('/auth/')) {
