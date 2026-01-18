@@ -14,9 +14,9 @@ export const FEATURE_FLAGS = {
    * - false: 使用旧的提示词构建逻辑（当前线上版本）
    * - true: 使用新的智能三层优先级系统
    * 
-   * 默认: false（保守策略，测试通过后再开启）
+   * 🚀 直接启用新系统（无真实用户，无需灰度测试）
    */
-  USE_NEW_PROMPT_SYSTEM: process.env.NEXT_PUBLIC_USE_NEW_PROMPT_SYSTEM === 'true',
+  USE_NEW_PROMPT_SYSTEM: true,
   
   /**
    * 风格库数据库开关
