@@ -335,7 +335,7 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
       .map((p: string) => p.trim())
       .filter((p: string) => p.length > 0)
     
-    keyPhrases.forEach(phrase => {
+    keyPhrases.forEach((phrase: string) => {
       const type = detectFeatureType(phrase)
       features.push({
         type,
