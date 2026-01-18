@@ -11,7 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { signInWithGoogle, signInWithEmail } from '@/lib/auth/actions'
+import { signInWithEmail } from '@/lib/auth/actions'
+import { signInWithGooglePopup } from '@/lib/auth/client-actions'
 import { Mail, Loader2 } from 'lucide-react'
 import { BRANDING } from '@/lib/constants/branding'
 
@@ -28,8 +29,21 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
+    setMessage('')
+    
     try {
-      await signInWithGoogle(redirectTo)
+      const result = await signInWithGooglePopup()
+      
+      if (result.error) {
+        setMessage(result.error)
+        setIsLoading(false)
+      } else if (result.popup === false) {
+        // Popup was blocked, redirecting in current tab
+        setMessage('Redirecting to Google...')
+      } else {
+        // Popup opened successfully, waiting for auth
+        setMessage('Please complete sign in in the popup window...')
+      }
     } catch (error) {
       console.error('Error:', error)
       setMessage('Failed to sign in with Google')

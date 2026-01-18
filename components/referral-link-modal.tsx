@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Copy, Check, Share2, Users, Gift, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { signInWithGoogle } from '@/lib/auth/actions';
+import { signInWithGooglePopup } from '@/lib/auth/client-actions';
 
 interface ReferralLinkModalProps {
   isOpen: boolean;
@@ -80,7 +80,11 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
   };
 
   const handleSignIn = async () => {
-    await signInWithGoogle('/en/pricing');
+    const result = await signInWithGooglePopup();
+    if (result.error && result.error !== 'Sign in cancelled') {
+      alert(result.error);
+    }
+    // If successful, page will reload automatically
   };
 
   const copyToClipboard = async () => {
