@@ -77,8 +77,8 @@ export default function TestLabPage() {
       
       if (!uploadRes.ok) {
         const errorData = await uploadRes.json().catch(() => ({}))
-        const errorMsg = errorData.message || errorData.error || '上传失败'
-        console.error('Upload error:', errorMsg)
+        const errorMsg = errorData.details || errorData.message || errorData.error || '上传失败'
+        console.error('Upload error details:', errorData)
         throw new Error(`上传失败: ${errorMsg}`)
       }
       

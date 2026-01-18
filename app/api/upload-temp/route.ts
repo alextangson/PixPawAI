@@ -13,6 +13,15 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // 检查环境变量
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing Supabase credentials')
+      return NextResponse.json({ 
+        error: 'Server configuration error',
+        details: 'Missing Supabase credentials'
+      }, { status: 500 })
+    }
+    
     const formData = await request.formData()
     const file = formData.get('file') as File
     
@@ -36,8 +45,15 @@ export async function POST(request: NextRequest) {
     
     // 上传到 Supabase Storage
     const supabase = createAdminClient()
-    const fileName = `test-${Date.now()}-${file.name}`
+    
+    // 清理文件名：移除特殊字符和中文
+    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_') // 替换非法字符为下划线
+    const fileExt = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const randomId = Math.random().toString(36).substring(7)
+    const fileName = `test-${Date.now()}-${randomId}.${fileExt}`
     const filePath = `test-lab/${fileName}`
+    
+    console.log('Upload details:', { originalName: file.name, cleanName: fileName, size: file.size, type: file.type })
     
     const { data, error } = await supabase.storage
       .from('generated-results')  // 使用现有的 bucket
@@ -48,8 +64,13 @@ export async function POST(request: NextRequest) {
       })
     
     if (error) {
-      console.error('Upload error:', error)
-      return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+      console.error('Supabase upload error:', error)
+      return NextResponse.json({ 
+        error: 'Upload failed', 
+        details: error.message,
+        bucket: 'generated-results',
+        path: filePath
+      }, { status: 500 })
     }
     
     // 获取公开URL
