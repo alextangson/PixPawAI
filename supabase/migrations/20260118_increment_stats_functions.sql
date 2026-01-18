@@ -2,13 +2,25 @@
 -- Migration: 20260118_increment_stats_functions
 -- Purpose: Enable real-time stats tracking for public gallery images
 
+-- Check if generations table exists
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'generations'
+  ) THEN
+    RAISE EXCEPTION 'ERROR: Table public.generations does not exist. Please run the main schema.sql file first.';
+  END IF;
+END $$;
+
 -- Function to increment view count
-CREATE OR REPLACE FUNCTION increment_views(generation_uuid UUID)
+CREATE OR REPLACE FUNCTION public.increment_views(generation_uuid UUID)
 RETURNS INTEGER AS $$
 DECLARE
   new_count INTEGER;
 BEGIN
-  UPDATE generations 
+  UPDATE public.generations 
   SET views = views + 1 
   WHERE id = generation_uuid AND is_public = true
   RETURNING views INTO new_count;
@@ -18,12 +30,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to increment like count
-CREATE OR REPLACE FUNCTION increment_likes(generation_uuid UUID)
+CREATE OR REPLACE FUNCTION public.increment_likes(generation_uuid UUID)
 RETURNS INTEGER AS $$
 DECLARE
   new_count INTEGER;
 BEGIN
-  UPDATE generations 
+  UPDATE public.generations 
   SET likes = likes + 1 
   WHERE id = generation_uuid AND is_public = true
   RETURNING likes INTO new_count;

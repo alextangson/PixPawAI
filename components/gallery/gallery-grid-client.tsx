@@ -7,6 +7,7 @@ import { Search, Sparkles, X, Eye, Heart } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { UploadModalWizard } from '@/components/upload-modal-wizard';
 
 const FILTER_CATEGORIES = [
   { id: 'All', label: 'All', icon: '✨' },
@@ -31,6 +32,7 @@ interface GalleryImage {
   views: number;
   likes: number;
   is_public: boolean;
+  pet_type: string | null;
 }
 
 interface GalleryGridClientProps {
@@ -43,52 +45,126 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [hasLiked, setHasLiked] = useState<Set<string>>(new Set());
+  const [images, setImages] = useState<GalleryImage[]>(initialImages);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialImages.length >= 30);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     getDictionary(lang).then(setDict);
+    
+    // Load liked images from localStorage
+    const likedImages = localStorage.getItem('likedGalleryImages');
+    if (likedImages) {
+      try {
+        setHasLiked(new Set(JSON.parse(likedImages)));
+      } catch (e) {
+        console.error('Failed to parse liked images:', e);
+      }
+    }
   }, [lang]);
 
   useEffect(() => {
     const imageId = searchParams.get('id');
-    if (imageId && initialImages.length > 0) {
-      const image = initialImages.find(item => item.id === imageId);
+    if (imageId && images.length > 0) {
+      const image = images.find(item => item.id === imageId);
       if (image) {
         setSelectedImage(image);
       }
     }
-  }, [searchParams, initialImages]);
+  }, [searchParams, images]);
 
-  // Helper function to detect pet category from prompt/alt_text
+  // Infinite scroll - load more images
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreImages();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const sentinel = document.getElementById('gallery-sentinel');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => {
+      if (sentinel) {
+        observer.unobserve(sentinel);
+      }
+    };
+  }, [hasMore, isLoadingMore, images.length]);
+
+  const loadMoreImages = async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(
+        `/api/gallery/load-more?offset=${images.length}&limit=30`,
+        { method: 'GET' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to load more images');
+      }
+
+      const data = await response.json();
+      const newImages = data.images || [];
+
+      if (newImages.length > 0) {
+        setImages((prev) => [...prev, ...newImages]);
+      }
+
+      // If we got fewer than 30 images, we've reached the end
+      if (newImages.length < 30) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Failed to load more images:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Helper function to detect pet category - now uses pet_type field from database
   const detectPetCategory = (item: GalleryImage): string => {
+    // First, try to use the pet_type field from database (set during sharing)
+    if (item.pet_type) {
+      const petType = item.pet_type.toLowerCase();
+      
+      // Map pet_type to filter categories
+      if (petType === 'dog') return 'Dogs';
+      if (petType === 'cat') return 'Cats';
+      if (petType === 'rabbit' || petType === 'bunny') return 'Rabbits';
+      if (['hamster', 'guinea pig', 'gerbil', 'mouse', 'rat', 'ferret', 'chinchilla', 'hedgehog'].includes(petType)) return 'Small Pets';
+      if (['bird', 'parrot', 'parakeet', 'cockatiel', 'macaw', 'canary', 'finch'].includes(petType)) return 'Birds';
+      if (['lizard', 'gecko', 'snake', 'turtle', 'tortoise', 'iguana', 'chameleon'].includes(petType)) return 'Reptiles';
+      if (['horse', 'pony', 'cow', 'pig', 'sheep', 'goat', 'chicken', 'duck', 'donkey'].includes(petType)) return 'Farm & Other';
+    }
+    
+    // Fallback: try to detect from text (for old data without pet_type)
     const text = `${item.prompt || ''} ${item.alt_text || ''} ${item.title || ''}`.toLowerCase();
     
-    // Dogs
     if (text.match(/\b(dog|puppy|corgi|beagle|retriever|bulldog|poodle|husky|shepherd)\b/)) return 'Dogs';
-    
-    // Cats
     if (text.match(/\b(cat|kitten|feline|persian|siamese|tabby)\b/)) return 'Cats';
-    
-    // Rabbits
     if (text.match(/\b(rabbit|bunny|hare)\b/)) return 'Rabbits';
-    
-    // Small Pets
     if (text.match(/\b(hamster|guinea pig|gerbil|mouse|rat|ferret)\b/)) return 'Small Pets';
-    
-    // Birds
     if (text.match(/\b(bird|parrot|parakeet|cockatiel|macaw|canary|finch)\b/)) return 'Birds';
-    
-    // Reptiles
     if (text.match(/\b(lizard|gecko|snake|turtle|tortoise|iguana|chameleon)\b/)) return 'Reptiles';
-    
-    // Farm & Other
     if (text.match(/\b(horse|pony|cow|pig|sheep|goat|chicken|duck|donkey)\b/)) return 'Farm & Other';
     
     return 'Dogs'; // Default fallback
   };
 
-  const filteredItems = initialImages.filter(item => {
+  const filteredItems = images.filter(item => {
     const matchesSearch =
       searchQuery === '' ||
       (item.title && item.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -101,9 +177,20 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
     return matchesSearch && matchesFilter;
   });
 
-  const handleImageClick = (item: GalleryImage) => {
+  const handleImageClick = async (item: GalleryImage) => {
     setSelectedImage(item);
     router.push(`/${lang}/gallery?id=${item.id}`, { scroll: false });
+    
+    // Increment view count asynchronously
+    try {
+      await fetch('/api/gallery/increment-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generation_id: item.id, action: 'view' }),
+      });
+    } catch (error) {
+      console.error('Failed to increment view count:', error);
+    }
   };
 
   const handleCloseModal = () => {
@@ -113,7 +200,39 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
 
   const handleRemixStyle = () => {
     if (selectedImage) {
-      router.push(`/${lang}?style=${selectedImage.style}`);
+      // Close the modal first
+      handleCloseModal();
+      // Open upload modal with pre-selected style
+      setShowUploadModal(true);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!selectedImage) return;
+    
+    // Check if already liked
+    if (hasLiked.has(selectedImage.id)) {
+      return; // Already liked, do nothing
+    }
+    
+    try {
+      // Optimistic update
+      setSelectedImage({ ...selectedImage, likes: selectedImage.likes + 1 });
+      
+      // Update localStorage
+      const newLiked = new Set(hasLiked);
+      newLiked.add(selectedImage.id);
+      setHasLiked(newLiked);
+      localStorage.setItem('likedGalleryImages', JSON.stringify(Array.from(newLiked)));
+      
+      // Call API
+      await fetch('/api/gallery/increment-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generation_id: selectedImage.id, action: 'like' }),
+      });
+    } catch (error) {
+      console.error('Failed to increment like count:', error);
     }
   };
 
@@ -182,7 +301,7 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
         <div className="container mx-auto px-4 max-w-7xl">
           {filteredItems.length === 0 ? (
             <div className="text-center py-20">
-              {initialImages.length === 0 ? (
+              {images.length === 0 ? (
                 // No images in database at all
                 <div className="max-w-md mx-auto">
                   <Sparkles className="w-16 h-16 text-coral mx-auto mb-4" />
@@ -256,6 +375,18 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
               ))}
             </div>
           )}
+
+          {/* Infinite Scroll Sentinel */}
+          {hasMore && filteredItems.length > 0 && (
+            <div id="gallery-sentinel" className="w-full py-8 flex justify-center">
+              {isLoadingMore && (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <div className="w-5 h-5 border-2 border-coral border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading more...</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -271,13 +402,18 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
               
               <div className="grid grid-cols-1 sm:grid-cols-2 h-auto sm:h-[85vh] max-h-[900px]">
                 {/* Left Column - The Image */}
-                <div className="relative h-[400px] sm:h-full w-full bg-gray-900 flex items-center justify-center">
+                <div className="relative h-[400px] sm:h-full w-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
                   {/* Use native img tag to avoid Next.js Image Optimization API errors */}
                   <img
                     src={selectedImage.output_url}
                     alt={selectedImage.alt_text || selectedImage.title || 'AI generated pet portrait'}
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-cover rounded-2xl shadow-2xl"
                   />
+                  
+                  {/* Brand Logo Watermark */}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md">
+                    <span className="text-coral font-bold text-lg">PixPaw<span className="text-orange-600">AI</span></span>
+                  </div>
                 </div>
 
                 {/* Right Column - The Content */}
@@ -315,15 +451,29 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
                         <p className="text-xs text-gray-500">Views</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-pink-50 rounded-full flex items-center justify-center">
-                        <Heart className="w-5 h-5 text-pink-600" />
+                    <button
+                      onClick={handleLike}
+                      disabled={hasLiked.has(selectedImage.id)}
+                      className={`flex items-center gap-2 transition-all ${
+                        hasLiked.has(selectedImage.id)
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:scale-105 cursor-pointer'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        hasLiked.has(selectedImage.id) ? 'bg-pink-100' : 'bg-pink-50'
+                      }`}>
+                        <Heart className={`w-5 h-5 ${
+                          hasLiked.has(selectedImage.id) ? 'text-pink-600 fill-pink-600' : 'text-pink-600'
+                        }`} />
                       </div>
                       <div>
                         <p className="text-2xl font-bold text-gray-900">{selectedImage.likes ?? 0}</p>
-                        <p className="text-xs text-gray-500">Likes</p>
+                        <p className="text-xs text-gray-500">
+                          {hasLiked.has(selectedImage.id) ? 'Liked' : 'Likes'}
+                        </p>
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                 {/* Title */}
@@ -364,6 +514,15 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Upload Modal for Remix */}
+      {showUploadModal && (
+        <UploadModalWizard
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          selectedStyle={selectedImage?.style}
+        />
+      )}
     </main>
   );
 }

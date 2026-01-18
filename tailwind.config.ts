@@ -24,6 +24,7 @@ const config = {
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
         'dancing-script': ['var(--font-dancing-script)', 'cursive'],
         'caveat': ['var(--font-caveat)', 'cursive'],
+        'pacifico': ['var(--font-pacifico)', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",

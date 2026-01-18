@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter, Dancing_Script, Caveat } from "next/font/google"
+import { Inter, Dancing_Script, Caveat, Pacifico } from "next/font/google"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -12,6 +12,11 @@ const caveat = Caveat({
   subsets: ["latin"],
   variable: '--font-caveat',
   weight: ['400', '700']
+})
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  variable: '--font-pacifico',
+  weight: '400'
 })
 
 export const metadata: Metadata = {
@@ -60,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${dancingScript.variable} ${caveat.variable}`} suppressHydrationWarning>
+      <body className={`${inter.className} ${dancingScript.variable} ${caveat.variable} ${pacifico.variable}`} suppressHydrationWarning>
         {children}
       </body>
     </html>

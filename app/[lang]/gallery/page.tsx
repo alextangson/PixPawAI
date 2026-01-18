@@ -16,6 +16,7 @@ interface GalleryImage {
   views: number;
   likes: number;
   is_public: boolean;
+  pet_type: string | null;
 }
 
 // SEO Metadata
@@ -40,12 +41,12 @@ export default async function GalleryPage({ params }: { params: Promise<{ lang: 
   const supabase = await createClient();
   const { data: images, error } = await supabase
     .from('generations')
-    .select('id, output_url, title, alt_text, style, style_category, prompt, created_at, views, likes, is_public')
+    .select('id, output_url, title, alt_text, style, style_category, prompt, created_at, views, likes, is_public, pet_type')
     .eq('status', 'succeeded')
     .eq('is_public', true)
     .not('output_url', 'is', null)
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(30);  // Reduced from 100 to 30 for better initial load performance
 
   if (error) {
     logger.error('Gallery', error);

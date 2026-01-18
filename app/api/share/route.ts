@@ -114,18 +114,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. Generate alt text
+    // 6. Generate alt text with enhanced SEO
     let altText = ''
     if (title) {
       // Use title as alt text if provided
       altText = title
     } else {
-      // Generate default alt text from prompt
-      const promptPreview = generation.prompt?.substring(0, 100) || 'pet portrait'
-      altText = `AI generated pet portrait: ${promptPreview}`
+      // Generate rich alt text from quality_check data
+      const qc = generation.quality_check
+      const petType = qc?.petType || 'pet'
+      const breed = qc?.breed && qc.breed !== 'unknown' ? qc.breed : ''
+      const style = generation.style || '3D Pixar style'
+      
+      altText = `AI generated ${petType} portrait${breed ? ' - ' + breed : ''}, ${style}, high resolution`
     }
 
-    // 7. Generate share card asynchronously (non-blocking)
+    // 7. Extract pet_type from quality_check for gallery filtering
+    let petType = null
+    if (generation.quality_check?.petType) {
+      petType = generation.quality_check.petType.toLowerCase()
+      console.log('✅ Extracted pet_type from quality_check:', petType)
+    } else {
+      console.warn('⚠️ No petType found in quality_check for generation:', generation_id)
+    }
+
+    // 8. Generate share card asynchronously (non-blocking)
     let shareCardUrl = ''
     let shareSlogan = ''
     let shareSloganIndex = Math.floor(Math.random() * PREMIUM_SLOGANS.length)
@@ -161,7 +174,7 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ No output_url available for card generation')
     }
 
-    // 8. Update generation: set public, title, alt_text, is_rewarded, and share_card_url
+    // 9. Update generation: set public, title, alt_text, pet_type, is_rewarded, and share_card_url
     // Use admin client to bypass RLS policies
     const adminSupabase = createAdminClient()
     const { error: updateError } = await adminSupabase
@@ -170,6 +183,7 @@ export async function POST(request: NextRequest) {
         is_public: true,
         title: title || null,
         alt_text: altText,
+        pet_type: petType,  // ✅ Auto-categorize for gallery filtering
         is_rewarded: true,
         share_card_url: shareCardUrl || null,
       })
@@ -187,9 +201,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Generation shared successfully:', generation_id)
-    console.log('✅ Set is_public=true, is_rewarded=true, share_card_url saved')
+    console.log('✅ Set is_public=true, pet_type=' + petType + ', is_rewarded=true, share_card_url saved')
 
-    // 9. Increment user's credits ONLY if eligible (first time sharing + under limit)
+    // 10. Increment user's credits ONLY if eligible (first time sharing + under limit)
     let updatedCredits = null
     
     if (isEligibleForReward) {
@@ -234,7 +248,7 @@ export async function POST(request: NextRequest) {
       updatedCredits = currentProfile?.credits || null
     }
 
-    // 10. Return success with share card data
+    // 11. Return success with share card data
     const remainingRewards = MAX_SHARE_REWARDS - (profile!.share_rewards_earned + (isEligibleForReward ? 1 : 0))
     
     let successMessage = ''

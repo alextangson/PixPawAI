@@ -158,9 +158,8 @@ export async function POST(request: NextRequest) {
           x="${canvasWidth / 2}" 
           y="${footerHeight * 0.85}" 
           text-anchor="middle"
-          font-family="'Caveat', cursive, Georgia, serif" 
+          font-family="'Pacifico', cursive, Georgia, serif" 
           font-size="${sloganFontSize * 1.1}" 
-          font-style="italic" 
           fill="#666666"
         >"${selectedSlogan}"</text>
       </svg>

@@ -200,8 +200,8 @@ export function ArtCardModal({
                   {/* Separator */}
                   <div className="border-t border-gray-200"></div>
 
-                  {/* Slogan - Larger and More Artistic with Caveat */}
-                  <div className="text-gray-700 italic text-xl leading-relaxed font-caveat min-h-[3rem] flex items-center justify-center text-center">
+                  {/* Slogan - Larger and More Artistic with Pacifico */}
+                  <div className="text-gray-700 text-xl leading-relaxed font-pacifico min-h-[3rem] flex items-center justify-center text-center">
                     "{selectedSlogan}"
                   </div>
 
