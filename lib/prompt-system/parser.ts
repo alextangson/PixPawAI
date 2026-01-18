@@ -332,8 +332,8 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
     // 将keyFeatures分割为多个特征
     const keyPhrases = qwenResult.keyFeatures
       .split(/[,，]/)
-      .map(p => p.trim())
-      .filter(p => p.length > 0)
+      .map((p: string) => p.trim())
+      .filter((p: string) => p.length > 0)
     
     keyPhrases.forEach(phrase => {
       const type = detectFeatureType(phrase)
