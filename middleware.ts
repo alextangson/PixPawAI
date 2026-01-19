@@ -25,6 +25,16 @@ function getLocale(request: NextRequest): string | undefined {
 }
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware for RSC prefetch requests
+  const requestHeaders = new Headers(request.headers)
+  const isRSCRequest = requestHeaders.get('RSC') === '1' || 
+                       requestHeaders.get('Next-Router-Prefetch') === '1'
+  
+  // For RSC requests, just pass through
+  if (isRSCRequest) {
+    return NextResponse.next()
+  }
+  
   // First, handle Supabase session refresh
   const supabaseResponse = await updateSession(request)
   
@@ -112,5 +122,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Matcher ignoring `/_next/` and `/api/`
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  // Also ignore RSC prefetch requests to prevent payload errors
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+  ],
 }

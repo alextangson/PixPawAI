@@ -35,14 +35,24 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query
     
     if (error) {
-      console.error('Error fetching styles:', error)
-      return NextResponse.json({ error: 'Failed to fetch styles' }, { status: 500 })
+      console.error('[Styles API] Database error:', error)
+      return NextResponse.json({ 
+        error: 'Failed to fetch styles',
+        details: error.message 
+      }, { status: 500 })
     }
     
-    return NextResponse.json({ styles: data })
+    // Add cache headers for better performance
+    const response = NextResponse.json({ styles: data || [] })
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    
+    return response
   } catch (error: any) {
-    console.error('Styles API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[Styles API] Unexpected error:', error)
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error.message 
+    }, { status: 500 })
   }
 }
 

@@ -59,9 +59,10 @@ export function useStyles() {
           setStyles(STYLES)
         }
       } catch (err: any) {
-        console.error('Failed to load styles from database, using fallback:', err)
+        // Silently fallback to hardcoded styles
+        // This is expected behavior if database is unavailable
+        console.warn('[useStyles] Using fallback styles:', err.message || 'Database unavailable')
         setError(err.message)
-        // Use hardcoded styles as fallback
         setStyles(STYLES)
       } finally {
         setLoading(false)
