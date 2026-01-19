@@ -179,7 +179,9 @@ export default function TestLabPage() {
           tier: styleData.tier || 2,
           strength: styleData.recommended_strength_min || 0.35,
           guidance: styleData.recommended_guidance || 2.5,
-          expectedSimilarity: styleData.expected_similarity || '70-80%'
+          expectedSimilarity: styleData.expected_similarity || '70-80%',
+          description: styleData.description || 'Default style',
+          numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
         }
         
         setTierConfig(config)
