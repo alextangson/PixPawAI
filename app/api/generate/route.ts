@@ -650,7 +650,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      styleName = styleConfig.name || style
+      styleName = styleConfig.label || style
     } else {
       // Create temporary style config from provided prompts (Test Lab "Create New" mode)
       styleConfig = {
@@ -723,12 +723,9 @@ export async function POST(request: NextRequest) {
       dataSource = 'quick'
       
       // 📊 Log degradation event for monitoring
-      logger.warn('AnalysisDegradation', {
-        reason: 'detailed_analysis_missing',
-        userId: user.id.substring(0, 8),
-        petType: quickAnalysis.petType,
-        quality: quickAnalysis.quality
-      })
+      logger.warn('AnalysisDegradation', 
+        `detailed_analysis_missing - userId: ${user.id.substring(0, 8)}, petType: ${quickAnalysis.petType}, quality: ${quickAnalysis.quality}`
+      )
       
       console.warn('⚠️ Quick Analysis Data:', {
         source: 'frontend-quick',
