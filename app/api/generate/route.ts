@@ -618,8 +618,8 @@ export async function POST(request: NextRequest) {
 
     // STEP D: GET STYLE PARAMETERS FROM DATABASE
     // Fetch style-specific parameters from database, or use defaults
-    const supabase = await createAdminClient()
-    const { data: styleData } = await supabase
+    const styleSupabase = await createAdminClient()
+    const { data: styleData } = await styleSupabase
       .from('styles')
       .select('recommended_strength_min, recommended_guidance')
       .eq('id', style)

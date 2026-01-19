@@ -156,8 +156,6 @@ export async function POST(request: NextRequest) {
       .eq('id', targetUserId)
       .single()
 
-    const operation = amount > 0 ? 'added' : 'deducted'
-    const absAmount = Math.abs(amount)
     const preposition = amount > 0 ? 'to' : 'from'
     
     return NextResponse.json({
