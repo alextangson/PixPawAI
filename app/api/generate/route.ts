@@ -347,7 +347,11 @@ async function generateWithReplicate(
   imageUrl?: string,  // Pre-processed image URL (already correct size)
   promptStrength: number = 0.35,  // Dynamic strength based on style tier
   guidance: number = 2.5,  // Dynamic guidance based on style tier
-  negativePrompt?: string  // Optional negative prompt from new system
+  negativePrompt?: string,  // Optional negative prompt from new system
+  // ⚡ Performance optimization parameters
+  goFast: boolean = true,   // Test mode: speed vs quality
+  megapixels: string = "1",
+  outputQuality: number = 80
 ): Promise<{ publicUrl: string; storagePath: string; originalPath?: string }> {
   console.log('🚀 generateWithReplicate called:', {
     generationId,
@@ -378,11 +382,34 @@ async function generateWithReplicate(
     prompt: finalPrompt,
     num_outputs: 1,
     output_format: "png",
-    output_quality: 100,
+    output_quality: outputQuality,     // Configurable quality (default 80)
     disable_safety_checker: true,
     num_inference_steps: 50,
     guidance: guidance,  // Dynamic guidance based on style tier
+    go_fast: goFast,                   // ⚡ Performance boost (40-60% faster)
+    megapixels: megapixels             // Control output size (default "1" = 1024x1024)
   }
+
+  // ⚡ Performance configuration logging
+  console.log('⚡ Performance config:', {
+    goFast,
+    megapixels,
+    outputQuality,
+    estimatedSpeedBoost: goFast ? '40-60% faster' : 'baseline',
+    note: goFast ? '⚠️ go_fast enabled - may reduce style transfer quality' : '✅ go_fast disabled - full style transfer'
+  })
+  
+  // 🎨 Log full generation parameters
+  console.log('🎨 Full FLUX-dev input:', {
+    promptLength: finalPrompt.length,
+    hasImage: !!imageUrl,
+    strength: promptStrength,
+    guidance,
+    steps: 50,
+    quality: outputQuality,
+    megapixels,
+    go_fast: goFast
+  })
   
   // Add negative prompt if provided (from new prompt system)
   if (negativePrompt && negativePrompt.trim()) {
@@ -497,20 +524,91 @@ export async function POST(request: NextRequest) {
       imageUrl, 
       style, 
       prompt: userPrompt, 
+      promptSuffix = '', // For Test Lab "Create New" mode
+      negativePrompt = '', // For Test Lab "Create New" mode
       petType = 'pet', 
       aspectRatio = '1:1', // Default to square
       strength, // Accept from frontend but don't set default here
       guidance, // Accept guidance from frontend
       petName = '', // Pet name for Art Card title generation
       testMode = false, // Test mode: skip DB operations
-      detailedAnalysis = null // 🔥 Frontend detailed analysis results (race condition fix)
+      detailedAnalysis = null, // 🔥 Frontend detailed analysis results (race condition fix)
+      quickAnalysis = null, // 🆕 Frontend quick analysis results (fallback strategy)
+      // ⚡ Performance optimization parameters (Phase 1)
+      goFast = true,              // Enabled: test speed vs quality trade-off
+      megapixels = "1",           // Default: 1MP (1024x1024)
+      outputQuality = 80,         // Default: 80 quality (recommended, vs 100)
     } = body
 
-    if (!style) {
+    // Validate: Either style ID or promptSuffix must be provided
+    if (!style && !promptSuffix) {
       return NextResponse.json(
-        { error: 'Missing required field: style' },
+        { error: 'Missing required field: either style or promptSuffix must be provided' },
         { status: 400 }
       )
+    }
+
+    // 2.5. MODERATION: Check user violations and filter prompt
+    const { checkUserViolations, logViolation } = await import('@/lib/moderation/violation-tracker')
+    const { filterPrompt } = await import('@/lib/moderation/keyword-filter')
+    
+    // Check if user is banned or in cooldown
+    const violationStatus = await checkUserViolations(user.id)
+    
+    if (!violationStatus.allowed) {
+      if (violationStatus.banned) {
+        return NextResponse.json(
+          { 
+            error: 'Account suspended',
+            message: violationStatus.message || 'Your account has been suspended for violating our content policy.'
+          },
+          { status: 403 }
+        )
+      }
+      
+      if (violationStatus.cooldown) {
+        return NextResponse.json(
+          { 
+            error: 'Account in cooldown',
+            message: violationStatus.message,
+            cooldownSeconds: violationStatus.cooldown
+          },
+          { status: 429 } // Too Many Requests
+        )
+      }
+    }
+    
+    // Filter user prompt for inappropriate content
+    const filterResult = filterPrompt(userPrompt || '')
+    
+    if (filterResult.blocked) {
+      // Log violation
+      await logViolation({
+        userId: user.id,
+        violationType: 'sensitive_prompt',
+        prompt: userPrompt,
+        metadata: {
+          matchedWords: filterResult.matchedBlacklist,
+          style,
+          timestamp: new Date().toISOString()
+        }
+      })
+      
+      return NextResponse.json(
+        { 
+          error: 'Inappropriate content detected',
+          message: 'Your input contains inappropriate language. Please revise and try again.'
+        },
+        { status: 400 }
+      )
+    }
+    
+    // Use sanitized prompt (graylist words removed)
+    const sanitizedUserPrompt = filterResult.cleaned
+    
+    // Show warning if user has previous violations
+    if (violationStatus.warning) {
+      console.warn(`⚠️ User ${user.id.substring(0, 8)}... has ${violationStatus.violationCount} violation(s)`)
     }
 
     // STEP A: Determine target dimensions based on aspect ratio
@@ -539,16 +637,37 @@ export async function POST(request: NextRequest) {
         targetHeight = 1024
     }
 
-    // 3. Get style configuration (Database-first with fallback)
-    const styleConfig = await getStyleConfigWithFallback(style)
-    if (!styleConfig) {
-      return NextResponse.json(
-        { error: `Invalid style: ${style}` },
-        { status: 400 }
-      )
+    // 3. Get style configuration (Database-first with fallback, or use provided prompts)
+    let styleConfig
+    let styleName = 'Custom Style'
+    
+    if (style) {
+      // Use existing style from database
+      styleConfig = await getStyleConfigWithFallback(style)
+      if (!styleConfig) {
+        return NextResponse.json(
+          { error: `Invalid style: ${style}` },
+          { status: 400 }
+        )
+      }
+      styleName = styleConfig.name || style
+    } else {
+      // Create temporary style config from provided prompts (Test Lab "Create New" mode)
+      styleConfig = {
+        id: 'temp-' + Date.now(),
+        name: body.styleName || 'Test Style',
+        promptSuffix: promptSuffix || '',
+        negativePrompt: negativePrompt || '',
+        recommendedStrengthMin: 0.35,
+        recommendedStrengthMax: 0.65,
+        recommendedGuidance: 2.5,
+        enabled: true,
+        category: 'test'
+      }
+      styleName = styleConfig.name
     }
 
-    // STEP B: VISION ANALYSIS - Analyze pet features before generation
+    // STEP B: VISION ANALYSIS - Three-tier data source strategy
     let petComplexity: PetComplexity = {
       hasHeterochromia: false,
       heterochromiaDetails: '',
@@ -559,9 +678,13 @@ export async function POST(request: NextRequest) {
       keyFeatures: 'standard pet'
     }
     
-    // 🔥 RACE CONDITION FIX: Prioritize frontend detailed analysis results
+    // Track which data source was used (for monitoring)
+    let dataSource: 'detailed' | 'quick' | 'backend' = 'backend'
+    
+    // 🎯 THREE-TIER STRATEGY: detailed → quick → backend
     if (detailedAnalysis) {
-      console.log('✅ Using frontend detailed analysis:', detailedAnalysis)
+      // ✅ TIER 1: Frontend detailed analysis (best quality)
+      console.log('✅ Using frontend detailed analysis')
       petComplexity = {
         petType: detailedAnalysis.petType || petType,
         detectedColors: detailedAnalysis.detectedColors || '',
@@ -571,31 +694,80 @@ export async function POST(request: NextRequest) {
         patternDetails: '', // Frontend doesn't provide patternDetails
         multiplePets: detailedAnalysis.multiplePets || 1,
         breed: detailedAnalysis.breed || 'unknown',
-        keyFeatures: 'standard pet' // Frontend doesn't provide keyFeatures
+        keyFeatures: 'detailed analysis'
       }
-      console.log('✅ Frontend Pet Complexity:', {
-        heterochromia: petComplexity.hasHeterochromia,
-        complexPattern: petComplexity.complexPattern,
-        pets: petComplexity.multiplePets,
+      dataSource = 'detailed'
+      
+      console.log('✅ Detailed Analysis Data:', {
+        source: 'frontend-detailed',
+        petType: petComplexity.petType,
         breed: petComplexity.breed,
-        colors: petComplexity.detectedColors
+        colors: petComplexity.detectedColors,
+        heterochromia: petComplexity.hasHeterochromia
       })
+      
+    } else if (quickAnalysis) {
+      // ⚠️ TIER 2: Frontend quick analysis (fallback)
+      console.warn('⚠️ Detailed analysis unavailable, using quick analysis fallback')
+      petComplexity = {
+        petType: quickAnalysis.petType || petType,
+        detectedColors: '', // Quick check doesn't include colors
+        hasHeterochromia: false,
+        heterochromiaDetails: '',
+        complexPattern: false,
+        patternDetails: '',
+        multiplePets: 1,
+        breed: 'unknown',
+        keyFeatures: 'quick analysis fallback'
+      }
+      dataSource = 'quick'
+      
+      // 📊 Log degradation event for monitoring
+      logger.warn('AnalysisDegradation', {
+        reason: 'detailed_analysis_missing',
+        userId: user.id.substring(0, 8),
+        petType: quickAnalysis.petType,
+        quality: quickAnalysis.quality
+      })
+      
+      console.warn('⚠️ Quick Analysis Data:', {
+        source: 'frontend-quick',
+        petType: petComplexity.petType,
+        quality: quickAnalysis.quality,
+        note: 'Limited information - may affect prompt accuracy'
+      })
+      
     } else if (imageUrl) {
-      // Fallback: Backend analyzes if frontend didn't provide results
+      // ❌ TIER 3: Backend analysis (last resort - should rarely happen)
+      console.error('❌ No frontend analysis provided, running backend analysis (SLOW)')
+      
       try {
-        console.log('🔍 Frontend analysis not available, running backend vision analysis...')
         petComplexity = await analyzePetFeatures(imageUrl)
-        console.log('✅ Backend Pet Complexity Analysis:', {
-          heterochromia: petComplexity.hasHeterochromia,
-          complexPattern: petComplexity.complexPattern,
-          pets: petComplexity.multiplePets,
-          breed: petComplexity.breed
+        dataSource = 'backend'
+        
+        // 🚨 Log critical issue - this should not happen in normal flow
+        logger.error('BackendAnalysisFallback', {
+          reason: 'all_frontend_analysis_missing',
+          userId: user.id.substring(0, 8),
+          note: 'This indicates a frontend issue that needs investigation'
         })
+        
+        console.error('❌ Backend Analysis Data:', {
+          source: 'backend-fallback',
+          petType: petComplexity.petType,
+          breed: petComplexity.breed,
+          warning: 'Extra Qwen API call - investigate frontend issue'
+        })
+        
       } catch (error: any) {
         console.error('⚠️ Backend vision analysis failed, using defaults:', error.message)
         // Continue with default values
+        dataSource = 'backend'
       }
     }
+    
+    // Log final data source for analytics
+    console.log(`📊 Analysis Data Source: ${dataSource.toUpperCase()}`)
 
     // STEP C: PRE-PROCESS IMAGE - Pad with blurred background to exact dimensions
     let processedImageUrl = imageUrl
@@ -635,7 +807,7 @@ export async function POST(request: NextRequest) {
     // STEP E: CONSTRUCT TIER-APPROPRIATE PROMPT
     let finalPrompt = ''
     let finalNegativePrompt = ''
-    const styleName = styleConfig.label || '3D Pixar'
+    // styleName already defined above based on style source
     
     // 🔍 DEBUG: Force log environment variable status
     console.log('🔍 DEBUG - Environment Check:', {
@@ -658,7 +830,8 @@ export async function POST(request: NextRequest) {
         const finalPetType = petComplexity.petType || petType || 'pet'
         
         // 1. Parse user input (from "Add Your Creative Touch" field)
-        const userPromptResult = parseUserPrompt(userPrompt || '')
+        // Use sanitized prompt (sensitive words already filtered out)
+        const userPromptResult = parseUserPrompt(sanitizedUserPrompt || '')
         logger.promptBuild('User Features Parsed (before filter)', userPromptResult)
         
         // 🎯 ENHANCEMENT MODE: User input only for scene/action/composition
@@ -684,7 +857,7 @@ export async function POST(request: NextRequest) {
               feature,
               reason: 'enhancement_mode_filter',
               context: {
-                originalUserInput: userPrompt,
+                originalUserInput: sanitizedUserPrompt,
                 styleId: style,
                 petType: finalPetType
               }
@@ -804,7 +977,7 @@ export async function POST(request: NextRequest) {
           .replace(/orange turtleneck/gi, 'turtleneck')
           .replace(/olive green background/gi, 'solid background')
         
-        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}, ${aspectRatioGuide}. Keep original appearance, only apply ${styleName} artistic style.`
+        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${sanitizedUserPrompt}${cleanSuffix}, ${aspectRatioGuide}. Keep original appearance, only apply ${styleName} artistic style.`
         
         // Add complexity-specific reminders
         if (petComplexity.complexPattern) {
@@ -815,7 +988,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // TEXT-TO-IMAGE MODE
-        finalPrompt = `${userPrompt}${styleConfig.promptSuffix}, ${aspectRatioGuide}. Professional quality, highly detailed.`
+        finalPrompt = `${sanitizedUserPrompt}${styleConfig.promptSuffix}, ${aspectRatioGuide}. Professional quality, highly detailed.`
       }
       
       console.log('📝 OLD SYSTEM - Final Prompt:', finalPrompt.substring(0, 150) + '...')
@@ -828,7 +1001,7 @@ export async function POST(request: NextRequest) {
         style,
         imageUrl: imageUrl?.substring(0, 50),
         processedImageUrl: processedImageUrl?.substring(0, 50),
-        userPrompt,
+        userPrompt: sanitizedUserPrompt,
         petType,
         aspectRatio,
         strength,
@@ -859,7 +1032,10 @@ export async function POST(request: NextRequest) {
           processedImageUrl,
           finalStrength,
           finalGuidance,
-          finalNegativePrompt || undefined
+          finalNegativePrompt || undefined,
+          goFast,        // ⚡ Performance params
+          megapixels,
+          outputQuality
         )
         
         console.log(`🎨 TEST MODE - Generation complete: strength=${finalStrength.toFixed(2)}, guidance=${finalGuidance}`)
@@ -920,8 +1096,8 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         status: 'processing',
         prompt: finalPrompt,
-        style: style,
-        style_category: style,
+        style: style || 'test-style',  // Use temp ID for create mode
+        style_category: style || 'test',
         input_url: imageUrl || '',
         views: 0,
         likes: 0,
@@ -930,12 +1106,13 @@ export async function POST(request: NextRequest) {
         art_card_title: artCardTitle,
         metadata: {
           petType,
-          userPrompt,
+          userPrompt: sanitizedUserPrompt,
           stylePromptSuffix: styleConfig.promptSuffix,
           requestedAt: new Date().toISOString(),
           provider: 'replicate',
           model: 'black-forest-labs/flux-dev',
           aspectRatio,
+          analysisDataSource: dataSource, // 🆕 Track which data source was used
         },
       })
       .select()
@@ -978,7 +1155,10 @@ export async function POST(request: NextRequest) {
         processedImageUrl,  // Pre-processed image (already correct dimensions)
         finalStrength,  // Use frontend or calculated strength
         finalGuidance,  // Use frontend or calculated guidance
-        finalNegativePrompt || undefined  // Negative prompt from new system
+        finalNegativePrompt || undefined,  // Negative prompt from new system
+        goFast,        // ⚡ Performance params
+        megapixels,
+        outputQuality
       )
       
       console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'calculated'}), guidance=${finalGuidance} (${guidance ? 'frontend' : 'calculated'})`)
@@ -1001,6 +1181,7 @@ export async function POST(request: NextRequest) {
             preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
             visionAnalysis: petComplexity.keyFeatures || undefined,
             petComplexity: petComplexity,
+            analysisDataSource: dataSource, // 🆕 Confirm data source used
             generationParams: {
               strength: finalStrength,
               guidance: finalGuidance,
@@ -1078,7 +1259,7 @@ export async function POST(request: NextRequest) {
               filter_reason: filtered.reason,
               conflict_with_type: filtered.conflictWith?.type || null,
               conflict_with_value: filtered.conflictWith?.value || null,
-              original_user_input: filtered.context?.originalUserInput || userPrompt || null,
+              original_user_input: filtered.context?.originalUserInput || sanitizedUserPrompt || null,
               style_id: filtered.context?.styleId || style,
               pet_type: filtered.context?.petType || petType || null,
               metadata: {

@@ -28,6 +28,8 @@ interface UploadModalWizardProps {
 type Step = 'upload' | 'quality-check' | 'configure' | 'generating'
 
 interface QualityCheckResult {
+  isSafe?: boolean
+  unsafeReason?: 'none' | 'nudity' | 'gore' | 'hate' | 'violence'
   hasPet: boolean
   petType: string // 'dog' | 'cat' | 'other'
   quality: 'excellent' | 'good' | 'poor' | 'unusable'
@@ -71,6 +73,9 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [qualityCheckResult, setQualityCheckResult] = useState<QualityCheckResult | null>(null)
   const [showQualityWarning, setShowQualityWarning] = useState(false)
   const [isCheckingQuality, setIsCheckingQuality] = useState(false)
+  
+  // 🎯 Smart Analysis Strategy: Track both quick and detailed results
+  const [quickAnalysisResult, setQuickAnalysisResult] = useState<{hasPet: boolean; isClear: boolean; petType: string; quality: string} | null>(null)
   
   // Detailed analysis state tracking (for race condition fix)
   const [isDetailedAnalysisRunning, setIsDetailedAnalysisRunning] = useState(false)
@@ -460,6 +465,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       const quickResult = await quickResponse.json()
       console.log('✅ Quick quality check response:', quickResult)
       
+      // 💾 Save quick analysis result for potential fallback
+      setQuickAnalysisResult(quickResult)
       console.log('⚡ Quick Check Result:', quickResult)
       
       // Check if no pet detected or quality is poor
@@ -527,6 +534,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       console.log('✅ Detailed Analysis Complete:', result)
       
+      // 🚨 NSFW CHECK: Block if unsafe content detected
+      if (result.isSafe === false) {
+        setIsDetailedAnalysisRunning(false)
+        setError(`Content policy violation: This image contains inappropriate content (${result.unsafeReason}). Please upload a different image.`)
+        setStep('upload')
+        setUploadedFile(null)
+        setPreviewUrl('')
+        return
+      }
+      
       // Update with detailed result (will trigger re-render in configure step)
       setQualityCheckResult(result)
       setDetailedAnalysisCompleted(true)  // 🔥 Mark as completed
@@ -552,6 +569,30 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     setPreviewUrl('')
     setQualityCheckResult(null)
     setShowQualityWarning(false)
+  }
+
+  // 🎯 Smart waiting function for detailed analysis
+  const waitForDetailedAnalysis = (maxWaitMs: number): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const startTime = Date.now()
+      const checkInterval = setInterval(() => {
+        // Success: analysis completed
+        if (detailedAnalysisCompleted) {
+          clearInterval(checkInterval)
+          console.log('✅ Detailed analysis completed')
+          resolve(true)
+          return
+        }
+        
+        // Timeout: exceeded max wait time
+        if (Date.now() - startTime > maxWaitMs) {
+          clearInterval(checkInterval)
+          console.warn(`⏱️ Detailed analysis timeout after ${maxWaitMs}ms`)
+          resolve(false)
+          return
+        }
+      }, 500) // Check every 500ms
+    })
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -580,24 +621,44 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       return
     }
 
-    // 🔥 RACE CONDITION FIX: Wait for detailed analysis to complete (with timeout)
-    if (isDetailedAnalysisRunning) {
-      console.log('⏳ Waiting for detailed analysis to complete...')
+    // 🎯 SMART WAIT: Intelligently wait for detailed analysis
+    let analysisStatus: 'detailed' | 'quick' | 'none' = 'none'
+    
+    if (detailedAnalysisCompleted) {
+      // Case A: Detailed analysis already completed
+      console.log('✅ Using completed detailed analysis')
+      analysisStatus = 'detailed'
+    } else if (isDetailedAnalysisRunning) {
+      // Case B: Detailed analysis in progress, wait for it
+      console.log('⏳ Detailed analysis in progress, waiting up to 10 seconds...')
+      setError('正在分析宠物特征，请稍候...')
       
-      // Wait up to 5 seconds
-      const timeout = 5000
-      const startTime = Date.now()
+      const success = await waitForDetailedAnalysis(10000) // Wait max 10 seconds
       
-      while (isDetailedAnalysisRunning && (Date.now() - startTime) < timeout) {
-        await new Promise(resolve => setTimeout(resolve, 200))
-      }
-      
-      if (isDetailedAnalysisRunning) {
-        console.warn('⚠️ Detailed analysis timeout, proceeding anyway')
+      if (success) {
+        console.log('✅ Detailed analysis completed during wait')
+        analysisStatus = 'detailed'
+        setError('')
       } else {
-        console.log('✅ Detailed analysis completed, using results')
+        // Case C: Timeout, will use quick analysis fallback
+        console.warn('⚠️ Detailed analysis timeout, will use quick analysis fallback')
+        analysisStatus = 'quick'
+        setError('使用快速分析结果生成（可能略不准确）')
+        setTimeout(() => setError(''), 3000)
       }
+    } else if (quickAnalysisResult) {
+      // Case D: Detailed analysis failed/skipped, use quick result
+      console.warn('⚠️ No detailed analysis available, using quick analysis')
+      analysisStatus = 'quick'
     }
+    
+    // Log final analysis status
+    console.log('📊 Analysis Status:', {
+      status: analysisStatus,
+      hasDetailed: detailedAnalysisCompleted,
+      hasQuick: !!quickAnalysisResult,
+      detailedRunning: isDetailedAnalysisRunning
+    })
 
     // Check authentication status
     const supabase = createClient()
@@ -685,11 +746,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           imageUrl: imageUrl,
           style: selectedStyle,
           prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
-          petType: qualityCheckResult?.petType || 'pet',
+          petType: qualityCheckResult?.petType || quickAnalysisResult?.petType || 'pet',
           aspectRatio: aspectRatio,
           // strength removed - backend will use tier-based calculation
           petName: petName.trim(), // Pet name for Art Card title
-          // 🔥 RACE CONDITION FIX: Pass detailed analysis results to backend
+          // 🎯 THREE-TIER STRATEGY: Pass both detailed and quick analysis
+          // Backend will use: detailed (best) → quick (fallback) → backend analysis (last resort)
           detailedAnalysis: qualityCheckResult ? {
             petType: qualityCheckResult.petType,
             breed: qualityCheckResult.breed,
@@ -698,7 +760,14 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             heterochromiaDetails: qualityCheckResult.heterochromiaDetails,
             complexPattern: qualityCheckResult.complexPattern,
             multiplePets: qualityCheckResult.multiplePets
-          } : null  // If no result, backend will analyze
+          } : null,
+          // 🆕 NEW: Pass quick analysis as fallback
+          quickAnalysis: quickAnalysisResult ? {
+            hasPet: quickAnalysisResult.hasPet,
+            isClear: quickAnalysisResult.isClear,
+            petType: quickAnalysisResult.petType,
+            quality: quickAnalysisResult.quality
+          } : null
         }),
         signal: controller.signal
       })

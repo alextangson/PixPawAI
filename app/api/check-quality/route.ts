@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 interface QualityCheckResult {
+  isSafe: boolean
+  unsafeReason: 'none' | 'nudity' | 'gore' | 'hate' | 'violence'
   hasPet: boolean
   petType: string
   quality: 'excellent' | 'good' | 'poor' | 'unusable'
@@ -20,15 +22,30 @@ async function analyzeImageQuality(imageUrl: string): Promise<QualityCheckResult
     throw new Error('QWEN API KEY not configured')
   }
   
-  const prompt = `You are a pet photo quality inspector and feature analyst.
+  const prompt = `You are a pet photo quality inspector, content moderator, and feature analyst.
 
-STEP 1: Photo Quality Check
+STEP 1: Content Safety Check (CRITICAL - CHECK FIRST)
+Does this image contain any of the following inappropriate content?
+- Human nudity or sexual content (exposed genitals, breasts, buttocks)
+- Gore, violence, or blood (injuries, weapons, dead animals)
+- Hate symbols or offensive gestures
+
+IMPORTANT NOTES:
+- Hairless pets (Sphynx cats, Chinese Crested dogs) are SAFE and ALLOWED
+- Pet anatomy (nose close-ups, paw pads, belly fur, pink skin) is SAFE and ALLOWED
+- Pet nursing or natural behaviors are SAFE and ALLOWED
+- Humans holding/petting animals (hands/arms visible) is SAFE and ALLOWED
+
+If unsafe content detected, set "isSafe": false and specify reason.
+If safe, set "isSafe": true and "unsafeReason": "none", then continue to Step 2.
+
+STEP 2: Photo Quality Check
 - Is there a pet in this photo? (yes/no)
 - If yes, what type? (be specific: dog, cat, rabbit, bird, hamster, guinea pig, snake, lizard, turtle, fish, ferret, chinchilla, hedgehog, parrot, etc.)
 - Photo quality? (excellent/good/poor/unusable)
 - Issues? (blurry, too_small, poor_lighting, obstructed, no_pet)
 
-STEP 2: If quality is acceptable (excellent/good), analyze features:
+STEP 3: If quality is acceptable (excellent/good), analyze features:
 - Heterochromia? (left eye color, right eye color)
 - Breed? (if distinctive)
 - Complex patterns? (spots, stripes, markings)
@@ -36,6 +53,8 @@ STEP 2: If quality is acceptable (excellent/good), analyze features:
 
 Output ONLY this JSON:
 {
+  "isSafe": true,
+  "unsafeReason": "none",
   "hasPet": true,
   "petType": "dog",
   "quality": "good",
@@ -48,8 +67,26 @@ Output ONLY this JSON:
   "detectedColors": "black and white fur"
 }
 
-If quality is poor/unusable:
+If UNSAFE content detected:
 {
+  "isSafe": false,
+  "unsafeReason": "nudity",
+  "hasPet": false,
+  "petType": "none",
+  "quality": "unusable",
+  "issues": ["inappropriate_content"],
+  "hasHeterochromia": false,
+  "heterochromiaDetails": "",
+  "breed": "",
+  "complexPattern": false,
+  "multiplePets": 0,
+  "detectedColors": ""
+}
+
+If quality is poor/unusable but safe:
+{
+  "isSafe": true,
+  "unsafeReason": "none",
   "hasPet": true,
   "petType": "dog",
   "quality": "poor",
@@ -62,8 +99,10 @@ If quality is poor/unusable:
   "detectedColors": ""
 }
 
-If no pet detected:
+If no pet detected but safe:
 {
+  "isSafe": true,
+  "unsafeReason": "none",
   "hasPet": false,
   "petType": "none",
   "quality": "unusable",
@@ -115,11 +154,14 @@ If no pet detected:
     const content = data.choices?.[0]?.message?.content?.trim() || ''
     
     console.log('🔍 Qwen Quality Check Raw Response:', content)
+    console.log('📊 Qwen Full API Response:', JSON.stringify(data, null, 2))
     
     // Parse JSON response
     try {
       const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/)
       const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content
+      
+      console.log('📝 Extracted JSON string:', jsonStr)
       
       const parsed = JSON.parse(jsonStr) as QualityCheckResult
       console.log('✅ Parsed Quality Check:', parsed)
@@ -136,6 +178,8 @@ If no pet detected:
       
       if (noPetDetected) {
         return {
+          isSafe: true,
+          unsafeReason: 'none',
           hasPet: false,
           petType: 'none',
           quality: 'unusable',
@@ -150,11 +194,16 @@ If no pet detected:
       }
       
       // Otherwise, proceed with caution - mark as poor quality to show warning
+      console.warn('⚠️ Qwen parsing failed, returning fallback result. Raw content length:', content.length)
+      console.warn('⚠️ First 200 chars of content:', content.substring(0, 200))
+      
       return {
+        isSafe: true,
+        unsafeReason: 'none',
         hasPet: true,
         petType: 'unknown',
         quality: 'poor',
-        issues: ['unclear_detection'],
+        issues: ['unclear_detection', 'qwen_parsing_failed'],
         hasHeterochromia: false,
         heterochromiaDetails: '',
         breed: 'unknown',
@@ -165,8 +214,10 @@ If no pet detected:
     }
   } catch (error) {
     console.error('Qwen API Error:', error)
-    // On API error, skip quality check and proceed
+    // On API error, skip quality check and proceed (assume safe)
     return {
+      isSafe: true,
+      unsafeReason: 'none',
       hasPet: true,
       petType: 'unknown',
       quality: 'good',

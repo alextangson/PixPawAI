@@ -94,7 +94,64 @@ export async function PUT(
       example_image_url
     } = body
     
-    // 构建更新对象（只更新提供的字段）
+    const adminSupabase = await createAdminClient()
+    
+    // 1. 获取当前配置（用于检测是否有重要变化和保存版本）
+    const { data: currentStyle, error: fetchError } = await adminSupabase
+      .from('styles')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (fetchError || !currentStyle) {
+      return NextResponse.json({ 
+        error: 'Style not found', 
+        details: fetchError?.message 
+      }, { status: 404 })
+    }
+    
+    // 2. 检测是否有重要参数变化（需要保存版本）
+    const hasSignificantChange = 
+      (prompt_suffix !== undefined && prompt_suffix !== currentStyle.prompt_suffix) ||
+      (negative_prompt !== undefined && negative_prompt !== currentStyle.negative_prompt) ||
+      (recommended_strength_min !== undefined && recommended_strength_min !== currentStyle.recommended_strength_min) ||
+      (recommended_strength_max !== undefined && recommended_strength_max !== currentStyle.recommended_strength_max) ||
+      (recommended_guidance !== undefined && recommended_guidance !== currentStyle.recommended_guidance)
+    
+    // 3. 如果有重要变化，保存当前配置为历史版本
+    if (hasSignificantChange) {
+      // 获取下一个版本号
+      const { data: latestVersions } = await adminSupabase
+        .from('style_versions')
+        .select('version_number')
+        .eq('style_id', id)
+        .order('version_number', { ascending: false })
+        .limit(1)
+      
+      const nextVersion = (latestVersions?.[0]?.version_number || 0) + 1
+      
+      // 保存当前配置为历史版本
+      const { error: versionError } = await adminSupabase
+        .from('style_versions')
+        .insert({
+          style_id: id,
+          version_number: nextVersion,
+          prompt_suffix: currentStyle.prompt_suffix,
+          negative_prompt: currentStyle.negative_prompt,
+          recommended_strength_min: currentStyle.recommended_strength_min,
+          recommended_strength_max: currentStyle.recommended_strength_max,
+          recommended_guidance: currentStyle.recommended_guidance,
+          created_by: authCheck.user?.id,
+          notes: body._version_notes || 'Auto-saved before update'
+        })
+      
+      if (versionError) {
+        console.warn('Failed to save version history:', versionError)
+        // 不阻止更新，只记录警告
+      }
+    }
+    
+    // 4. 构建更新对象（只更新提供的字段）
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
     if (emoji !== undefined) updateData.emoji = emoji
@@ -114,8 +171,7 @@ export async function PUT(
     if (preview_image_url !== undefined) updateData.preview_image_url = preview_image_url
     if (example_image_url !== undefined) updateData.example_image_url = example_image_url
     
-    // 更新风格
-    const adminSupabase = await createAdminClient()
+    // 5. 更新风格
     const { data, error } = await adminSupabase
       .from('styles')
       .update(updateData)

@@ -122,8 +122,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Matcher ignoring `/_next/` and `/api/`
-  // Also ignore RSC prefetch requests to prevent payload errors
+  // Also ignore static files (images, fonts, json, etc.) and RSC prefetch requests
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|json|woff|woff2|ttf|eot)$).*)',
   ],
 }

@@ -183,12 +183,12 @@ function calculatePriority(type: FeatureType, source: 'user' | 'qwen' | 'style' 
     breed: 9,
     color: 8,
     pattern: 8,
+    style_modifier: 7, // ✅ 提升风格修饰词优先级（原来是4）
     composition: 7,
     action: 6,
     mood: 6,
     lighting: 5,
     scene: 5,
-    style_modifier: 4,
     quality: 3,
     other: 2
   }

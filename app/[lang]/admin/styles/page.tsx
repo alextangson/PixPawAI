@@ -94,6 +94,12 @@ export default function StylesManagementPage() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null) // styleId being uploaded
   const [imagePreview, setImagePreview] = useState<string>('')
   
+  // 版本历史相关状态
+  const [versionHistoryStyleId, setVersionHistoryStyleId] = useState<string | null>(null)
+  const [versionHistory, setVersionHistory] = useState<any[]>([])
+  const [loadingVersions, setLoadingVersions] = useState(false)
+  const [expandedVersion, setExpandedVersion] = useState<number | null>(null)
+  
   // 表单状态
   const [formData, setFormData] = useState<Partial<Style>>({
     id: '',
@@ -259,6 +265,66 @@ export default function StylesManagementPage() {
       alert('删除成功！')
     } catch (err: any) {
       alert(`删除失败: ${err.message}`)
+    }
+  }
+  
+  // 获取版本历史
+  async function loadVersionHistory(styleId: string) {
+    try {
+      setLoadingVersions(true)
+      setVersionHistoryStyleId(styleId)
+      
+      const res = await fetch(`/api/admin/styles/${styleId}/versions`)
+      
+      if (!res.ok) {
+        throw new Error('Failed to load version history')
+      }
+      
+      const data = await res.json()
+      setVersionHistory(data.versions || [])
+    } catch (err: any) {
+      alert(`获取版本历史失败: ${err.message}`)
+      setVersionHistoryStyleId(null)
+    } finally {
+      setLoadingVersions(false)
+    }
+  }
+  
+  // 恢复到指定版本
+  async function handleRestoreVersion(styleId: string, versionNumber: number) {
+    const version = versionHistory.find(v => v.version_number === versionNumber)
+    if (!version) return
+    
+    const confirmed = confirm(
+      `确定要恢复到版本 ${versionNumber} 吗？\n\n` +
+      `当前配置将被保存为新版本。\n\n` +
+      `版本 ${versionNumber} 参数:\n` +
+      `Strength: ${version.recommended_strength_min?.toFixed(2) || 'N/A'} - ${version.recommended_strength_max?.toFixed(2) || 'N/A'}\n` +
+      `Guidance: ${version.recommended_guidance?.toFixed(1) || 'N/A'}`
+    )
+    
+    if (!confirmed) return
+    
+    try {
+      const res = await fetch(`/api/admin/styles/${styleId}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version_number: versionNumber })
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to restore version')
+      }
+      
+      const data = await res.json()
+      alert(`✅ 成功恢复到版本 ${versionNumber}！\n\n当前配置已保存为版本 ${data.backupVersion}`)
+      
+      // 重新加载风格列表和版本历史
+      await loadStyles()
+      await loadVersionHistory(styleId)
+    } catch (err: any) {
+      alert(`恢复版本失败: ${err.message}`)
     }
   }
   
@@ -861,6 +927,15 @@ export default function StylesManagementPage() {
                     <Edit2 className="w-4 h-4" />
                   </Button>
                   <Button
+                    onClick={() => loadVersionHistory(style.id)}
+                    size="sm"
+                    variant="outline"
+                    title="Version History / 版本历史"
+                    className="text-purple-600 hover:bg-purple-50"
+                  >
+                    📜
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(style.id)}
                     size="sm"
                     variant="outline"
@@ -878,6 +953,204 @@ export default function StylesManagementPage() {
       {styles.length === 0 && !loading && (
         <div className="text-center py-12 text-gray-500">
           暂无风格，点击上方按钮添加新风格
+        </div>
+      )}
+      
+      {/* Version History Modal */}
+      {versionHistoryStyleId && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setVersionHistoryStyleId(null)}
+        >
+          <div 
+            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                📜 Version History / 版本历史
+                <span className="text-sm font-normal text-gray-500">
+                  ({styles.find(s => s.id === versionHistoryStyleId)?.name})
+                </span>
+              </h2>
+              <button 
+                onClick={() => setVersionHistoryStyleId(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {loadingVersions ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading versions / 加载中...</p>
+                </div>
+              ) : versionHistory.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">暂无版本历史</p>
+                  <p className="text-sm">第一次更新风格参数后将自动创建版本记录</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Current Version */}
+                  {(() => {
+                    const currentStyle = styles.find(s => s.id === versionHistoryStyleId)
+                    if (!currentStyle) return null
+                    
+                    return (
+                      <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                              Current / 当前版本
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(currentStyle.updated_at || currentStyle.created_at || '').toLocaleString('zh-CN')}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-gray-500 text-xs mb-1">Strength Range</div>
+                            <div className="font-mono font-semibold">
+                              {currentStyle.recommended_strength_min?.toFixed(2) || 'N/A'} - 
+                              {currentStyle.recommended_strength_max?.toFixed(2) || 'N/A'}
+                            </div>
+                          </div>
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-gray-500 text-xs mb-1">Guidance</div>
+                            <div className="font-mono font-semibold">
+                              {currentStyle.recommended_guidance?.toFixed(1) || 'N/A'}
+                            </div>
+                          </div>
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-gray-500 text-xs mb-1">Tier</div>
+                            <div className="font-semibold">
+                              {currentStyle.tier || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {expandedVersion === -1 && (
+                          <div className="mt-3 pt-3 border-t space-y-2">
+                            <div>
+                              <div className="text-xs font-medium text-gray-600 mb-1">Prompt Suffix:</div>
+                              <div className="bg-white p-2 rounded text-sm">
+                                {currentStyle.prompt_suffix}
+                              </div>
+                            </div>
+                            {currentStyle.negative_prompt && (
+                              <div>
+                                <div className="text-xs font-medium text-gray-600 mb-1">Negative Prompt:</div>
+                                <div className="bg-white p-2 rounded text-sm">
+                                  {currentStyle.negative_prompt}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <button
+                          onClick={() => setExpandedVersion(expandedVersion === -1 ? null : -1)}
+                          className="mt-3 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {expandedVersion === -1 ? '▼ Hide Details / 隐藏详情' : '▶ View Details / 查看详情'}
+                        </button>
+                      </div>
+                    )
+                  })()}
+                  
+                  {/* Historical Versions */}
+                  {versionHistory.map((version) => (
+                    <div 
+                      key={version.id} 
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-bold">
+                            v{version.version_number}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(version.created_at).toLocaleString('zh-CN')}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleRestoreVersion(versionHistoryStyleId, version.version_number)}
+                          className="px-3 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded text-xs font-medium transition-colors flex items-center gap-1"
+                        >
+                          ↻ Restore / 恢复
+                        </button>
+                      </div>
+                      
+                      {version.notes && (
+                        <div className="mb-3 text-sm text-gray-600 italic bg-yellow-50 p-2 rounded">
+                          📝 {version.notes}
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="bg-gray-50 p-3 rounded">
+                          <div className="text-gray-500 text-xs mb-1">Strength Range</div>
+                          <div className="font-mono font-semibold">
+                            {version.recommended_strength_min?.toFixed(2) || 'N/A'} - 
+                            {version.recommended_strength_max?.toFixed(2) || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded">
+                          <div className="text-gray-500 text-xs mb-1">Guidance</div>
+                          <div className="font-mono font-semibold">
+                            {version.recommended_guidance?.toFixed(1) || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded">
+                          <div className="text-gray-500 text-xs mb-1">Created By</div>
+                          <div className="font-semibold text-xs truncate">
+                            {version.created_by?.slice(0, 8) || 'System'}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {expandedVersion === version.version_number && (
+                        <div className="mt-3 pt-3 border-t space-y-2">
+                          <div>
+                            <div className="text-xs font-medium text-gray-600 mb-1">Prompt Suffix:</div>
+                            <div className="bg-gray-50 p-2 rounded text-sm">
+                              {version.prompt_suffix}
+                            </div>
+                          </div>
+                          {version.negative_prompt && (
+                            <div>
+                              <div className="text-xs font-medium text-gray-600 mb-1">Negative Prompt:</div>
+                              <div className="bg-gray-50 p-2 rounded text-sm">
+                                {version.negative_prompt}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <button
+                        onClick={() => setExpandedVersion(expandedVersion === version.version_number ? null : version.version_number)}
+                        className="mt-3 text-xs text-gray-600 hover:text-gray-800 font-medium"
+                      >
+                        {expandedVersion === version.version_number ? '▼ Hide Details / 隐藏详情' : '▶ View Details / 查看详情'}
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {versionHistory.length > 10 && (
+                    <div className="text-center py-4 text-sm text-gray-500">
+                      Showing all {versionHistory.length} versions / 显示全部 {versionHistory.length} 个版本
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

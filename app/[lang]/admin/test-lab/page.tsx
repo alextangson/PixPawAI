@@ -29,7 +29,8 @@ import {
   Star,
   Plus,
   Save,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react'
 import { useStyles } from '@/lib/hooks/use-styles'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
@@ -97,6 +98,7 @@ export default function TestLabPage() {
   // Analysis state
   const [qwenResult, setQwenResult] = useState<QwenResult | null>(null)
   const [finalPrompt, setFinalPrompt] = useState<MergedPrompt | null>(null)
+  const [promptDebugInfo, setPromptDebugInfo] = useState<any>(null)
   
   // Generation state
   const [genParams, setGenParams] = useState({
@@ -105,7 +107,9 @@ export default function TestLabPage() {
     aspectRatio: '1:1'
   })
   const [abTestMode, setAbTestMode] = useState(false)
-  const [selectedVariants, setSelectedVariants] = useState<string[]>(['default'])
+  const [abTestStrengthDelta, setAbTestStrengthDelta] = useState<number>(0)
+  const [abTestGuidanceDelta, setAbTestGuidanceDelta] = useState<number>(0)
+  const [abTestAspectRatios, setAbTestAspectRatios] = useState<string[]>([])
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
@@ -113,7 +117,7 @@ export default function TestLabPage() {
   // Collapsible sections state
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
   const [showABTest, setShowABTest] = useState(false)
-  const [showPromptPreview, setShowPromptPreview] = useState(false)
+  const [showPromptPreview, setShowPromptPreview] = useState(true) // 默认展开，方便调试
   
   // Test History state
   const [testHistory, setTestHistory] = useState<TestSession[]>([])
@@ -260,7 +264,7 @@ export default function TestLabPage() {
         ? originalStyleData.negative_prompt 
         : negativePrompt
       
-      const { prompt } = await buildPromptFromSources({
+      const { prompt, debug } = await buildPromptFromSources({
         userPrompt: testPrompt || '',
         qwenResult: qwenResult,
         stylePromptSuffix: effectivePromptSuffix,
@@ -268,11 +272,13 @@ export default function TestLabPage() {
       })
       
       setFinalPrompt(prompt)
+      setPromptDebugInfo(debug)
       
       console.log('✅ Prompt Flow Built:', {
         hasStylePrompt: !!effectivePromptSuffix,
         hasNegativePrompt: !!effectiveNegativePrompt,
-        finalPrompt: prompt
+        finalPrompt: prompt,
+        debug: debug
       })
     } catch (error) {
       console.error('❌ Prompt build error:', error)
@@ -308,15 +314,29 @@ export default function TestLabPage() {
         // 构建 API 请求体
         const apiRequestBody = {
           imageUrl: imagePreview,
-          style: workMode === 'optimize' && selectedStyle ? selectedStyle : undefined,
+          // In "optimize" mode, pass existing style ID
+          // In "create" mode, don't pass style (will use promptSuffix/negativePrompt directly)
+          ...(workMode === 'optimize' && selectedStyle ? { style: selectedStyle } : {}),
           prompt: testPrompt || '',
           promptSuffix: effectivePromptSuffix || '',
           negativePrompt: effectiveNegativePrompt || '',
           petType: qwenResult?.petType || 'pet',
+          // ✅ 传递完整的 Qwen 分析结果（避免第2次重复调用）
+          detailedAnalysis: qwenResult ? {
+            petType: qwenResult.petType,
+            detectedColors: qwenResult.detectedColors || '',
+            hasHeterochromia: qwenResult.hasHeterochromia || false,
+            heterochromiaDetails: qwenResult.heterochromiaDetails || '',
+            complexPattern: qwenResult.complexPattern || false,
+            multiplePets: qwenResult.multiplePets || 1,
+            breed: qwenResult.breed || 'unknown'
+          } : undefined,
           aspectRatio: params.aspectRatio,
           strength: params.strength,
           guidance: params.guidance,
-          testMode: true
+          testMode: true,
+          // Pass style name for create mode (for logging/debugging)
+          ...(workMode === 'create' && styleName ? { styleName: styleName } : {})
         }
         
         // 记录 API 请求用于调试
@@ -378,48 +398,52 @@ export default function TestLabPage() {
     }
     
     const variants: any[] = []
+    const baseVariant = {
+      strength: genParams.strength,
+      guidance: genParams.guidance,
+      aspectRatio: genParams.aspectRatio
+    }
     
-    if (selectedVariants.includes('default')) {
+    // Always include base variant
+    variants.push(baseVariant)
+    
+    // Strength variants
+    if (abTestStrengthDelta > 0) {
       variants.push({
-        strength: genParams.strength,
-        guidance: genParams.guidance,
-        aspectRatio: genParams.aspectRatio
+        ...baseVariant,
+        strength: Math.max(0.15, genParams.strength - abTestStrengthDelta)
+      })
+      variants.push({
+        ...baseVariant,
+        strength: Math.min(0.95, genParams.strength + abTestStrengthDelta)
       })
     }
     
-    if (selectedVariants.includes('lower_strength')) {
+    // Guidance variants
+    if (abTestGuidanceDelta > 0) {
       variants.push({
-        strength: Math.max(0.25, genParams.strength - 0.05),
-        guidance: genParams.guidance,
-        aspectRatio: genParams.aspectRatio
+        ...baseVariant,
+        guidance: Math.max(1.0, genParams.guidance - abTestGuidanceDelta)
+      })
+      variants.push({
+        ...baseVariant,
+        guidance: Math.min(5.0, genParams.guidance + abTestGuidanceDelta)
       })
     }
     
-    if (selectedVariants.includes('higher_strength')) {
-      variants.push({
-        strength: Math.min(0.80, genParams.strength + 0.05),
-        guidance: genParams.guidance,
-        aspectRatio: genParams.aspectRatio
-      })
-    }
-    
-    if (selectedVariants.includes('lower_guidance')) {
-      variants.push({
-        strength: genParams.strength,
-        guidance: Math.max(1.5, genParams.guidance - 0.5),
-        aspectRatio: genParams.aspectRatio
+    // Aspect ratio variants
+    if (abTestAspectRatios.length > 0) {
+      abTestAspectRatios.forEach(ratio => {
+        if (ratio !== genParams.aspectRatio) {
+          variants.push({
+            ...baseVariant,
+            aspectRatio: ratio
+          })
+        }
       })
     }
     
     return variants
-  }
-  
-  function toggleVariant(variant: string) {
-    setSelectedVariants(prev => 
-      prev.includes(variant)
-        ? prev.filter(v => v !== variant)
-        : [...prev, variant]
-    )
   }
   
   function handleDrop(e: React.DragEvent) {
@@ -516,6 +540,64 @@ export default function TestLabPage() {
       guidance: session.result.params.guidance,
       aspectRatio: session.result.params.aspectRatio
     })
+  }
+  
+  // Delete single history entry
+  const deleteHistoryEntry = (sessionId: string) => {
+    const updatedHistory = testHistory.filter(s => s.id !== sessionId)
+    setTestHistory(updatedHistory)
+    
+    try {
+      localStorage.setItem('testlab_history', JSON.stringify({ sessions: updatedHistory }))
+      console.log('🗑️ Deleted history entry:', sessionId)
+    } catch (error) {
+      console.error('Failed to update test history:', error)
+    }
+  }
+
+  // Clear all history
+  const clearAllHistory = () => {
+    if (!confirm('⚠️ 确认删除所有测试历史？这个操作不可逆！\n\nConfirm delete all test history? This action cannot be undone!')) {
+      return
+    }
+    
+    setTestHistory([])
+    
+    try {
+      localStorage.removeItem('testlab_history')
+      console.log('🗑️ Cleared all test history')
+      alert('✅ All test history cleared / 已清空所有测试历史')
+    } catch (error) {
+      console.error('Failed to clear test history:', error)
+      alert('❌ Failed to clear history / 清空失败')
+    }
+  }
+
+  // Delete old history (older than X days)
+  const deleteOldHistory = (days: number) => {
+    const cutoffTime = Date.now() - (days * 24 * 60 * 60 * 1000)
+    const updatedHistory = testHistory.filter(s => new Date(s.testDate).getTime() > cutoffTime)
+    
+    const deletedCount = testHistory.length - updatedHistory.length
+    
+    if (deletedCount === 0) {
+      alert(`ℹ️ No history older than ${days} days / 没有超过 ${days} 天的历史`)
+      return
+    }
+    
+    if (!confirm(`⚠️ 将删除 ${deletedCount} 条超过 ${days} 天的历史记录，确认？\n\nDelete ${deletedCount} history entries older than ${days} days?`)) {
+      return
+    }
+    
+    setTestHistory(updatedHistory)
+    
+    try {
+      localStorage.setItem('testlab_history', JSON.stringify({ sessions: updatedHistory }))
+      console.log(`🗑️ Deleted ${deletedCount} old history entries (>${days} days)`)
+      alert(`✅ Deleted ${deletedCount} entries / 已删除 ${deletedCount} 条记录`)
+    } catch (error) {
+      console.error('Failed to delete old history:', error)
+    }
   }
   
   // Load style for optimization mode
@@ -670,11 +752,11 @@ export default function TestLabPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="relative">
+                  <div className="relative inline-block">
                     <img 
                       src={imagePreview} 
                       alt="Preview" 
-                      className="w-full rounded-lg border"
+                      className="w-48 h-48 rounded-lg border object-cover"
                     />
                     <Button
                       variant="destructive"
@@ -1003,72 +1085,165 @@ export default function TestLabPage() {
             </Card>
             
             {/* 5. A/B Test Mode (Collapsible) */}
-            <Card className="p-6 border-2 border-purple-200">
-              <button
-                onClick={() => setShowABTest(!showABTest)}
-                className="flex items-center justify-between w-full text-left"
-              >
+            <Card className="p-4 border-2 border-purple-200">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <FlaskConical className="w-5 h-5 text-purple-600" />
-                  <h2 className="text-lg font-semibold">A/B Test Mode / A/B 测试模式</h2>
-                  <label className="relative inline-flex items-center cursor-pointer ml-2">
-                    <input 
-                      type="checkbox"
-                      checked={abTestMode}
-                      onChange={(e) => {
-                        setAbTestMode(e.target.checked)
-                        e.stopPropagation()
-                      }}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
-                  </label>
+                  <h2 className="font-semibold">A/B Test Mode / A/B 测试</h2>
                 </div>
-                {showABTest && abTestMode ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={abTestMode}
+                    onChange={(e) => {
+                      setAbTestMode(e.target.checked)
+                      if (!e.target.checked) {
+                        setAbTestStrengthDelta(0)
+                        setAbTestGuidanceDelta(0)
+                        setAbTestAspectRatios([])
+                      }
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
               
-              {showABTest && abTestMode && (
-                <div className="mt-4 space-y-2">
-                  <label className="flex items-center text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedVariants.includes('default')}
-                      onChange={() => toggleVariant('default')}
-                      className="mr-2"
-                    />
-                    <span>Default / 默认 (str={genParams.strength.toFixed(2)})</span>
-                  </label>
-                  <label className="flex items-center text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedVariants.includes('lower_strength')}
-                      onChange={() => toggleVariant('lower_strength')}
-                      className="mr-2"
-                    />
-                    <span>Lower Strength / 降低强度 (-0.05)</span>
-                  </label>
-                  <label className="flex items-center text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedVariants.includes('higher_strength')}
-                      onChange={() => toggleVariant('higher_strength')}
-                      className="mr-2"
-                    />
-                    <span>Higher Strength / 提高强度 (+0.05)</span>
-                  </label>
-                  <label className="flex items-center text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedVariants.includes('lower_guidance')}
-                      onChange={() => toggleVariant('lower_guidance')}
-                      className="mr-2"
-                    />
-                    <span>Lower Guidance / 降低引导度 (-0.5)</span>
-                  </label>
+              {abTestMode && (
+                <div className="space-y-4 pt-3 border-t">
+                  {/* Base Parameters Info */}
+                  <div className="bg-blue-50 p-3 rounded text-xs">
+                    <div className="font-medium text-blue-900 mb-1">Base Parameters / 基准参数</div>
+                    <div className="text-blue-700">
+                      Strength: {genParams.strength.toFixed(2)} | 
+                      Guidance: {genParams.guidance.toFixed(1)} | 
+                      Ratio: {genParams.aspectRatio}
+                    </div>
+                  </div>
+                  
+                  {/* Strength Variants */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Strength Variants / 强度变体
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setAbTestStrengthDelta(abTestStrengthDelta === 0.05 ? 0 : 0.05)}
+                        className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+                          abTestStrengthDelta === 0.05
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ±0.05
+                      </button>
+                      <button
+                        onClick={() => setAbTestStrengthDelta(abTestStrengthDelta === 0.10 ? 0 : 0.10)}
+                        className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+                          abTestStrengthDelta === 0.10
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ±0.10
+                      </button>
+                      <button
+                        onClick={() => setAbTestStrengthDelta(abTestStrengthDelta === 0.15 ? 0 : 0.15)}
+                        className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+                          abTestStrengthDelta === 0.15
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ±0.15
+                      </button>
+                    </div>
+                    {abTestStrengthDelta > 0 && (
+                      <div className="mt-2 text-xs text-gray-600 bg-purple-50 p-2 rounded">
+                        Will generate: {(genParams.strength - abTestStrengthDelta).toFixed(2)}, {genParams.strength.toFixed(2)}, {(genParams.strength + abTestStrengthDelta).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Guidance Variants */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Guidance Variants / 引导度变体
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setAbTestGuidanceDelta(abTestGuidanceDelta === 0.5 ? 0 : 0.5)}
+                        className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+                          abTestGuidanceDelta === 0.5
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ±0.5
+                      </button>
+                      <button
+                        onClick={() => setAbTestGuidanceDelta(abTestGuidanceDelta === 1.0 ? 0 : 1.0)}
+                        className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+                          abTestGuidanceDelta === 1.0
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ±1.0
+                      </button>
+                      <button
+                        onClick={() => setAbTestGuidanceDelta(abTestGuidanceDelta === 1.5 ? 0 : 1.5)}
+                        className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+                          abTestGuidanceDelta === 1.5
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        ±1.5
+                      </button>
+                    </div>
+                    {abTestGuidanceDelta > 0 && (
+                      <div className="mt-2 text-xs text-gray-600 bg-purple-50 p-2 rounded">
+                        Will generate: {(genParams.guidance - abTestGuidanceDelta).toFixed(1)}, {genParams.guidance.toFixed(1)}, {(genParams.guidance + abTestGuidanceDelta).toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Aspect Ratio Variants */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Additional Aspect Ratios / 额外比例
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['1:1', '3:4', '4:3', '16:9', '9:16'].map(ratio => (
+                        <label key={ratio} className="flex items-center text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={abTestAspectRatios.includes(ratio)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAbTestAspectRatios([...abTestAspectRatios, ratio])
+                              } else {
+                                setAbTestAspectRatios(abTestAspectRatios.filter(r => r !== ratio))
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className={ratio === genParams.aspectRatio ? 'font-bold text-blue-600' : ''}>
+                            {ratio} {ratio === genParams.aspectRatio && '(Base / 基准)'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Total Count */}
+                  <div className="bg-green-50 p-3 rounded border border-green-200">
+                    <div className="text-sm font-medium text-green-900">
+                      Total Images to Generate / 总计将生成:
+                      <span className="text-lg font-bold ml-2">{calculateVariants().length}</span> images
+                    </div>
+                  </div>
                 </div>
               )}
             </Card>
@@ -1153,7 +1328,14 @@ export default function TestLabPage() {
                       
                       {/* 右侧：分析结果 */}
                       <div className="flex-1 space-y-2">
-                        <h3 className="font-semibold text-sm">Qwen Analysis / 分析结果</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-sm">Qwen Analysis / 分析结果</h3>
+                          {(qwenResult.petType === 'unknown' || qwenResult.quality === 'poor') && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
+                              ⚠️ 识别不完整
+                            </span>
+                          )}
+                        </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="bg-gray-50 p-2 rounded">
                             <div className="text-gray-500 text-xs">Pet Type / 宠物类型</div>
@@ -1182,6 +1364,29 @@ export default function TestLabPage() {
                           <div className="bg-purple-50 p-2 rounded text-xs">
                             <div className="text-gray-600 text-xs mb-1">Heterochromia / 异瞳</div>
                             <div className="text-gray-900">{qwenResult.heterochromiaDetails}</div>
+                          </div>
+                        )}
+                        
+                        {/* 识别失败警告 */}
+                        {(qwenResult.petType === 'unknown' || qwenResult.petType === 'none') && (
+                          <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded text-xs">
+                            <div className="font-bold text-orange-900 mb-1 flex items-center gap-1">
+                              ⚠️ Qwen 识别失败
+                            </div>
+                            <div className="text-orange-800 space-y-1">
+                              <p>可能原因：</p>
+                              <ul className="list-disc list-inside text-xs space-y-0.5 ml-2">
+                                <li>图片分辨率过低或模糊</li>
+                                <li>宠物不清晰或被遮挡</li>
+                                <li>API 调用或解析失败</li>
+                              </ul>
+                              <p className="mt-2 font-medium">💡 建议：</p>
+                              <ul className="list-disc list-inside text-xs space-y-0.5 ml-2">
+                                <li>查看浏览器控制台（F12）的错误日志</li>
+                                <li>在 Custom Prompt 中手动添加特征</li>
+                                <li>尝试重新上传更清晰的图片</li>
+                              </ul>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1238,18 +1443,141 @@ export default function TestLabPage() {
                 </div>
               ) : showPromptPreview ? (
                 <div className="mt-3 space-y-3">
+                  {/* Positive Prompt with Highlighting */}
                   <div>
-                    <div className="text-xs text-gray-500 mb-1 font-medium">Positive Prompt / 正向提示词</div>
-                    <div className="bg-green-50 p-3 rounded text-sm text-gray-800 max-h-32 overflow-y-auto">
-                      {finalPrompt.positive}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs text-gray-500 font-medium">Positive Prompt / 正向提示词</div>
+                      {finalPrompt.positive.toLowerCase().includes('heterochromia') && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
+                          ✓ 包含异瞳特征
+                        </span>
+                      )}
+                    </div>
+                    <div className="bg-green-50 p-3 rounded text-sm text-gray-800 max-h-48 overflow-y-auto font-mono leading-relaxed">
+                      {finalPrompt.positive.split(',').map((part, idx) => {
+                        const trimmed = part.trim()
+                        const isHeterochromia = trimmed.toLowerCase().includes('heterochromia')
+                        const isKeyFeature = trimmed.toLowerCase().includes('eye') || 
+                                            trimmed.toLowerCase().includes('breed') ||
+                                            trimmed.toLowerCase().includes('color')
+                        
+                        return (
+                          <span key={idx}>
+                            <span 
+                              className={
+                                isHeterochromia 
+                                  ? 'bg-purple-200 text-purple-900 px-1 rounded font-bold' 
+                                  : isKeyFeature 
+                                    ? 'bg-yellow-100 text-yellow-900 px-1 rounded'
+                                    : ''
+                              }
+                            >
+                              {trimmed}
+                            </span>
+                            {idx < finalPrompt.positive.split(',').length - 1 && ', '}
+                          </span>
+                        )
+                      })}
                     </div>
                   </div>
+                  
+                  {/* Negative Prompt */}
                   <div>
                     <div className="text-xs text-gray-500 mb-1 font-medium">Negative Prompt / 负向提示词</div>
                     <div className="bg-red-50 p-3 rounded text-sm text-gray-800 max-h-32 overflow-y-auto">
                       {finalPrompt.negative || '(empty / 空)'}
                     </div>
                   </div>
+                  
+                  {/* Debug Info: Feature Sources */}
+                  {promptDebugInfo && (
+                    <div className="border-t pt-3">
+                      <div className="text-xs text-gray-500 mb-2 font-medium flex items-center gap-2 flex-wrap">
+                        <span>🔍 Debug: Feature Sources / 特征来源分析</span>
+                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                          Total: {promptDebugInfo.cleanedFeatures?.length || 0} features
+                        </span>
+                        {promptDebugInfo.conflictCount > 0 && (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
+                            {promptDebugInfo.conflictCount} conflicts resolved
+                          </span>
+                        )}
+                        {promptDebugInfo.cleanedFeatures?.filter((f: any) => f.source === 'qwen').length === 0 && (
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">
+                            ❌ Qwen 未识别任何特征！
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                          <div className="font-medium text-blue-900 mb-1">
+                            👤 User Input
+                          </div>
+                          <div className="text-blue-700">
+                            {promptDebugInfo.cleanedFeatures?.filter((f: any) => f.source === 'user').length || 0} features
+                          </div>
+                        </div>
+                        
+                        <div className="bg-purple-50 p-2 rounded border border-purple-200">
+                          <div className="font-medium text-purple-900 mb-1">
+                            🤖 Qwen AI
+                          </div>
+                          <div className="text-purple-700">
+                            {promptDebugInfo.cleanedFeatures?.filter((f: any) => f.source === 'qwen').length || 0} features
+                          </div>
+                          {promptDebugInfo.cleanedFeatures?.filter((f: any) => 
+                            f.source === 'qwen' && f.value?.toLowerCase().includes('heterochromia')
+                          ).length > 0 && (
+                            <div className="mt-1 text-xs bg-purple-200 text-purple-900 px-1 py-0.5 rounded">
+                              ✓ 异瞳已识别
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="bg-green-50 p-2 rounded border border-green-200">
+                          <div className="font-medium text-green-900 mb-1">
+                            🎨 Style Prompt
+                          </div>
+                          <div className="text-green-700">
+                            {promptDebugInfo.cleanedFeatures?.filter((f: any) => f.source === 'style').length || 0} features
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Detailed Feature List */}
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-xs text-gray-600 hover:text-gray-800 font-medium">
+                          ▶ View All Features / 查看所有特征 ({promptDebugInfo.cleanedFeatures?.length || 0})
+                        </summary>
+                        <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                          {promptDebugInfo.cleanedFeatures?.map((feature: any, idx: number) => (
+                            <div 
+                              key={idx} 
+                              className={`text-xs p-2 rounded ${
+                                feature.source === 'qwen' ? 'bg-purple-50 border border-purple-200' :
+                                feature.source === 'style' ? 'bg-green-50 border border-green-200' :
+                                'bg-blue-50 border border-blue-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`font-mono ${
+                                  feature.value?.toLowerCase().includes('heterochromia') 
+                                    ? 'font-bold text-purple-900' 
+                                    : ''
+                                }`}>
+                                  {feature.normalized || feature.value}
+                                </span>
+                                <span className="text-xs opacity-60">
+                                  [{feature.source}] p:{feature.priority}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  )}
                   
                   {/* 新增：完整参数显示 */}
                   <div className="border-t pt-3">
@@ -1271,7 +1599,7 @@ export default function TestLabPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Num Outputs:</span>
-                        <span className="font-medium">{abTestMode ? selectedVariants.length : 1}</span>
+                        <span className="font-medium">{abTestMode ? calculateVariants().length : 1}</span>
                       </div>
                     </div>
                   </div>
@@ -1306,246 +1634,300 @@ export default function TestLabPage() {
               )}
             </Card>
             
-            {/* 4. Generated Results */}
-            <Card className="p-4">
-              <h2 className="font-semibold mb-3">4. Generated Results / 生成结果</h2>
-              
-              {generatedImages.length === 0 && !isGenerating ? (
-                <div className="text-center py-12 bg-gray-50 rounded border-2 border-dashed border-gray-300">
-                  <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm text-gray-500">No images generated yet</p>
-                  <p className="text-xs text-gray-400 mt-1">暂无生成结果</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {generatedImages.map((img, index) => (
-                    <div key={img.id} className={`border-2 rounded-lg overflow-hidden ${img.isBest ? 'border-green-500 shadow-lg' : 'border-gray-200'}`}>
-                      <div 
-                        className="relative cursor-pointer group" 
-                        onClick={() => setSelectedImageModal(img)}
-                      >
-                        <img 
-                          src={img.imageUrl} 
-                          alt={`Generated ${index + 1}`}
-                          className="w-full aspect-square object-cover"
-                        />
-                        {img.isBest && (
-                          <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                            <Star className="w-3 h-3 fill-white" />
-                            Best
-                          </div>
-                        )}
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                          <span className="opacity-0 group-hover:opacity-100 text-white bg-black/50 px-3 py-1 rounded text-sm transition-opacity">
-                            Click to enlarge / 点击放大
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-3 bg-gray-50 space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Strength:</span>
-                            <span className="font-medium">{img.params.strength.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Guidance:</span>
-                            <span className="font-medium">{img.params.guidance.toFixed(1)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Aspect Ratio:</span>
-                            <span className="font-medium">{img.params.aspectRatio}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Time:</span>
-                            <span className="font-medium">{img.timeTaken}s</span>
-                          </div>
-                        </div>
-                        
-                        {/* Rating */}
-                        <div className="pt-2 border-t border-gray-200">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-gray-600 font-medium">Quality Rating / 质量评分:</span>
-                            <div className="flex gap-0.5">
-                              {[1, 2, 3, 4, 5].map(star => (
-                                <button
-                                  key={star}
-                                  onClick={() => rateImage(img.id, star)}
-                                  className="transition-all hover:scale-110"
-                                >
-                                  <Star
-                                    className={`w-5 h-5 ${
-                                      (img.rating || 0) >= star 
-                                        ? 'fill-yellow-400 stroke-yellow-500' 
-                                        : 'fill-none stroke-gray-300 hover:stroke-gray-400'
-                                    }`}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          {/* Actions */}
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => markAsBest(img.id)}
-                              disabled={img.isBest}
-                              className={`flex-1 text-xs px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1 ${
-                                img.isBest 
-                                  ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                                  : 'bg-green-50 hover:bg-green-100 text-green-700'
-                              }`}
-                            >
-                              <Star className={`w-3 h-3 ${img.isBest ? 'fill-green-600' : ''}`} />
-                              {img.isBest ? 'Best' : 'Mark'}
-                            </button>
-                            <button 
-                              onClick={() => applyToStyle(img.params)}
-                              className="flex-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
-                            >
-                              <Save className="w-3 h-3" />
-                              Apply
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-            
-            {/* 5. Statistics Panel */}
-            {generatedImages.length > 0 && (
-              <Card className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200">
-                <h2 className="font-semibold mb-3 flex items-center gap-2">
-                  <FlaskConical className="w-4 h-4 text-purple-600" />
-                  Current Session Stats / 当前测试统计
-                </h2>
-                
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-gray-500 text-xs mb-1">Generated / 生成</div>
-                    <div className="text-2xl font-bold text-blue-600">{generatedImages.length}</div>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-gray-500 text-xs mb-1">Avg Rating / 评分</div>
-                    <div className="text-xl font-bold text-yellow-600 flex items-center gap-1">
-                      {(() => {
-                        const rated = generatedImages.filter(img => img.rating)
-                        const avg = rated.length > 0 ? rated.reduce((sum, img) => sum + (img.rating || 0), 0) / rated.length : 0
-                        return avg > 0 ? (
-                          <>
-                            {avg.toFixed(1)}
-                            <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-500" />
-                          </>
-                        ) : '-'
-                      })()}
-                    </div>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-gray-500 text-xs mb-1">Best / 最佳</div>
-                    <div className="text-xl font-bold text-green-600">
-                      {generatedImages.find(img => img.isBest) ? (
-                        <Star className="w-6 h-6 fill-green-500 stroke-green-600 inline" />
-                      ) : '-'}
-                    </div>
-                  </div>
+            {/* Placeholder for Generated Results */}
+            {!isGenerating && generatedImages.length === 0 && (
+              <Card className="p-6 border-2 border-dashed border-gray-300">
+                <div className="text-center py-8">
+                  <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium text-gray-600 mb-2">Generated Results Will Appear Below</p>
+                  <p className="text-sm text-gray-500">生成结果将显示在下方全宽区域</p>
+                  <p className="text-xs text-gray-400 mt-2">↓ Scroll down after generation / 生成后向下滚动查看</p>
                 </div>
               </Card>
             )}
             
           </div>
         </div>
+        
+        {/* FULL WIDTH SECTION - Generated Results */}
+        {generatedImages.length > 0 && (
+          <Card className="p-6 mt-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <ImageIcon className="w-6 h-6 text-blue-600" />
+                Generated Results / 生成结果
+                <span className="text-sm font-normal text-gray-500 ml-2">({generatedImages.length} {generatedImages.length === 1 ? 'image' : 'images'})</span>
+              </h2>
+              
+              {/* Quick Stats */}
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">Avg Rating:</span>
+                  <span className="font-bold text-yellow-600">
+                    {(() => {
+                      const rated = generatedImages.filter(img => img.rating)
+                      const avg = rated.length > 0 ? rated.reduce((sum, img) => sum + (img.rating || 0), 0) / rated.length : 0
+                      return avg > 0 ? avg.toFixed(1) : '-'
+                    })()}
+                  </span>
+                  <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-500" />
+                </div>
+                {generatedImages.find(img => img.isBest) && (
+                  <div className="flex items-center gap-1 text-green-600 font-medium">
+                    <Star className="w-4 h-4 fill-green-500" />
+                    Best Marked
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Grid Layout for Results */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {generatedImages.map((img, index) => (
+                <div key={img.id} className={`border-2 rounded-lg overflow-hidden transition-all hover:shadow-xl ${img.isBest ? 'border-green-500 shadow-lg ring-2 ring-green-200' : 'border-gray-200'}`}>
+                  <div 
+                    className="relative cursor-pointer group" 
+                    onClick={() => setSelectedImageModal(img)}
+                  >
+                    <img 
+                      src={img.imageUrl} 
+                      alt={`Generated ${index + 1}`}
+                      className="w-full aspect-square object-cover"
+                    />
+                    {img.isBest && (
+                      <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                        <Star className="w-4 h-4 fill-white" />
+                        Best
+                      </div>
+                    )}
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 text-white bg-black/70 px-4 py-2 rounded-lg text-sm font-medium transition-opacity">
+                        Click to enlarge / 点击放大
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-white space-y-3">
+                    {/* Parameters Grid */}
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Strength:</span>
+                        <span className="font-mono font-medium">{img.params.strength.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Guidance:</span>
+                        <span className="font-mono font-medium">{img.params.guidance.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Ratio:</span>
+                        <span className="font-medium">{img.params.aspectRatio}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Time:</span>
+                        <span className="font-medium">{img.timeTaken}s</span>
+                      </div>
+                    </div>
+                    
+                    {/* Rating Stars */}
+                    <div className="flex items-center justify-center gap-1 py-2">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <button
+                          key={star}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            rateImage(img.id, star)
+                          }}
+                          className="transition-all hover:scale-125"
+                        >
+                          <Star
+                            className={`w-6 h-6 ${
+                              (img.rating || 0) >= star 
+                                ? 'fill-yellow-400 stroke-yellow-500' 
+                                : 'fill-none stroke-gray-300 hover:stroke-gray-400'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          markAsBest(img.id)
+                        }}
+                        disabled={img.isBest}
+                        className={`flex-1 text-xs px-3 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 ${
+                          img.isBest 
+                            ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                            : 'bg-green-50 hover:bg-green-100 text-green-700 hover:shadow-md'
+                        }`}
+                      >
+                        <Star className={`w-3.5 h-3.5 ${img.isBest ? 'fill-green-600' : ''}`} />
+                        {img.isBest ? 'Best' : 'Mark'}
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          applyToStyle(img.params)
+                        }}
+                        className="flex-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 hover:shadow-md"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
       
-      {/* Test History - Full Width Table */}
+      {/* Test History - Card Layout with Thumbnails */}
       {testHistory.length > 0 && (
-        <Card className="p-4 mt-6 bg-gray-50">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full text-left"
-          >
-            <h2 className="font-semibold flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Test History / 测试历史 ({testHistory.length})
-            </h2>
-            {showHistory ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
+        <Card className="p-6 mt-6">
+          <div className="flex items-start justify-between mb-4">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 text-left"
+            >
+              <FileText className="w-6 h-6 text-gray-700" />
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                Test History / 测试历史
+                <span className="text-sm font-normal text-gray-500">({testHistory.length} sessions)</span>
+              </h2>
+              {showHistory ? (
+                <ChevronUp className="w-6 h-6 text-gray-400" />
+              ) : (
+                <ChevronDown className="w-6 h-6 text-gray-400" />
+              )}
+            </button>
+            
+            {/* History Management Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => deleteOldHistory(7)}
+                className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+                title="Delete history older than 7 days"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete 7d+
+              </button>
+              <button
+                onClick={clearAllHistory}
+                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+                title="Clear all test history"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear All / 清空
+              </button>
+            </div>
+          </div>
           
           {showHistory && (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-gray-300">
-                    <th className="text-left py-2 px-3 font-semibold text-gray-700">Date / 日期</th>
-                    <th className="text-left py-2 px-3 font-semibold text-gray-700">Style Name / 风格名</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Rating / 评分</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Strength</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Guidance</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Time / 时长</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Actions / 操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {testHistory.slice(0, 20).map((session, index) => (
-                    <tr 
-                      key={session.id} 
-                      className={`border-b border-gray-200 hover:bg-gray-100 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                    >
-                      <td className="py-3 px-3 text-xs text-gray-600">
-                        {new Date(session.testDate).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="font-medium text-gray-900">{session.styleName}</span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
+            <div className="space-y-3">
+              {testHistory.slice(0, 20).map((session) => (
+                <div 
+                  key={session.id} 
+                  className="flex gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all"
+                >
+                  {/* Thumbnail */}
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={session.result.imageUrl} 
+                      alt="Result" 
+                      className="w-28 h-28 rounded-lg border-2 border-gray-200 object-cover cursor-pointer hover:border-blue-400 transition-colors"
+                      onClick={() => setSelectedImageModal(session.result)}
+                    />
+                  </div>
+                  
+                  {/* Info Section */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{session.styleName || 'Custom Style'}</h3>
+                        <p className="text-xs text-gray-500">
+                          {new Date(session.testDate).toLocaleString('zh-CN', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      
+                      {/* Rating */}
+                      <div className="flex gap-0.5">
                         {session.result.rating ? (
-                          <div className="flex justify-center gap-0.5">
-                            {Array.from({length: session.result.rating}).map((_, i) => (
-                              <Star key={i} className="w-3 h-3 fill-yellow-400 stroke-yellow-500" />
-                            ))}
-                          </div>
+                          Array.from({length: session.result.rating}).map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-yellow-400 stroke-yellow-500" />
+                          ))
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-xs text-gray-400">No rating</span>
                         )}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="font-mono text-sm">{session.result.params.strength.toFixed(2)}</span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="font-mono text-sm">{session.result.params.guidance.toFixed(1)}</span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="text-gray-600">{session.result.timeTaken}s</span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => loadSession(session)}
-                          className="text-xs"
-                        >
-                          <Upload className="w-3 h-3 mr-1" />
-                          Load
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                    
+                    {/* Parameters Grid */}
+                    <div className="grid grid-cols-4 gap-3 mb-3">
+                      <div className="bg-gray-50 px-3 py-2 rounded">
+                        <div className="text-xs text-gray-500 mb-0.5">Strength</div>
+                        <div className="font-mono font-semibold text-sm">{session.result.params.strength.toFixed(2)}</div>
+                      </div>
+                      <div className="bg-gray-50 px-3 py-2 rounded">
+                        <div className="text-xs text-gray-500 mb-0.5">Guidance</div>
+                        <div className="font-mono font-semibold text-sm">{session.result.params.guidance.toFixed(1)}</div>
+                      </div>
+                      <div className="bg-gray-50 px-3 py-2 rounded">
+                        <div className="text-xs text-gray-500 mb-0.5">Ratio</div>
+                        <div className="font-semibold text-sm">{session.result.params.aspectRatio}</div>
+                      </div>
+                      <div className="bg-gray-50 px-3 py-2 rounded">
+                        <div className="text-xs text-gray-500 mb-0.5">Time</div>
+                        <div className="font-semibold text-sm">{session.result.timeTaken}s</div>
+                      </div>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => loadSession(session)}
+                        className="flex-1 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Load / 加载
+                      </button>
+                      <button
+                        onClick={() => setSelectedImageModal(session.result)}
+                        className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        View / 查看
+                      </button>
+                      <button
+                        onClick={() => deleteHistoryEntry(session.id)}
+                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        title="Delete this history entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
               {testHistory.length > 20 && (
-                <div className="mt-3 text-center text-xs text-gray-500">
-                  Showing 20 of {testHistory.length} sessions / 显示 20 / {testHistory.length} 条记录
+                <div className="mt-4 text-center py-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Showing 20 of {testHistory.length} sessions / 显示 20 / {testHistory.length} 条记录
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Oldest sessions are automatically removed / 最旧的记录会自动清理
+                  </p>
                 </div>
               )}
             </div>

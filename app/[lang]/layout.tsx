@@ -38,6 +38,16 @@ export async function generateMetadata({
     description: dict.metadata.description,
     keywords: dict.metadata.keywords.split(', '),
     authors: [{ name: "PixPaw AI" }],
+    manifest: '/manifest.json',  // ✅ 使用绝对路径，不受 [lang] 路由影响
+    icons: {
+      icon: [
+        { url: '/favicons/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+        { url: '/favicons/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+        { url: '/favicons/favicon.ico', sizes: 'any' },
+      ],
+      shortcut: '/favicons/favicon.ico',
+      apple: '/favicons/apple-touch-icon.png',
+    },
     openGraph: {
       title: dict.metadata.title,
       description: dict.metadata.description,
