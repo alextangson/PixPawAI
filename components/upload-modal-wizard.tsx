@@ -667,8 +667,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       console.log('🎨 Starting image generation...', {
         style: selectedStyle,
         aspectRatio: aspectRatio,
-        strength: strength,
-        petName: petName
+        petName: petName,
+        note: 'Strength will be auto-calculated by backend based on style tier'
       })
       
       const controller = new AbortController()
@@ -687,7 +687,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
           petType: qualityCheckResult?.petType || 'pet',
           aspectRatio: aspectRatio,
-          strength: strength,
+          // strength removed - backend will use tier-based calculation
           petName: petName.trim(), // Pet name for Art Card title
           // 🔥 RACE CONDITION FIX: Pass detailed analysis results to backend
           detailedAnalysis: qualityCheckResult ? {
@@ -1351,67 +1351,30 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   </div>
                 </div>
 
-                {/* Style Strength - Prominent (not hidden in Advanced) */}
-                <div className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-coral" />
-                      Style Strength
-                    </label>
-                    <span className="text-lg font-bold text-coral bg-white px-3 py-1 rounded-full shadow-sm">
-                      {Math.round(strength * 100)}%
-                    </span>
-              </div>
-                  
-                  {/* Quick Preset Buttons */}
-                  <div className="flex gap-2 mb-3">
-                    {[0.85, 0.90, 0.92, 0.95].map((preset) => (
-                      <button
-                        key={preset}
-                        onClick={() => setStrength(preset)}
-                        className={cn(
-                          "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
-                          strength === preset
-                            ? "bg-coral text-white"
-                            : "bg-white border border-gray-300 text-gray-700 hover:border-coral"
-                        )}
-                      >
-                        {Math.round(preset * 100)}%
-                        {preset === 0.92 && <span className="ml-1">⭐</span>}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <Slider
-                    min={0.7}
-                    max={0.95}
-                    step={0.01}  // Fine-grained control
-                    value={[strength]}
-                    onValueChange={(value) => setStrength(value[0])}
-                    className="w-full mb-2"
-                  />
-                  
-                  <div className="flex justify-between text-xs text-gray-600 px-1">
-                    <span className="font-medium">More Creative</span>
-                    <span className="font-medium">More Realistic</span>
-                </div>
-                  
-                  {/* Dynamic Recommendation */}
-                  <div className={cn(
-                    "text-xs rounded-lg p-3 border mt-3",
-                    strength >= 0.9 
-                      ? "bg-green-50 border-green-200 text-green-800" 
-                      : strength >= 0.80 
-                      ? "bg-blue-50 border-blue-200 text-blue-800"
-                      : "bg-amber-50 border-amber-200 text-amber-800"
-                  )}>
-                    {strength >= 0.9 ? (
-                      <><strong>Recommended:</strong> High accuracy preserves unique features</>
-                    ) : strength >= 0.80 ? (
-                      <><strong>Balanced:</strong> Good mix of style and accuracy</>
-                    ) : (
-                      <><strong>Creative:</strong> More artistic, features may change</>
-                    )}
+                {/* AI Optimization Notice - Replaces manual slider */}
+                <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-gray-900 mb-1">
+                        🤖 AI-Optimized Parameters
+                      </h4>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        Our system automatically selects the best generation parameters based on:
+                      </p>
+                      <ul className="mt-2 space-y-1 text-xs text-gray-600">
+                        <li>✓ Selected style (realistic vs artistic)</li>
+                        <li>✓ Detected pet features (heterochromia, patterns)</li>
+                        <li>✓ Image complexity (multiple pets, fur texture)</li>
+                      </ul>
+                      <div className="mt-3 bg-white rounded-lg p-2 text-xs text-center">
+                        <span className="text-gray-600">This ensures </span>
+                        <span className="font-bold text-blue-600">maximum similarity</span>
+                        <span className="text-gray-600"> to your pet!</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
@@ -1435,7 +1398,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     </p>
                   </div>
 
-                {/* AI Detected Features - Below Style Strength */}
+                {/* AI Detected Features */}
                 {qualityCheckResult?.hasHeterochromia && (
                   <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
                     <div className="flex items-start gap-2">
@@ -1446,7 +1409,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                           {qualityCheckResult.heterochromiaDetails}
                         </p>
                         <p className="text-xs text-blue-600 mt-1 italic">
-                          Tip: Use 95% strength for best preservation
+                          Our system will automatically optimize parameters to preserve this unique feature.
                         </p>
                   </div>
                 </div>
