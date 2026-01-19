@@ -397,7 +397,7 @@ export function ResultModal({
     <>
       {/* Main Result Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
-        <div className="bg-white w-full h-full lg:h-[90vh] lg:max-w-7xl lg:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
+        <div className="bg-white w-full h-screen sm:h-[95vh] lg:h-[90vh] lg:max-w-7xl rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
           
           {/* Close Button (Top Right) */}
           <button
@@ -411,7 +411,7 @@ export function ResultModal({
           {/* LEFT PANEL: The Asset (Image + Actions) */}
           <div className="lg:w-[58%] flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
             {/* Image Display Area */}
-            <div className="flex-1 relative flex items-center justify-center p-4 lg:p-8">
+            <div className="flex-1 relative flex items-center justify-center p-3 sm:p-4 lg:p-8">
               {/* Skeleton Loader */}
               {/* Skeleton Loader - Show while image is loading */}
               {!imageLoaded && (
@@ -437,10 +437,10 @@ export function ResultModal({
                 src={generatedImageUrl}
                 alt="Your AI-generated pet portrait"
                 className={cn(
-                  "max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-opacity duration-300",
+                  "max-w-full max-h-[50vh] sm:max-h-[60vh] lg:max-h-[70vh] object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-opacity duration-300",
                   imageLoaded ? "opacity-100" : "opacity-0"
                 )}
-                style={{ maxHeight: '70vh' }}
+                style={{ maxHeight: '50vh' }}
                 onLoad={() => setImageLoaded(true)}
                 onClick={() => window.open(generatedImageUrl, '_blank')}
               />
@@ -448,7 +448,7 @@ export function ResultModal({
 
             {/* Action Bar - Only show when Love it */}
             {userChoice === 'love' && (
-            <div className="bg-white p-4 lg:p-6 border-t border-gray-200 flex-shrink-0">
+            <div className="bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 flex-shrink-0">
               <div className="max-w-2xl mx-auto space-y-3">
                 
                 {/* Share Input (Conditional) */}
@@ -589,7 +589,7 @@ export function ResultModal({
             
             {!userChoice ? (
               /* Initial State: Choice Buttons - Vertically Centered */
-              <div className="flex flex-col items-center justify-center h-full p-8">
+              <div className="flex flex-col items-center justify-center h-full p-4 sm:p-6 lg:p-8">
                 <div className="text-center mb-8">
                   <h3 className="text-3xl font-bold text-gray-900 mb-3">
                     How do you feel about your creation?
@@ -622,7 +622,7 @@ export function ResultModal({
               </div>
             ) : userChoice === 'love' ? (
               /* Love it: Product Push */
-              <div className="p-6 lg:p-12 flex flex-col justify-between min-h-full">
+              <div className="p-4 sm:p-6 lg:p-12 flex flex-col justify-between min-h-full">
                 {/* Back Button */}
                 <button 
                   onClick={() => setUserChoice(null)}
@@ -725,7 +725,7 @@ export function ResultModal({
               </div>
             ) : (
               /* Not quite: Feedback Form */
-              <div className="p-6 lg:p-12 flex flex-col justify-between min-h-full">
+              <div className="p-4 sm:p-6 lg:p-12 flex flex-col justify-between min-h-full">
                 {/* Back Button */}
                 <button 
                   onClick={() => setUserChoice(null)}

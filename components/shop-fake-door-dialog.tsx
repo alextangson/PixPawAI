@@ -69,10 +69,13 @@ export function ShopFakeDoorDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 overflow-hidden border-0">
+        {/* Accessible title for screen readers */}
+        <DialogTitle className="sr-only">PixPaw Merchandise Store - Coming Soon</DialogTitle>
+        
         {!submitted ? (
           <>
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-coral to-orange-600 p-6 text-center space-y-3">
+            <div className="bg-gradient-to-r from-coral to-orange-600 p-5 sm:p-6 text-center space-y-3">
               {/* Shopping Icon */}
               <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center">
                 <ShoppingBag className="w-8 h-8 text-coral" />
@@ -82,7 +85,7 @@ export function ShopFakeDoorDialog({
             </div>
 
             {/* Content - Minimal */}
-            <div className="p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <p className="text-gray-700 text-center leading-relaxed">
                 We're preparing the factory lines to print <strong>{petName}</strong> on 
                 high-quality canvas, pillows, and mugs.

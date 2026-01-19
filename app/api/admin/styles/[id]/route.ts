@@ -78,11 +78,12 @@ export async function PUT(
       name,
       emoji,
       prompt_suffix,
-      base_prompt,
       negative_prompt,
       category,
       description,
       tags,
+      tier,
+      expected_similarity,
       recommended_strength_min,
       recommended_strength_max,
       recommended_guidance,
@@ -98,11 +99,12 @@ export async function PUT(
     if (name !== undefined) updateData.name = name
     if (emoji !== undefined) updateData.emoji = emoji
     if (prompt_suffix !== undefined) updateData.prompt_suffix = prompt_suffix
-    if (base_prompt !== undefined) updateData.base_prompt = base_prompt
     if (negative_prompt !== undefined) updateData.negative_prompt = negative_prompt
     if (category !== undefined) updateData.category = category
     if (description !== undefined) updateData.description = description
     if (tags !== undefined) updateData.tags = tags
+    if (tier !== undefined) updateData.tier = tier
+    if (expected_similarity !== undefined) updateData.expected_similarity = expected_similarity
     if (recommended_strength_min !== undefined) updateData.recommended_strength_min = recommended_strength_min
     if (recommended_strength_max !== undefined) updateData.recommended_strength_max = recommended_strength_max
     if (recommended_guidance !== undefined) updateData.recommended_guidance = recommended_guidance

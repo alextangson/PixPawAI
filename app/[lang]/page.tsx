@@ -43,6 +43,65 @@ export default function Home() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
+  // Check for saved configuration after login redirect
+  useEffect(() => {
+    // Check if we're returning from OAuth login (has #upload hash)
+    const hasUploadHash = window.location.hash === '#upload'
+    
+    if (hasUploadHash) {
+      // Clear the hash from URL
+      window.history.replaceState(null, '', window.location.pathname)
+      
+      // Try to restore saved configuration
+      const savedConfig = localStorage.getItem('pixpaw_pending_generation')
+      
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig)
+          const age = Date.now() - config.timestamp
+          
+          // Only restore if saved within last 10 minutes
+          if (age < 10 * 60 * 1000) {
+            console.log('[HomePage] Restoring saved configuration after login')
+            // Restore selected style if available
+            if (config.selectedStyle) {
+              setSelectedStyle(config.selectedStyle)
+            }
+            // Open the modal
+            setIsUploadModalOpen(true)
+          } else {
+            // Config expired, clear it and just open empty modal
+            localStorage.removeItem('pixpaw_pending_generation')
+            setIsUploadModalOpen(true)
+          }
+        } catch (error) {
+          console.error('[HomePage] Failed to parse saved config:', error)
+          localStorage.removeItem('pixpaw_pending_generation')
+          setIsUploadModalOpen(true)
+        }
+      } else {
+        // No saved config, just open modal
+        setIsUploadModalOpen(true)
+      }
+    } else {
+      // Regular page load - clean up any expired configs but don't auto-open
+      const savedConfig = localStorage.getItem('pixpaw_pending_generation')
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig)
+          const age = Date.now() - config.timestamp
+          
+          // Clean up expired configs
+          if (age >= 10 * 60 * 1000) {
+            localStorage.removeItem('pixpaw_pending_generation')
+          }
+        } catch (error) {
+          localStorage.removeItem('pixpaw_pending_generation')
+        }
+      }
+    }
+  }, [])
+
   const handleOpenUpload = (styleName?: string) => {
     setSelectedStyle(styleName || null)
     setIsUploadModalOpen(true)

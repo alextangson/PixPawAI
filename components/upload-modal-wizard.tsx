@@ -79,41 +79,76 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [lastUploadTime, setLastUploadTime] = useState<number>(0)
   const [isUploadBlocked, setIsUploadBlocked] = useState(false)
   const [uploadCooldown, setUploadCooldown] = useState<number>(0)
+  
+  // Auth checking state to prevent race conditions
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false)
 
   // Check user authentication
   useEffect(() => {
     const checkUser = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+      setIsCheckingAuth(true)
       
-      // If user just logged in, restore saved configuration
-      if (user) {
-        const savedConfig = localStorage.getItem('pixpaw_pending_generation')
-        if (savedConfig) {
-          try {
-            const config = JSON.parse(savedConfig)
-            // Only restore if saved within last 10 minutes
-            if (Date.now() - config.timestamp < 10 * 60 * 1000) {
-              console.log('✅ Restoring saved configuration after login')
-              setUploadedImageUrl(config.uploadedImageUrl || '')
-              setPreviewUrl(config.uploadedImageUrl || config.previewUrl || '') // Use Supabase URL as preview
-              setSelectedStyle(config.selectedStyle || '')
-              setAspectRatio(config.aspectRatio || '1:1')
-              setStrength(config.strength || 0.92)
-              setUserPrompt(config.userPrompt || '')
-              setPetName(config.petName || '')
-              setStep('configure') // Go directly to configure step
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        console.log('[UploadModalWizard] User:', user ? `${user.email} (${user.id})` : 'Not logged in')
+        
+        setUser(user)
+        
+        // If user just logged in, restore saved configuration
+        if (user) {
+          const savedConfig = localStorage.getItem('pixpaw_pending_generation')
+          
+          if (savedConfig) {
+            try {
+              const config = JSON.parse(savedConfig)
+              const age = Date.now() - config.timestamp
+              const ageMinutes = Math.floor(age / 60000)
               
-              // Show success message
-              console.log('🎉 Welcome back! Your configuration has been restored.')
+              console.log('[UploadModalWizard] Found saved config:', {
+                age: `${ageMinutes} minutes`,
+                hasImageUrl: !!config.uploadedImageUrl,
+                hasStyle: !!config.selectedStyle,
+                hasPetName: !!config.petName
+              })
+              
+              // Only restore if saved within last 10 minutes
+              if (age < 10 * 60 * 1000) {
+                console.log('[UploadModalWizard] ✅ Restoring configuration:', {
+                  imageUrl: config.uploadedImageUrl?.substring(0, 50) + '...',
+                  style: config.selectedStyle,
+                  petName: config.petName
+                })
+                
+                setUploadedImageUrl(config.uploadedImageUrl || '')
+                setPreviewUrl(config.uploadedImageUrl || config.previewUrl || '')
+                setSelectedStyle(config.selectedStyle || '')
+                setAspectRatio(config.aspectRatio || '1:1')
+                setStrength(config.strength || 0.92)
+                setUserPrompt(config.userPrompt || '')
+                setPetName(config.petName || '')
+                
+                // Important: Mark that we have an uploaded file (even though we don't have the File object)
+                // The uploadedImageUrl is enough for generation
+                if (config.uploadedImageUrl) {
+                  setStep('configure')
+                } else {
+                  console.warn('[UploadModalWizard] ⚠️ No image URL in saved config')
+                }
+              } else {
+                console.log('[UploadModalWizard] ⚠️ Config expired:', ageMinutes, 'minutes old')
+              }
+              localStorage.removeItem('pixpaw_pending_generation')
+            } catch (error) {
+              console.error('[UploadModalWizard] ❌ Failed to restore configuration:', error)
             }
-            // Clear saved config
-            localStorage.removeItem('pixpaw_pending_generation')
-          } catch (error) {
-            console.error('Failed to restore configuration:', error)
+          } else {
+            console.log('[UploadModalWizard] No saved configuration found')
           }
         }
+      } finally {
+        setIsCheckingAuth(false)
       }
     }
     
@@ -121,6 +156,57 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       checkUser()
     }
   }, [isOpen])
+
+
+  // Listen to Supabase auth state changes to update user in real-time
+  useEffect(() => {
+    const supabase = createClient()
+    
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth state changed:', event, 'User ID:', session?.user?.id || 'none')
+      
+      // Update user state for any event that has a session
+      if (session?.user) {
+        console.log('✅ Setting user from auth state change:', session.user.email)
+        setUser(session.user)
+        
+        // Only restore config on SIGNED_IN event
+        if (event === 'SIGNED_IN') {
+          const savedConfig = localStorage.getItem('pixpaw_pending_generation')
+          if (savedConfig) {
+            try {
+              const config = JSON.parse(savedConfig)
+              if (Date.now() - config.timestamp < 10 * 60 * 1000) {
+                console.log('✅ Restoring configuration after sign in')
+                setUploadedImageUrl(config.uploadedImageUrl || '')
+                setPreviewUrl(config.uploadedImageUrl || config.previewUrl || '')
+                setSelectedStyle(config.selectedStyle || '')
+                setAspectRatio(config.aspectRatio || '1:1')
+                setStrength(config.strength || 0.92)
+                setUserPrompt(config.userPrompt || '')
+                setPetName(config.petName || '')
+              }
+              localStorage.removeItem('pixpaw_pending_generation')
+            } catch (error) {
+              console.error('Failed to restore configuration:', error)
+            }
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('🚪 User signed out, clearing user state')
+        setUser(null)
+      } else if (event === 'INITIAL_SESSION' && !session) {
+        console.log('⚠️ Initial session is empty, user not logged in')
+        setUser(null)
+      }
+    })
+    
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
 
   // Cooldown timer effect
   useEffect(() => {
@@ -161,6 +247,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setQualityCheckResult(null)
         setShowQualityWarning(false)
         setIsCheckingQuality(false)
+        setIsCheckingAuth(false)
         // Note: Share-related states removed (now handled by ResultModal)
       }, 300)
     }
@@ -474,12 +561,28 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // STEP B: CONFIGURE - Generate Logic
   // ============================================
   const handleGenerate = async () => {
-    if (!uploadedFile || !selectedStyle) {
+    // Check if we have an image (either File object or uploaded URL) and style
+    if ((!uploadedFile && !uploadedImageUrl) || !selectedStyle) {
       setError('Please upload a photo and select a style')
+      console.error('[handleGenerate] Missing required data:', {
+        hasFile: !!uploadedFile,
+        hasImageUrl: !!uploadedImageUrl,
+        hasStyle: !!selectedStyle
+      })
       return
     }
 
-    if (!user) {
+    // Check authentication status
+    const supabase = createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    
+    // Update state if user is logged in
+    if (currentUser && !user) {
+      setUser(currentUser)
+    }
+
+    // Show login modal if not logged in
+    if (!currentUser) {
       // Save current configuration to localStorage before login
       const configState = {
         uploadedImageUrl, // Supabase URL (still valid after login)
@@ -491,6 +594,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         petName,
         timestamp: Date.now()
       }
+      
+      console.log('[UploadModalWizard] 💾 Saving config before login:', {
+        hasImageUrl: !!uploadedImageUrl,
+        imageUrlPreview: uploadedImageUrl?.substring(0, 50) + '...',
+        style: selectedStyle,
+        petName: petName,
+        aspectRatio,
+        strength
+      })
+      
       localStorage.setItem('pixpaw_pending_generation', JSON.stringify(configState))
       
       // Show beautiful login modal
@@ -510,7 +623,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       if (!imageUrl && uploadedFile) {
         console.log('📤 Uploading file...')
-      const uploadResult = await uploadUserImage(uploadedFile, user.id)
+      const uploadResult = await uploadUserImage(uploadedFile, currentUser.id)
 
       if ('error' in uploadResult) {
         throw new Error(uploadResult.error)
@@ -631,10 +744,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // RENDER
   // ============================================
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col max-w-7xl rounded-3xl p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white shadow-2xl w-full h-[95vh] sm:h-auto max-h-[95vh] overflow-hidden flex flex-col max-w-7xl rounded-t-3xl sm:rounded-3xl p-4 sm:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {step === 'configure' && (
               <button
@@ -669,7 +782,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden overflow-y-auto p-6">
+        <div className="flex-1 overflow-hidden overflow-y-auto p-4 sm:p-6">
           {/* Error Display */}
           {error && (
             <div className={`mb-6 rounded-xl p-6 ${
@@ -1143,7 +1256,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                                 : "border-gray-200 hover:border-gray-300"
                             )}
                           >
-                            <img src={style.src} className="w-full h-full object-cover" alt={style.label} />
+                            {style.src && style.src.trim() !== '' ? (
+                              <img src={style.src} className="w-full h-full object-cover" alt={style.label} />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">No preview</span>
+                              </div>
+                            )}
                             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
                               <p className="text-white text-xs font-medium truncate">{style.label}</p>
                             </div>
@@ -1474,10 +1593,15 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           <div className="border-t border-gray-200 px-6 py-4">
             <Button
               onClick={handleGenerate}
-              disabled={!selectedStyle}
+              disabled={!selectedStyle || isCheckingAuth}
               className="w-full bg-coral hover:bg-orange-600 text-white font-semibold h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {user ? (
+              {isCheckingAuth ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Checking login status...
+                </>
+              ) : user ? (
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />
                   Generate Portrait
@@ -1489,7 +1613,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </>
               )}
             </Button>
-            {!user && (
+            {!user && !isCheckingAuth && (
               <p className="text-xs text-center text-gray-500 mt-2">
                 Create an account to start generating
               </p>

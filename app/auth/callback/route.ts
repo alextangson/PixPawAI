@@ -176,32 +176,18 @@ export async function GET(request: Request) {
         })
       }
       
-      // Create response with proper cookie settings
-      const response = NextResponse.redirect(`${origin}${next}`)
-      
-      // Set cookies on the response
-      const allCookies = cookieStore.getAll()
-      allCookies.forEach(cookie => {
-        response.cookies.set(cookie.name, cookie.value, {
-          path: '/',
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: cookie.name.includes('auth-token'),
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-        })
-      })
-      
       // Clear referral code cookie after processing
       if (referralCodeCookie) {
-        response.cookies.delete('referral_code')
+        cookieStore.delete('referral_code')
       }
       
-      console.log('🍪 Cookies set:', allCookies.map(c => c.name))
+      console.log('✅ Session established, redirecting to:', next)
       
       // Revalidate to update UI
       revalidatePath('/', 'layout')
       
-      return response
+      // Redirect - Supabase has already set the auth cookies via exchangeCodeForSession
+      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 

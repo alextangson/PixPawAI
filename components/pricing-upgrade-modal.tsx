@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { X, Sparkles, Check, TrendingUp, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { trackUpgradeModalShown, trackUpgradeModalClick } from '@/lib/pricing-analytics';
 
 interface UpgradeModalProps {
@@ -70,6 +70,9 @@ export function UpgradeModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden bg-gradient-to-br from-white to-orange-50">
+        {/* Accessible title for screen readers */}
+        <DialogTitle className="sr-only">Upgrade to Pro Plan</DialogTitle>
+        
         {/* Close button */}
         <button
           onClick={handleDismiss}
@@ -79,19 +82,19 @@ export function UpgradeModal({
           <X className="w-5 h-5 text-gray-500" />
         </button>
 
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">
               {getHeadline()}
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-base sm:text-lg text-gray-600">
               {getSubheadline()}
             </p>
           </div>
 
           {/* Satisfaction Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 sm:mb-8">
             <div className="bg-red-50 rounded-xl p-6 border-2 border-red-200 text-center">
               <div className="text-sm text-gray-600 mb-2">免费用户满意度</div>
               <div className="text-4xl font-bold text-red-600 mb-1">45%</div>

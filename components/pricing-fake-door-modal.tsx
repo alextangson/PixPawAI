@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, Mail, Bell, Sparkles } from 'lucide-react';
 import { useState } from 'react';
@@ -65,6 +65,9 @@ export function PricingFakeDoorModal({ isOpen, onClose, tier, price }: FakeDoorM
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
+        {/* Accessible title for screen readers */}
+        <DialogTitle className="sr-only">Payment Coming Soon - Join Waitlist</DialogTitle>
+        
         <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full p-2 hover:bg-gray-100 transition-colors"

@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
-import { getStyleConfigWithFallback } from '@/lib/supabase/styles'
+import { getStyleConfigWithFallback, getStyleTierFromDatabase } from '@/lib/supabase/styles'
 import { getStyleTierConfig, getDefaultTierConfig, adjustStrengthForComplexity } from '@/lib/style-tiers'
 import Replicate from 'replicate'
 import sharp from 'sharp'
@@ -350,11 +350,24 @@ async function generateWithReplicate(
   guidance: number = 2.5,  // Dynamic guidance based on style tier
   negativePrompt?: string  // Optional negative prompt from new system
 ): Promise<{ publicUrl: string; storagePath: string; originalPath?: string }> {
+  console.log('🚀 generateWithReplicate called:', {
+    generationId,
+    userId: userId.substring(0, 8) + '...',
+    hasImageUrl: !!imageUrl,
+    promptLength: finalPrompt?.length,
+    strength: promptStrength,
+    guidance,
+    hasNegativePrompt: !!negativePrompt
+  })
+  
   const apiKey = process.env.REPLICATE_API_TOKEN
 
   if (!apiKey) {
+    console.error('❌ REPLICATE_API_TOKEN is not configured!')
     throw new Error('REPLICATE_API_TOKEN is not configured')
   }
+  
+  console.log('✅ REPLICATE_API_TOKEN found, length:', apiKey.length)
 
   // Initialize Replicate client
   const replicate = new Replicate({
@@ -582,7 +595,9 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP D: GET STYLE TIER CONFIG and ADJUST STRENGTH
-    const tierConfig = getStyleTierConfig(style) || getDefaultTierConfig()
+    // Priority: Database tier config -> Hardcoded tier config -> Default config
+    const dbTierConfig = await getStyleTierFromDatabase(style)
+    const tierConfig = dbTierConfig || getStyleTierConfig(style) || getDefaultTierConfig()
     const baseStrength = tierConfig.strength
     const adjustedStrength = adjustStrengthForComplexity(baseStrength, {
       hasHeterochromia: petComplexity.hasHeterochromia,
@@ -590,7 +605,7 @@ export async function POST(request: NextRequest) {
       multiplePets: petComplexity.multiplePets
     })
     
-    console.log(`🎯 Style Tier ${tierConfig.tier}: ${style}`)
+    console.log(`🎯 Style Tier ${tierConfig.tier}: ${style} (${dbTierConfig ? 'from database' : 'hardcoded'})`)
     console.log(`   Base strength: ${baseStrength.toFixed(2)} → Adjusted: ${adjustedStrength.toFixed(2)}`)
     console.log(`   Guidance: ${tierConfig.guidance}`)
     console.log(`   Expected similarity: ${tierConfig.expectedSimilarity}`)
@@ -810,11 +825,33 @@ export async function POST(request: NextRequest) {
     // TEST MODE: Skip database operations and credits
     if (testMode) {
       console.log('🧪 TEST MODE: Skipping credits and database operations')
+      console.log('🧪 TEST MODE - Request params:', {
+        style,
+        imageUrl: imageUrl?.substring(0, 50),
+        processedImageUrl: processedImageUrl?.substring(0, 50),
+        userPrompt,
+        petType,
+        aspectRatio,
+        strength,
+        guidance
+      })
+      console.log('🧪 TEST MODE - Final prompts:', {
+        positive: finalPrompt?.substring(0, 100),
+        negative: finalNegativePrompt?.substring(0, 100)
+      })
       
       try {
         // Use frontend params or calculated params
         const finalStrength = strength !== undefined ? strength : adjustedStrength
         const finalGuidance = guidance !== undefined ? guidance : tierConfig.guidance
+        
+        console.log('🧪 TEST MODE - Calling generateWithReplicate:', {
+          userId: user.id,
+          strength: finalStrength,
+          guidance: finalGuidance,
+          hasProcessedImage: !!processedImageUrl,
+          hasNegativePrompt: !!finalNegativePrompt
+        })
         
         const { publicUrl } = await generateWithReplicate(
           finalPrompt,
@@ -840,9 +877,13 @@ export async function POST(request: NextRequest) {
           }
         })
       } catch (error: any) {
-        console.error('❌ Test generation failed:', error)
+        console.error('❌ Test generation failed - Full error:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack?.split('\n').slice(0, 3)
+        })
         return NextResponse.json(
-          { error: 'Test generation failed', message: error.message },
+          { error: 'Test generation failed', message: error.message, details: error.stack?.split('\n')[0] },
           { status: 500 }
         )
       }

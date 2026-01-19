@@ -11,8 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { signInWithEmail } from '@/lib/auth/actions'
-import { signInWithGooglePopup } from '@/lib/auth/client-actions'
+import { signInWithEmail, signInWithGoogle } from '@/lib/auth/actions'
 import { Mail, Loader2 } from 'lucide-react'
 import { BRANDING } from '@/lib/constants/branding'
 
@@ -32,18 +31,8 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
     setMessage('')
     
     try {
-      const result = await signInWithGooglePopup()
-      
-      if (result.error) {
-        setMessage(result.error)
-        setIsLoading(false)
-      } else if (result.popup === false) {
-        // Popup was blocked, redirecting in current tab
-        setMessage('Redirecting to Google...')
-      } else {
-        // Popup opened successfully, waiting for auth
-        setMessage('Please complete sign in in the popup window...')
-      }
+      await signInWithGoogle(redirectTo)
+      // Browser will redirect to Google
     } catch (error) {
       console.error('Error:', error)
       setMessage('Failed to sign in with Google')
@@ -81,7 +70,7 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
       <DialogContent className="sm:max-w-[480px] w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto p-0 overflow-hidden rounded-3xl shadow-2xl border-0 bg-gradient-to-br from-coral via-orange-500 to-orange-600">
         
         {/* Brand Color Background with White Logo & Card */}
-        <div className="px-6 sm:px-12 py-8 sm:py-16 text-center">
+        <div className="px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-16 text-center">
           
           {/* White Logo */}
           <div className="mb-6 sm:mb-10">
@@ -95,7 +84,7 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
           </div>
           
           {/* White Card Container */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-10 max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-6 lg:p-10 max-w-md mx-auto">
             
             {/* Headline */}
             <DialogHeader className="mb-6 sm:mb-8">

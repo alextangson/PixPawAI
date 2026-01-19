@@ -42,7 +42,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
   const styles = databaseStyles.map((style, index) => ({
     name: style.label,
     description: style.description || '',
-    image: style.src,
+    image: style.src || '/originals/iShot_2026-01-16_15.14.03.png', // Fallback to placeholder if src is empty
     badge: index === 0 ? 'Most Popular' : (index === 2 ? 'Trending' : null),
     aspectRatio: 'standard',
     isComingSoon: false,
@@ -124,15 +124,21 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
 
               {/* Full-Bleed Background Image with Zoom Effect */}
               <div className="relative overflow-hidden">
-                <img
-                  src={style.image}
-                  alt={style.name}
-                  className={`w-full h-72 md:h-80 object-cover transition-transform duration-700 ${
-                    style.isComingSoon 
-                      ? 'filter grayscale opacity-60' 
-                      : 'group-hover:scale-110'
-                  }`}
-                />
+                {style.image && style.image.trim() !== '' ? (
+                  <img
+                    src={style.image}
+                    alt={style.name}
+                    className={`w-full h-72 md:h-80 object-cover transition-transform duration-700 ${
+                      style.isComingSoon 
+                        ? 'filter grayscale opacity-60' 
+                        : 'group-hover:scale-110'
+                    }`}
+                  />
+                ) : (
+                  <div className="w-full h-72 md:h-80 bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400 text-sm">No preview available</span>
+                  </div>
+                )}
                 {/* Gradient Overlay for Better Text Readability */}
                 <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent ${
                   style.isComingSoon ? 'bg-black/40' : ''

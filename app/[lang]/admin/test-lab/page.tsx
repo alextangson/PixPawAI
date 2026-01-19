@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/card'
 import { Upload, Loader2, Code, Download, Image as ImageIcon, Sparkles, Settings, ChevronRight, AlertCircle } from 'lucide-react'
 import { STYLES, type Style } from '@/lib/styles'
 import { useStyles } from '@/lib/hooks/use-styles'
-import { getStyleTierConfig, getDefaultTierConfig } from '@/lib/style-tiers'
+import { getStyleTierConfig, getDefaultTierConfig, type StyleTierConfig } from '@/lib/style-tiers'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
 import { cleanConflicts, sortFeatures } from '@/lib/prompt-system/conflict-cleaner'
 import { buildPrompt, buildPromptFromSources } from '@/lib/prompt-system/prompt-builder'
@@ -87,16 +87,70 @@ export default function TestLabPage() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
+  const [tierConfig, setTierConfig] = useState<StyleTierConfig>(getDefaultTierConfig())
   
-  // Update generation params when style changes
+  // Auto-select first style when styles are loaded
   useEffect(() => {
-    const tierConfig = getStyleTierConfig(selectedStyle) || getDefaultTierConfig()
-    setGenParams(prev => ({
-      ...prev,
-      strength: tierConfig.strength,
-      guidance: tierConfig.guidance
-    }))
+    if (!loadingStyles && availableStyles.length > 0 && !selectedStyle) {
+      setSelectedStyle(availableStyles[0].id)
+    }
+  }, [loadingStyles, availableStyles, selectedStyle])
+  
+  // Update generation params and tier config when style changes
+  useEffect(() => {
+    async function loadTierConfig() {
+      if (!selectedStyle) return
+      
+      // Try to fetch tier config from database first
+      try {
+        const res = await fetch(`/api/admin/styles/${selectedStyle}`)
+        if (res.ok) {
+          const { style } = await res.json()
+          if (style && style.tier) {
+            // Use database config
+            const dbTierConfig: StyleTierConfig = {
+              tier: style.tier,
+              strength: style.recommended_strength_min || 0.35,
+              guidance: style.recommended_guidance || 2.5,
+              description: getTierDescription(style.tier),
+              expectedSimilarity: style.expected_similarity || '70-80%',
+              numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
+            }
+            setTierConfig(dbTierConfig)
+            setGenParams(prev => ({
+              ...prev,
+              strength: dbTierConfig.strength,
+              guidance: dbTierConfig.guidance
+            }))
+            return
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load tier config from database:', err)
+      }
+      
+      // Fallback to hardcoded config
+      const fallbackConfig = getStyleTierConfig(selectedStyle) || getDefaultTierConfig()
+      setTierConfig(fallbackConfig)
+      setGenParams(prev => ({
+        ...prev,
+        strength: fallbackConfig.strength,
+        guidance: fallbackConfig.guidance
+      }))
+    }
+    
+    loadTierConfig()
   }, [selectedStyle])
+  
+  function getTierDescription(tier: number): string {
+    switch (tier) {
+      case 1: return '写实增强'
+      case 2: return '轻艺术'
+      case 3: return '强艺术'
+      case 4: return '极致艺术'
+      default: return '默认配置'
+    }
+  }
   
   // Auto-run prompt flow when moving to prompt tab
   useEffect(() => {
@@ -108,36 +162,42 @@ export default function TestLabPage() {
   // Upload and analyze image
   async function handleImageUpload(file: File) {
     setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    setImagePreview(URL.createObjectURL(file)) // For preview only
     setQwenResult(null)
     setError('')
-    
-    await analyzeImage(file)
-  }
-  
-  async function analyzeImage(file: File) {
     setIsAnalyzing(true)
-    setError('')
     
     try {
-      const cleanFileName = file.name.replace(/[^\w\s.-]/g, '_')
-      const cleanedFile = new File([file], cleanFileName, { type: file.type })
-      
+      // Upload to temp storage to get public URL
       const formData = new FormData()
-      formData.append('file', cleanedFile)
+      formData.append('file', file)
       
-      const uploadRes = await fetch('/api/upload-temp', {
+      const uploadResponse = await fetch('/api/upload-temp', {
         method: 'POST',
         body: formData
       })
       
-      if (!uploadRes.ok) {
-        const errorData = await uploadRes.json().catch(() => ({}))
-        throw new Error(errorData.details || errorData.error || 'Upload failed')
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image')
       }
       
-      const { imageUrl } = await uploadRes.json()
+      const { imageUrl } = await uploadResponse.json()
+      console.log('✅ Image uploaded to temp storage:', imageUrl)
       
+      // Update preview with public URL
+      setImagePreview(imageUrl)
+      
+      // Analyze using public URL
+      await analyzeImage(file, imageUrl)
+    } catch (error: any) {
+      console.error('❌ Upload failed:', error)
+      setError('Failed to upload image: ' + error.message)
+      setIsAnalyzing(false)
+    }
+  }
+  
+  async function analyzeImage(file: File, imageUrl: string) {
+    try {
       const analyzeRes = await fetch('/api/check-quality', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,9 +211,11 @@ export default function TestLabPage() {
       
       const result = await analyzeRes.json()
       setQwenResult(result)
+      console.log('✅ Image analyzed:', result)
     } catch (err: any) {
       setError(err.message || 'Unknown error')
-      console.error('Analysis error:', err)
+      console.error('❌ Analysis error:', err)
+      throw err
     } finally {
       setIsAnalyzing(false)
     }
@@ -162,19 +224,44 @@ export default function TestLabPage() {
   // Build complete prompt flow
   async function handleBuildPromptFlow() {
     try {
-      const style = STYLES.find(s => s.id === selectedStyle)
+      // Try to get style from database first, fallback to hardcoded
+      let style = availableStyles.find(s => s.id === selectedStyle)
+      if (!style) {
+        style = STYLES.find(s => s.id === selectedStyle)
+      }
+      
+      // Try to fetch negative_prompt from database
+      let negativePrompt = ''
+      try {
+        const res = await fetch(`/api/admin/styles/${selectedStyle}`)
+        if (res.ok) {
+          const { style: dbStyle } = await res.json()
+          if (dbStyle?.negative_prompt) {
+            negativePrompt = dbStyle.negative_prompt
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load negative prompt:', err)
+      }
       
       const { prompt, debug } = await buildPromptFromSources({
         userPrompt: testPrompt || undefined,
         qwenResult: qwenResult || undefined,
-        stylePromptSuffix: style?.promptSuffix
+        stylePromptSuffix: style?.promptSuffix,
+        negativePrompt: negativePrompt || undefined
       })
       
       setParsedFeatures(debug.parsedFeatures)
       setCleanedFeatures(debug.cleanedFeatures)
       setFinalPrompt(prompt)
       
-      console.log('Prompt Flow Complete:', { prompt, debug })
+      console.log('✅ Prompt Flow Built:', {
+        styleId: selectedStyle,
+        hasStylePrompt: !!style?.promptSuffix,
+        hasNegativePrompt: !!negativePrompt,
+        totalFeatures: debug.parsedFeatures.length,
+        prompt
+      })
     } catch (error: any) {
       console.error('Prompt flow error:', error)
       alert(`Failed to build prompt: ${error.message}`)
@@ -216,7 +303,14 @@ export default function TestLabPage() {
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.error || 'Generation failed')
+          console.error('❌ API Error Details:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error,
+            message: errorData.message,
+            fullError: errorData
+          })
+          throw new Error(errorData.message || errorData.error || 'Generation failed')
         }
         
         const data = await response.json()
@@ -289,7 +383,6 @@ export default function TestLabPage() {
     }
   }
   
-  const tierConfig = getStyleTierConfig(selectedStyle) || getDefaultTierConfig()
   const canProceedToAnalysis = qwenResult !== null
   const canProceedToPrompt = canProceedToAnalysis && finalPrompt !== null
   const canProceedToGenerate = canProceedToPrompt
@@ -433,17 +526,32 @@ export default function TestLabPage() {
             
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Select Style</h2>
-              <select
-                value={selectedStyle}
-                onChange={(e) => setSelectedStyle(e.target.value)}
-                className="w-full p-3 border rounded-lg"
-              >
-                {STYLES.map((style) => (
-                  <option key={style.id} value={style.id}>
-                    {style.label}
-                  </option>
-                ))}
-              </select>
+              {loadingStyles ? (
+                <div className="p-3 text-center text-gray-500">
+                  Loading styles...
+                </div>
+              ) : availableStyles.length === 0 ? (
+                <div className="p-3 text-center text-red-500">
+                  No styles available. Please create styles in the Styles Management page.
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={selectedStyle}
+                    onChange={(e) => setSelectedStyle(e.target.value)}
+                    className="w-full p-3 border rounded-lg"
+                  >
+                    {availableStyles.map((style) => (
+                      <option key={style.id} value={style.id}>
+                        {style.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2 text-xs text-green-600">
+                    ✅ Loaded {availableStyles.length} style(s) from database
+                  </div>
+                </>
+              )}
               <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
                 <div className="font-medium text-blue-900 mb-1">Style Info</div>
                 <div className="text-blue-700 space-y-1">

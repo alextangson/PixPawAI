@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Copy, Check, Share2, Users, Gift, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { signInWithGooglePopup } from '@/lib/auth/client-actions';
+import { signInWithGoogle } from '@/lib/auth/actions';
 
 interface ReferralLinkModalProps {
   isOpen: boolean;
@@ -80,11 +80,12 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
   };
 
   const handleSignIn = async () => {
-    const result = await signInWithGooglePopup();
-    if (result.error && result.error !== 'Sign in cancelled') {
-      alert(result.error);
+    try {
+      const redirectTo = typeof window !== 'undefined' ? window.location.pathname : '/';
+      await signInWithGoogle(redirectTo);
+    } catch (error) {
+      console.error('Login error:', error);
     }
-    // If successful, page will reload automatically
   };
 
   const copyToClipboard = async () => {
@@ -117,8 +118,8 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -178,7 +179,7 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
           <>
             {/* Stats */}
             {stats && (
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <div className="bg-orange-50 rounded-xl p-3 text-center">
                   <Users className="w-5 h-5 text-coral mx-auto mb-1" />
                   <div className="text-2xl font-bold text-gray-900">{stats.successfulReferrals}</div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Sparkles, Gift, Lock, Loader2 } from 'lucide-react'
 import { signInWithGoogle } from '@/lib/auth/actions'
@@ -17,8 +17,8 @@ export function GuestLoginModal({ isOpen, onClose }: GuestLoginModalProps) {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      // Redirect back to the current page after login
-      const redirectTo = typeof window !== 'undefined' ? window.location.pathname : '/'
+      // Redirect back to the current page with hash to reopen modal
+      const redirectTo = typeof window !== 'undefined' ? window.location.pathname + '#upload' : '/'
       await signInWithGoogle(redirectTo)
     } catch (error) {
       console.error('Login error:', error)
@@ -29,6 +29,9 @@ export function GuestLoginModal({ isOpen, onClose }: GuestLoginModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto p-0 overflow-hidden bg-gradient-to-br from-orange-50 via-white to-coral/5">
+        {/* Accessible title for screen readers */}
+        <DialogTitle className="sr-only">Sign in to PixPaw AI</DialogTitle>
+        
         {/* Header Section */}
         <div className="relative p-6 sm:p-8 pb-4 sm:pb-6 text-center">
           {/* Decorative Background */}
