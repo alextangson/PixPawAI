@@ -351,27 +351,43 @@ export function parseQwenFeatures(qwenResult: any): ParsedFeature[] {
   if (qwenResult.hasHeterochromia) {
     // 如果有具体的眼睛颜色描述，使用详细信息
     if (qwenResult.heterochromiaDetails && qwenResult.heterochromiaDetails.trim() !== '') {
-      // 🔄 镜像翻转：Qwen 的左右需要翻转才能匹配 AI 模型的视角
-      // Qwen: "left eye blue, right eye brown"
-      // AI需要: "right eye blue, left eye brown"
-      const mirroredDetails = qwenResult.heterochromiaDetails
-        .replace(/\bleft\b/gi, 'TEMP_LEFT')   // 临时标记 left
-        .replace(/\bright\b/gi, 'left')        // right → left
-        .replace(/TEMP_LEFT/gi, 'right')       // TEMP_LEFT → right
+      // 🎯 明确图像坐标系，消除视角歧义
+      // Qwen 的视角是基于观察者看照片的视角，与图像坐标系一致
+      const details = qwenResult.heterochromiaDetails.trim()
       
-      features.push({
-        type: 'color',
-        value: `heterochromia (${mirroredDetails})`,
-        normalized: `heterochromia, ${mirroredDetails}`,
-        priority: calculatePriority('color', 'qwen') + 3, // 异瞳是最独特的特征，最高优先级
-        source: 'qwen'
-      })
+      // 解析眼睛颜色（支持多种格式）
+      // "left yellow, right blue" or "left eye blue, right eye brown"
+      const leftMatch = details.match(/\bleft\b[^,]*?(\w+)/i)
+      const rightMatch = details.match(/\bright\b[^,]*?(\w+)/i)
+      
+      const leftColor = leftMatch ? leftMatch[1].trim() : ''
+      const rightColor = rightMatch ? rightMatch[1].trim() : ''
+      
+      // 如果成功解析颜色，使用明确的图像坐标系表达
+      if (leftColor && rightColor) {
+        features.push({
+          type: 'color',
+          value: `heterochromia (${details})`,
+          normalized: `heterochromia: ${leftColor} eye on left side of image, ${rightColor} eye on right side of image`,
+          priority: calculatePriority('color', 'qwen') + 3,
+          source: 'qwen'
+        })
+      } else {
+        // Fallback: 使用原始描述
+        features.push({
+          type: 'color',
+          value: `heterochromia (${details})`,
+          normalized: `heterochromia eyes (${details})`,
+          priority: calculatePriority('color', 'qwen') + 3,
+          source: 'qwen'
+        })
+      }
     } else {
       // 如果没有具体描述，使用通用描述
       features.push({
         type: 'color',
         value: 'heterochromia eyes',
-        normalized: 'heterochromia eyes',
+        normalized: 'heterochromia eyes with different colored eyes',
         priority: calculatePriority('color', 'qwen') + 2,
         source: 'qwen'
       })

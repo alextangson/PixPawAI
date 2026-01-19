@@ -11,7 +11,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Beaker, Palette, FileText, Search, Home, Gift } from 'lucide-react'
+import { Beaker, Palette, FileText, Search, Home, Gift, LayoutDashboard, Coins } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AdminSidebarProps {
@@ -23,6 +23,18 @@ export function AdminSidebar({ lang, userEmail }: AdminSidebarProps) {
   const pathname = usePathname()
   
   const navItems = [
+    { 
+      icon: LayoutDashboard, 
+      label: 'Dashboard', 
+      href: `/${lang}/admin`,
+      description: '数据仪表盘'
+    },
+    { 
+      icon: Coins, 
+      label: 'Credit Management', 
+      href: `/${lang}/admin/credits`,
+      description: '用户积分管理'
+    },
     { 
       icon: Beaker, 
       label: 'Test Lab', 
@@ -68,7 +80,10 @@ export function AdminSidebar({ lang, userEmail }: AdminSidebarProps) {
         <ul className="space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = pathname?.startsWith(item.href)
+            // Dashboard 需要精确匹配，其他页面使用 startsWith
+            const isActive = item.href === `/${lang}/admin` 
+              ? pathname === item.href 
+              : pathname?.startsWith(item.href)
             
             return (
               <li key={item.href}>

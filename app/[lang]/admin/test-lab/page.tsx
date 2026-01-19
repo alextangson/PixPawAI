@@ -32,7 +32,6 @@ import {
   Info
 } from 'lucide-react'
 import { useStyles } from '@/lib/hooks/use-styles'
-import { getStyleTierConfig, getDefaultTierConfig, type StyleTierConfig } from '@/lib/style-tiers'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt } from '@/lib/prompt-system/parser'
 import { cleanConflicts, sortFeatures } from '@/lib/prompt-system/conflict-cleaner'
 import { buildPrompt, buildPromptFromSources } from '@/lib/prompt-system/prompt-builder'
@@ -110,16 +109,11 @@ export default function TestLabPage() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
-  const [tierConfig, setTierConfig] = useState<StyleTierConfig>(getDefaultTierConfig())
   
   // Collapsible sections state
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
   const [showABTest, setShowABTest] = useState(false)
   const [showPromptPreview, setShowPromptPreview] = useState(false)
-  
-  // Manual Override Mode state
-  const [manualMode, setManualMode] = useState(false)
-  const [manualTier, setManualTier] = useState(2)
   
   // Test History state
   const [testHistory, setTestHistory] = useState<TestSession[]>([])
@@ -161,9 +155,9 @@ export default function TestLabPage() {
     }
   }, [promptSuffix, negativePrompt, qwenResult, workMode, originalStyleData])
   
-  // Update generation params and tier config when style changes
+  // Update generation params when style changes (for Optimize mode)
   useEffect(() => {
-    if (!selectedStyle || availableStyles.length === 0) return
+    if (!selectedStyle || availableStyles.length === 0 || workMode !== 'optimize') return
     
     const fetchStyleConfig = async () => {
       try {
@@ -175,35 +169,18 @@ export default function TestLabPage() {
         
         const styleData = await response.json()
         
-        const config: StyleTierConfig = {
-          tier: styleData.tier || 2,
-          strength: styleData.recommended_strength_min || 0.35,
-          guidance: styleData.recommended_guidance || 2.5,
-          expectedSimilarity: styleData.expected_similarity || '70-80%',
-          description: styleData.description || 'Default style',
-          numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-        }
-        
-        setTierConfig(config)
         setGenParams({
-          strength: config.strength,
-          guidance: config.guidance,
+          strength: styleData.recommended_strength_min || 0.45,
+          guidance: styleData.recommended_guidance || 2.5,
           aspectRatio: aspectRatio
         })
       } catch (error) {
         console.error('Error fetching style config:', error)
-        const fallback = getStyleTierConfig(selectedStyle) || getDefaultTierConfig()
-        setTierConfig(fallback)
-        setGenParams({
-          strength: fallback.strength,
-          guidance: fallback.guidance,
-          aspectRatio: aspectRatio
-        })
       }
     }
     
     fetchStyleConfig()
-  }, [selectedStyle, availableStyles])
+  }, [selectedStyle, availableStyles, workMode])
   
   // Upload and analyze image
   async function handleImageUpload(file: File) {
@@ -339,7 +316,6 @@ export default function TestLabPage() {
           aspectRatio: params.aspectRatio,
           strength: params.strength,
           guidance: params.guidance,
-          tier: manualMode ? manualTier : tierConfig.tier,
           testMode: true
         }
         
@@ -371,8 +347,7 @@ export default function TestLabPage() {
           id: crypto.randomUUID(),
           imageUrl: data.outputUrl,
           params: {
-            ...params,
-            tier: manualMode ? manualTier : tierConfig.tier
+            ...params
           },
           generatedAt: new Date(),
           timeTaken
@@ -501,12 +476,9 @@ export default function TestLabPage() {
     if (!selectedStyle) return
     
     const styleName = availableStyles.find(s => s.id === selectedStyle)?.label || selectedStyle
-    // 推断 tier：如果参数中有 tier 使用它，否则根据 strength 推断
-    const tier = params.tier || (manualMode ? inferTierFromParams(params.strength) : tierConfig.tier)
     
     const confirmed = confirm(
       `应用这些参数到风格 "${styleName}"?\n\n` +
-      `Tier: ${tier}${manualMode ? ' (根据参数自动推断)' : ''}\n` +
       `Strength: ${params.strength.toFixed(2)}\n` +
       `Guidance: ${params.guidance.toFixed(1)}\n\n` +
       `这将更新数据库中的风格配置。`
@@ -519,7 +491,6 @@ export default function TestLabPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tier: tier,
           recommended_strength_min: params.strength - 0.05,
           recommended_strength_max: params.strength + 0.05,
           recommended_guidance: params.guidance
@@ -528,21 +499,6 @@ export default function TestLabPage() {
       
       if (response.ok) {
         alert('✅ Style parameters updated successfully!\n\n风格参数已成功更新！')
-        // Refresh style config
-        const fetchStyleConfig = async () => {
-          const res = await fetch(`/api/admin/styles/${selectedStyle}`)
-          if (res.ok) {
-            const styleData = await res.json()
-            const config: StyleTierConfig = {
-              tier: styleData.tier || 2,
-              strength: styleData.recommended_strength_min || 0.35,
-              guidance: styleData.recommended_guidance || 2.5,
-              expectedSimilarity: styleData.expected_similarity || '70-80%'
-            }
-            setTierConfig(config)
-          }
-        }
-        fetchStyleConfig()
       } else {
         alert('❌ Failed to update style / 更新失败')
       }
@@ -560,9 +516,6 @@ export default function TestLabPage() {
       guidance: session.result.params.guidance,
       aspectRatio: session.result.params.aspectRatio
     })
-    if (session.result.params.tier) {
-      setManualTier(session.result.params.tier)
-    }
   }
   
   // Load style for optimization mode
@@ -571,7 +524,7 @@ export default function TestLabPage() {
       const response = await fetch(`/api/admin/styles/${styleId}`)
       if (!response.ok) return
       
-      const styleData = await response.json()
+      const { style: styleData } = await response.json()
       
       // 保存原始数据
       setOriginalStyleData(styleData)
@@ -579,24 +532,22 @@ export default function TestLabPage() {
       setStyleName(styleData.name || '')
       setPromptSuffix(styleData.prompt_suffix || '')
       setNegativePrompt(styleData.negative_prompt || '')
-      setManualTier(styleData.tier || 2)
       setGenParams({
-        strength: styleData.recommended_strength_min || 0.35,
+        strength: styleData.recommended_strength_min || 0.45,
         guidance: styleData.recommended_guidance || 2.5,
         aspectRatio: aspectRatio
+      })
+      
+      console.log('✅ Loaded style for optimization:', {
+        name: styleData.name,
+        promptSuffix: styleData.prompt_suffix,
+        negativePrompt: styleData.negative_prompt,
+        strength: styleData.recommended_strength_min,
+        guidance: styleData.recommended_guidance
       })
     } catch (error) {
       console.error('Failed to load style:', error)
     }
-  }
-  
-  // 根据参数自动推断 Tier
-  function inferTierFromParams(strength: number): number {
-    // 基于 strength 值推断最接近的 tier
-    if (strength <= 0.30) return 1  // Tier 1: 0.25
-    if (strength <= 0.40) return 2  // Tier 2: 0.35
-    if (strength <= 0.55) return 3  // Tier 3: 0.50
-    return 4                        // Tier 4: 0.65
   }
   
   // Save as new style
@@ -612,19 +563,12 @@ export default function TestLabPage() {
       return
     }
     
-    // 推断 tier：如果是 manual mode，根据参数推断；否则使用 tierConfig.tier
-    const saveTier = manualMode ? inferTierFromParams(genParams.strength) : tierConfig.tier
+    const confirmMsg = `将创建新风格 "${styleName}":\n\n` +
+      `Strength: ${genParams.strength.toFixed(2)}\n` +
+      `Guidance: ${genParams.guidance.toFixed(1)}\n\n` +
+      `继续创建？`
     
-    // 如果是 manual mode，提示用户推断出的 tier
-    if (manualMode) {
-      const confirmMsg = `将创建新风格 "${styleName}":\n\n` +
-        `Tier: ${saveTier} (根据 Strength ${genParams.strength.toFixed(2)} 自动推断)\n` +
-        `Strength: ${genParams.strength.toFixed(2)}\n` +
-        `Guidance: ${genParams.guidance.toFixed(1)}\n\n` +
-        `继续创建？`
-      
-      if (!confirm(confirmMsg)) return
-    }
+    if (!confirm(confirmMsg)) return
     
     try {
       const response = await fetch('/api/admin/styles', {
@@ -634,7 +578,6 @@ export default function TestLabPage() {
           name: styleName,
           prompt_suffix: promptSuffix,
           negative_prompt: negativePrompt,
-          tier: saveTier,
           recommended_strength_min: genParams.strength - 0.05,
           recommended_strength_max: genParams.strength + 0.05,
           recommended_guidance: genParams.guidance,
@@ -941,63 +884,10 @@ export default function TestLabPage() {
             
             {/* 4. Generation Parameters */}
             <Card className="p-4 border-2 border-blue-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold flex items-center gap-2">
-                  <Sliders className="w-4 h-4" />
-                  Generation Parameters / 生成参数
-                </h2>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input 
-                    type="checkbox"
-                    checked={manualMode}
-                    onChange={(e) => setManualMode(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span className="text-gray-700">Manual Mode / 手动模式</span>
-                </label>
-              </div>
-              
-              {/* Tier Selection - 只在非 Manual Mode 下显示 */}
-              {!manualMode && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <label className="block text-sm font-medium mb-2">
-                    Tier / 等级 (影响推荐参数)
-                  </label>
-                  <select
-                    value={tierConfig.tier}
-                    onChange={(e) => {
-                      const newTier = parseInt(e.target.value)
-                      const newTierConfig = getStyleTierConfig(selectedStyle, newTier)
-                      setTierConfig(newTierConfig)
-                      // 自动调整参数到该 tier 的推荐值
-                      setGenParams({
-                        ...genParams,
-                        strength: newTierConfig.strength,
-                        guidance: newTierConfig.guidance
-                      })
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="1">Tier 1 - Highest Similarity / 最高相似度 (70-80%)</option>
-                    <option value="2">Tier 2 - Balanced / 平衡 (60-70%)</option>
-                    <option value="3">Tier 3 - Creative / 创意 (40-60%)</option>
-                    <option value="4">Tier 4 - Most Artistic / 最艺术化 (20-40%)</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-2">
-                    当前配置: Strength {tierConfig.strength.toFixed(2)} | Guidance {tierConfig.guidance.toFixed(1)} | 预期相似度: {tierConfig.expectedSimilarity}
-                  </p>
-                </div>
-              )}
-              
-              {/* Manual Mode 提示 */}
-              {manualMode && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
-                  <p className="text-xs text-gray-600 flex items-center gap-1">
-                    <FlaskConical className="w-3 h-3" />
-                    Manual Mode: Full range adjustment enabled / 手动模式：启用全范围调节 (Tier: {manualTier})
-                  </p>
-                </div>
-              )}
+              <h2 className="font-semibold mb-3 flex items-center gap-2">
+                <Sliders className="w-4 h-4" />
+                Generation Parameters / 生成参数
+              </h2>
               
               <div className="space-y-4">
                 <div>
@@ -1006,25 +896,27 @@ export default function TestLabPage() {
                       <label className="text-sm font-medium">Strength / 强度</label>
                       <div className="group relative">
                         <Info className="w-3 h-3 text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                          Higher = More creative, less similar to original
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                          低值 (0.15-0.40): 更像原图，忠实还原<br/>
+                          中值 (0.40-0.65): 平衡风格与相似度<br/>
+                          高值 (0.65-0.95): 更艺术化，风格强烈
                         </div>
                       </div>
                     </div>
                     <input
                       type="number"
                       value={genParams.strength.toFixed(2)}
-                      onChange={(e) => setGenParams({...genParams, strength: parseFloat(e.target.value) || 0.35})}
+                      onChange={(e) => setGenParams({...genParams, strength: parseFloat(e.target.value) || 0.45})}
                       className="w-16 px-2 py-1 text-sm font-bold text-blue-600 border border-gray-300 rounded text-center"
                       step="0.01"
-                      min={manualMode ? 0.15 : Math.max(0.25, tierConfig.strength - 0.10)}
-                      max={manualMode ? 0.95 : Math.min(0.80, tierConfig.strength + 0.10)}
+                      min={0.15}
+                      max={0.95}
                     />
                   </div>
                   <input 
                     type="range" 
-                    min={manualMode ? 0.15 : Math.max(0.25, tierConfig.strength - 0.10)} 
-                    max={manualMode ? 0.95 : Math.min(0.80, tierConfig.strength + 0.10)} 
+                    min={0.15} 
+                    max={0.95} 
                     step={0.01}
                     value={genParams.strength}
                     onChange={(e) => setGenParams({...genParams, strength: parseFloat(e.target.value)})}
@@ -1032,22 +924,12 @@ export default function TestLabPage() {
                   />
                   <div className="flex justify-between text-xs mt-2">
                     <div className="text-left">
-                      <div className="font-mono text-gray-600">
-                        {manualMode ? '0.15' : (tierConfig.strength - 0.10).toFixed(2)}
-                      </div>
+                      <div className="font-mono text-gray-600">0.15</div>
                       <div className="text-gray-500">More Similar</div>
                       <div className="text-gray-400">更相似原图</div>
                     </div>
-                    {!manualMode && (
-                      <div className="text-center">
-                        <div className="font-medium text-blue-600">{tierConfig.strength.toFixed(2)}</div>
-                        <div className="text-gray-500">Recommended</div>
-                      </div>
-                    )}
                     <div className="text-right">
-                      <div className="font-mono text-gray-600">
-                        {manualMode ? '0.95' : (tierConfig.strength + 0.10).toFixed(2)}
-                      </div>
+                      <div className="font-mono text-gray-600">0.95</div>
                       <div className="text-gray-500">More Creative</div>
                       <div className="text-gray-400">更艺术化</div>
                     </div>
@@ -1060,8 +942,10 @@ export default function TestLabPage() {
                       <label className="text-sm font-medium">Guidance / 引导度</label>
                       <div className="group relative">
                         <Info className="w-3 h-3 text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                          Higher = Follows prompt more strictly
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                          低值 (1.0-2.0): AI 创意空间大<br/>
+                          中值 (2.0-3.5): 平衡控制与创意<br/>
+                          高值 (3.5-5.0): 严格遵循提示词
                         </div>
                       </div>
                     </div>
@@ -1071,14 +955,14 @@ export default function TestLabPage() {
                       onChange={(e) => setGenParams({...genParams, guidance: parseFloat(e.target.value) || 2.5})}
                       className="w-16 px-2 py-1 text-sm font-bold text-blue-600 border border-gray-300 rounded text-center"
                       step="0.1"
-                      min={manualMode ? 1.0 : Math.max(1.5, tierConfig.guidance - 1.0)}
-                      max={manualMode ? 5.0 : Math.min(4.0, tierConfig.guidance + 1.0)}
+                      min={1.0}
+                      max={5.0}
                     />
                   </div>
                   <input 
                     type="range" 
-                    min={manualMode ? 1.0 : Math.max(1.5, tierConfig.guidance - 1.0)} 
-                    max={manualMode ? 5.0 : Math.min(4.0, tierConfig.guidance + 1.0)} 
+                    min={1.0} 
+                    max={5.0} 
                     step={0.1}
                     value={genParams.guidance}
                     onChange={(e) => setGenParams({...genParams, guidance: parseFloat(e.target.value)})}
@@ -1086,24 +970,14 @@ export default function TestLabPage() {
                   />
                   <div className="flex justify-between text-xs mt-2">
                     <div className="text-left">
-                      <div className="font-mono text-gray-600">
-                        {manualMode ? '1.0' : (tierConfig.guidance - 1.0).toFixed(1)}
-                      </div>
+                      <div className="font-mono text-gray-600">1.0</div>
                       <div className="text-gray-500">More Freedom</div>
-                      <div className="text-gray-400">更自由发挥</div>
+                      <div className="text-gray-400">AI 创意空间大</div>
                     </div>
-                    {!manualMode && (
-                      <div className="text-center">
-                        <div className="font-medium text-blue-600">{tierConfig.guidance.toFixed(1)}</div>
-                        <div className="text-gray-500">Recommended</div>
-                      </div>
-                    )}
                     <div className="text-right">
-                      <div className="font-mono text-gray-600">
-                        {manualMode ? '5.0' : (tierConfig.guidance + 1.0).toFixed(1)}
-                      </div>
+                      <div className="font-mono text-gray-600">5.0</div>
                       <div className="text-gray-500">More Control</div>
-                      <div className="text-gray-400">更严格控制</div>
+                      <div className="text-gray-400">严格遵循提示词</div>
                     </div>
                   </div>
                 </div>
@@ -1326,22 +1200,14 @@ export default function TestLabPage() {
               <Card className="p-4">
                 <h2 className="font-semibold mb-3">2. Style Configuration / 风格配置</h2>
                 
-                <div className="grid grid-cols-4 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-gray-500 text-xs mb-1">Tier / 等级</div>
-                    <div className="text-lg font-semibold text-blue-600">{tierConfig.tier}</div>
+                    <div className="text-gray-500 text-xs mb-1">Current Strength / 当前强度</div>
+                    <div className="text-lg font-semibold text-blue-600">{genParams.strength.toFixed(2)}</div>
                   </div>
                   <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-gray-500 text-xs mb-1">Expected Similarity / 预期相似度</div>
-                    <div className="font-medium">{tierConfig.expectedSimilarity}</div>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-gray-500 text-xs mb-1">Strength Range / 强度范围</div>
-                    <div className="font-medium">{(tierConfig.strength - 0.10).toFixed(2)} - {(tierConfig.strength + 0.10).toFixed(2)}</div>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-gray-500 text-xs mb-1">Guidance / 引导度</div>
-                    <div className="font-medium">{tierConfig.guidance.toFixed(1)}</div>
+                    <div className="text-gray-500 text-xs mb-1">Current Guidance / 当前引导度</div>
+                    <div className="text-lg font-semibold text-blue-600">{genParams.guidance.toFixed(1)}</div>
                   </div>
                 </div>
               </Card>
@@ -1404,10 +1270,6 @@ export default function TestLabPage() {
                         <span className="font-medium">{genParams.aspectRatio}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Tier:</span>
-                        <span className="font-medium">{manualMode ? manualTier : tierConfig.tier}</span>
-                      </div>
-                      <div className="flex justify-between col-span-2">
                         <span className="text-gray-600">Num Outputs:</span>
                         <span className="font-medium">{abTestMode ? selectedVariants.length : 1}</span>
                       </div>
@@ -1491,8 +1353,8 @@ export default function TestLabPage() {
                             <span className="font-medium">{img.params.guidance.toFixed(1)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Tier:</span>
-                            <span className="font-medium">{img.params.tier || tierConfig.tier}</span>
+                            <span className="text-gray-500">Aspect Ratio:</span>
+                            <span className="font-medium">{img.params.aspectRatio}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-500">Time:</span>
@@ -1623,7 +1485,6 @@ export default function TestLabPage() {
                     <th className="text-left py-2 px-3 font-semibold text-gray-700">Date / 日期</th>
                     <th className="text-left py-2 px-3 font-semibold text-gray-700">Style Name / 风格名</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-700">Rating / 评分</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Tier</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-700">Strength</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-700">Guidance</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-700">Time / 时长</th>
@@ -1657,9 +1518,6 @@ export default function TestLabPage() {
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="font-mono text-sm text-blue-600">T{session.result.params.tier || '-'}</span>
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span className="font-mono text-sm">{session.result.params.strength.toFixed(2)}</span>
@@ -1740,10 +1598,6 @@ export default function TestLabPage() {
                   <div className="text-lg font-semibold text-blue-600">{selectedImageModal.params.guidance.toFixed(1)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Tier / 等级</div>
-                  <div className="text-lg font-semibold text-blue-600">{selectedImageModal.params.tier || tierConfig.tier}</div>
-                </div>
-                <div>
                   <div className="text-xs text-gray-500 mb-1">Aspect Ratio / 比例</div>
                   <div className="text-lg font-semibold text-gray-700">{selectedImageModal.params.aspectRatio}</div>
                 </div>
@@ -1751,7 +1605,7 @@ export default function TestLabPage() {
                   <div className="text-xs text-gray-500 mb-1">Generation Time / 生成时长</div>
                   <div className="text-lg font-semibold text-gray-700">{selectedImageModal.timeTaken}s</div>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <div className="text-xs text-gray-500 mb-1">Generated At / 生成时间</div>
                   <div className="text-sm font-medium text-gray-700">{new Date(selectedImageModal.generatedAt).toLocaleTimeString()}</div>
                 </div>

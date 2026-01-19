@@ -9,8 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStyleById } from '@/lib/styles'
-import { getStyleConfigWithFallback, getStyleTierFromDatabase } from '@/lib/supabase/styles'
-import { getStyleTierConfig, getDefaultTierConfig, adjustStrengthForComplexity } from '@/lib/style-tiers'
+import { getStyleConfigWithFallback } from '@/lib/supabase/styles'
 import Replicate from 'replicate'
 import sharp from 'sharp'
 import { FEATURE_FLAGS } from '@/lib/feature-flags'
@@ -617,21 +616,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP D: GET STYLE TIER CONFIG and ADJUST STRENGTH
-    // Priority: Database tier config -> Hardcoded tier config -> Default config
-    const dbTierConfig = await getStyleTierFromDatabase(style)
-    const tierConfig = dbTierConfig || getStyleTierConfig(style) || getDefaultTierConfig()
-    const baseStrength = tierConfig.strength
-    const adjustedStrength = adjustStrengthForComplexity(baseStrength, {
-      hasHeterochromia: petComplexity.hasHeterochromia,
-      complexPattern: petComplexity.complexPattern,
-      multiplePets: petComplexity.multiplePets
-    })
+    // STEP D: GET STYLE PARAMETERS FROM DATABASE
+    // Fetch style-specific parameters from database, or use defaults
+    const supabase = await createAdminClient()
+    const { data: styleData } = await supabase
+      .from('styles')
+      .select('recommended_strength_min, recommended_guidance')
+      .eq('id', style)
+      .single()
     
-    console.log(`🎯 Style Tier ${tierConfig.tier}: ${style} (${dbTierConfig ? 'from database' : 'hardcoded'})`)
-    console.log(`   Base strength: ${baseStrength.toFixed(2)} → Adjusted: ${adjustedStrength.toFixed(2)}`)
-    console.log(`   Guidance: ${tierConfig.guidance}`)
-    console.log(`   Expected similarity: ${tierConfig.expectedSimilarity}`)
+    const defaultStrength = styleData?.recommended_strength_min || 0.45
+    const defaultGuidance = styleData?.recommended_guidance || 2.5
+    
+    console.log(`🎯 Style Config: ${style}`)
+    console.log(`   Strength: ${defaultStrength.toFixed(2)}`)
+    console.log(`   Guidance: ${defaultGuidance.toFixed(1)}`)
     
     // STEP E: CONSTRUCT TIER-APPROPRIATE PROMPT
     let finalPrompt = ''
@@ -739,7 +738,7 @@ export async function POST(request: NextRequest) {
           negativePrompt: filteredUserResult.negativePrompt
         })
         
-        // Construct final prompt with tier-specific strategy
+        // Construct final prompt with unified strategy
         // Add aspect ratio guidance for better composition
         const aspectRatioGuide = aspectRatio === '1:1' ? 'square composition' :
                                  aspectRatio === '3:4' ? 'vertical portrait composition' :
@@ -747,13 +746,8 @@ export async function POST(request: NextRequest) {
                                  aspectRatio === '16:9' ? 'wide cinematic composition' :
                                  aspectRatio === '9:16' ? 'tall vertical composition' : 'centered composition'
         
-        if (tierConfig.tier <= 2) {
-          // Tier 1-2: Feature preservation priority
-          finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. Preserve exact features from reference image. Apply ${styleName} style.`
-        } else {
-          // Tier 3-4: Artistic style priority
-          finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. ${styleName} style interpretation. Based on reference image.`
-        }
+        // Unified prompt strategy: balance feature preservation with style application
+        finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. Preserve exact features from reference image. Apply ${styleName} style.`
         
         finalNegativePrompt = promptResult.negative
         
@@ -801,35 +795,16 @@ export async function POST(request: NextRequest) {
           featurePrefix += `with heterochromia (${petComplexity.heterochromiaDetails}), `
         }
         
-        // Tier-specific prompt strategy
-        if (tierConfig.tier <= 2) {
-          // Tier 1-2: 写实/轻艺术 - 强调特征保留，但也需要清理颜色强制
-          const cleanSuffix = styleConfig.promptSuffix
-            .replace(/soft white fur/gi, 'fur')
-            .replace(/white and pink/gi, 'colorful')
-            .replace(/pink and white/gi, 'colorful')
-            .replace(/yellow and pink/gi, 'colorful')
-            .replace(/orange turtleneck/gi, 'turtleneck')
-            .replace(/olive green background/gi, 'solid background')
-          
-          finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}, ${aspectRatioGuide}. Keep original appearance, only apply ${styleName} artistic style.`
-        } else {
-          // Tier 3-4: 强艺术 - 平衡风格和特征
-          // 清理可能冲突的颜色/特征描述，保留艺术风格
-          const cleanSuffix = styleConfig.promptSuffix
-            .replace(/warm/gi, '')
-            .replace(/bright/gi, '')
-            .replace(/soft white fur/gi, 'fur')
-            .replace(/white and pink/gi, 'colorful')
-            .replace(/pink and white/gi, 'colorful')
-            .replace(/pastel pink and white/gi, 'pastel')
-            .replace(/yellow and pink/gi, 'colorful')
-            .replace(/blue and yellow/gi, 'colorful')
-            .replace(/orange turtleneck/gi, 'turtleneck')
-            .replace(/olive green background/gi, 'solid background')
-          
-          finalPrompt = `${featurePrefix}${userPrompt}${cleanSuffix}, ${aspectRatioGuide}. Based on reference image, maintain core breed characteristics and distinctive features.`
-        }
+        // Unified prompt strategy: balance feature preservation with style application
+        const cleanSuffix = styleConfig.promptSuffix
+          .replace(/soft white fur/gi, 'fur')
+          .replace(/white and pink/gi, 'colorful')
+          .replace(/pink and white/gi, 'colorful')
+          .replace(/yellow and pink/gi, 'colorful')
+          .replace(/orange turtleneck/gi, 'turtleneck')
+          .replace(/olive green background/gi, 'solid background')
+        
+        finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${userPrompt}${cleanSuffix}, ${aspectRatioGuide}. Keep original appearance, only apply ${styleName} artistic style.`
         
         // Add complexity-specific reminders
         if (petComplexity.complexPattern) {
@@ -865,9 +840,9 @@ export async function POST(request: NextRequest) {
       })
       
       try {
-        // Use frontend params or calculated params
-        const finalStrength = strength !== undefined ? strength : adjustedStrength
-        const finalGuidance = guidance !== undefined ? guidance : tierConfig.guidance
+        // Use frontend params or default params from database
+        const finalStrength = strength !== undefined ? strength : defaultStrength
+        const finalGuidance = guidance !== undefined ? guidance : defaultGuidance
         
         console.log('🧪 TEST MODE - Calling generateWithReplicate:', {
           userId: user.id,
@@ -991,10 +966,10 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // STEP F: Call Replicate API with tier-optimized parameters
-      // Use frontend strength if provided, otherwise use tier-based calculation
-      const finalStrength = strength || adjustedStrength
-      const finalGuidance = guidance || tierConfig.guidance
+      // STEP F: Call Replicate API with style-specific parameters
+      // Use frontend strength if provided, otherwise use style defaults from database
+      const finalStrength = strength || defaultStrength
+      const finalGuidance = guidance || defaultGuidance
       
       const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
         finalPrompt, 
@@ -1026,11 +1001,10 @@ export async function POST(request: NextRequest) {
             preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
             visionAnalysis: petComplexity.keyFeatures || undefined,
             petComplexity: petComplexity,
-            tierConfig: {
-              tier: tierConfig.tier,
-              baseStrength: baseStrength,
-              adjustedStrength: adjustedStrength,
-              guidance: finalGuidance
+            generationParams: {
+              strength: finalStrength,
+              guidance: finalGuidance,
+              aspectRatio: aspectRatio
             },
           },
         })
