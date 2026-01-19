@@ -100,9 +100,9 @@ export async function checkUserViolations(userId: string): Promise<ViolationStat
     }
     
     // Get violation count in last 30 days
-    const { data: violations, error } = await supabase
+    const { data: violations, error, count } = await supabase
       .from('moderation_logs')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: false })
       .eq('user_id', userId)
       .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
     
@@ -115,7 +115,7 @@ export async function checkUserViolations(userId: string): Promise<ViolationStat
       }
     }
     
-    const violationCount = violations || 0
+    const violationCount = count || 0
     
     // Apply progressive penalties
     if (violationCount >= 6) {

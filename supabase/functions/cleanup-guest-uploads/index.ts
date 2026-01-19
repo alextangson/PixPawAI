@@ -1,12 +1,11 @@
 /**
- * Supabase Edge Function: Cleanup Guest Uploads & Test Lab Files
+ * Supabase Edge Function: Cleanup Guest Uploads
  * 
  * Purpose: Automatically delete temporary files older than 24 hours
  * Trigger: Cron job (daily at 2:00 AM UTC)
  * 
  * Cleanup targets:
  * - guest-uploads/guest-*/ (游客上传的原图)
- * - guest-uploads/test-lab/ (Admin Test Lab 测试图片)
  * 
  * This helps control storage costs by removing temporary files
  * that are no longer needed after testing or generation.
@@ -47,7 +46,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     console.log('🧹 Starting cleanup of guest-uploads bucket...')
-    console.log('📂 Targets: guest-*/ folders + test-lab/ folder')
+    console.log('📂 Targets: guest-*/ folders')
 
     // Define cutoff time (24 hours ago)
     const RETENTION_HOURS = 24
@@ -87,15 +86,14 @@ Deno.serve(async (req) => {
 
     console.log(`📂 Found ${folders.length} top-level items`)
 
-    // Process each folder (guest-1768xxx, test-lab, etc.)
+    // Process each folder (guest-1768xxx, etc.)
     for (const folder of folders) {
-      // Only process guest- folders and test-lab folder
+      // Only process guest- folders
       const isGuestFolder = folder.name.startsWith('guest-')
-      const isTestLabFolder = folder.name === 'test-lab'
       
-      if (!isGuestFolder && !isTestLabFolder) continue
+      if (!isGuestFolder) continue
 
-      console.log(`\n📁 Processing folder: ${folder.name}${isTestLabFolder ? ' (Test Lab)' : ''}`)
+      console.log(`\n📁 Processing folder: ${folder.name}`)
 
       // List files in this guest folder
       const { data: files, error: filesError } = await supabase.storage

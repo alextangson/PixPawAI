@@ -267,12 +267,6 @@ export function DashboardClient({ lang }: { lang: string }) {
         <h2 className="text-2xl font-semibold mb-4">Quick Links</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickLink
-            href={`/${lang}/admin/test-lab`}
-            title="Test Lab"
-            description="测试提示词系统"
-            color="bg-blue-50 hover:bg-blue-100"
-          />
-          <QuickLink
             href={`/${lang}/admin/styles`}
             title="Style Library"
             description="管理风格库"

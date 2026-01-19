@@ -270,27 +270,6 @@ export default function QwenConfigPage() {
         </div>
       </Card>
 
-      {/* Test Configuration */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <div className="flex items-start gap-4">
-          <TestTube2 className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-          <div className="flex-1">
-            <h3 className="font-semibold mb-2">Test Configuration</h3>
-            <p className="text-sm text-gray-700 mb-4">
-              To test your configuration changes, go to the <strong>Test Lab</strong> and upload a test image. 
-              The system will use these settings for the analysis.
-            </p>
-            <a 
-              href="/en/admin/test-lab"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <TestTube2 className="w-4 h-4" />
-              Go to Test Lab
-            </a>
-          </div>
-        </div>
-      </Card>
-
       {/* Important Notes */}
       <Card className="p-6 bg-yellow-50 border-yellow-200">
         <h3 className="font-semibold mb-2">Important Notes</h3>

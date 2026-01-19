@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     
     if (countError) {
       console.error('Error checking report rate limit:', countError)
-    } else if (recentReports && recentReports >= 10) {
+    } else if (recentReports && recentReports.length >= 10) {
       return NextResponse.json(
         { 
           error: 'Rate limit exceeded',

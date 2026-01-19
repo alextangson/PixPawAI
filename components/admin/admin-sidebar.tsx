@@ -36,12 +36,6 @@ export function AdminSidebar({ lang, userEmail }: AdminSidebarProps) {
       description: '用户积分管理'
     },
     { 
-      icon: Beaker, 
-      label: 'Test Lab', 
-      href: `/${lang}/admin/test-lab`,
-      description: '测试工具'
-    },
-    { 
       icon: Palette, 
       label: 'Style Library', 
       href: `/${lang}/admin/styles`,
