@@ -72,6 +72,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [showQualityWarning, setShowQualityWarning] = useState(false)
   const [isCheckingQuality, setIsCheckingQuality] = useState(false)
   
+  // Detailed analysis state tracking (for race condition fix)
+  const [isDetailedAnalysisRunning, setIsDetailedAnalysisRunning] = useState(false)
+  const [detailedAnalysisCompleted, setDetailedAnalysisCompleted] = useState(false)
+  
   // Style rotation for "Shuffle"
   const [styleRotationIndex, setStyleRotationIndex] = useState(0)
   
@@ -480,6 +484,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       // STEP 2: Quick check passed - proceed to configure immediately
       setIsCheckingQuality(false)
+      setIsDetailedAnalysisRunning(true)  // 🔥 Mark detailed analysis as starting
       setStep('configure')
       
       // STEP 3: Detailed analysis in background (doesn't block UI)
@@ -524,10 +529,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       
       // Update with detailed result (will trigger re-render in configure step)
       setQualityCheckResult(result)
+      setDetailedAnalysisCompleted(true)  // 🔥 Mark as completed
       
     } catch (error) {
       console.error('Detailed analysis error:', error)
       // Not critical - user can still proceed
+    } finally {
+      setIsDetailedAnalysisRunning(false)  // 🔥 Always mark as finished (success or failure)
     }
   }
   
@@ -570,6 +578,25 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         hasStyle: !!selectedStyle
       })
       return
+    }
+
+    // 🔥 RACE CONDITION FIX: Wait for detailed analysis to complete (with timeout)
+    if (isDetailedAnalysisRunning) {
+      console.log('⏳ Waiting for detailed analysis to complete...')
+      
+      // Wait up to 5 seconds
+      const timeout = 5000
+      const startTime = Date.now()
+      
+      while (isDetailedAnalysisRunning && (Date.now() - startTime) < timeout) {
+        await new Promise(resolve => setTimeout(resolve, 200))
+      }
+      
+      if (isDetailedAnalysisRunning) {
+        console.warn('⚠️ Detailed analysis timeout, proceeding anyway')
+      } else {
+        console.log('✅ Detailed analysis completed, using results')
+      }
     }
 
     // Check authentication status
@@ -655,15 +682,25 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            imageUrl: imageUrl,
+          imageUrl: imageUrl,
           style: selectedStyle,
           prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
-          petType: 'pet',
+          petType: qualityCheckResult?.petType || 'pet',
           aspectRatio: aspectRatio,
           strength: strength,
-            petName: petName.trim(), // Pet name for Art Card title
+          petName: petName.trim(), // Pet name for Art Card title
+          // 🔥 RACE CONDITION FIX: Pass detailed analysis results to backend
+          detailedAnalysis: qualityCheckResult ? {
+            petType: qualityCheckResult.petType,
+            breed: qualityCheckResult.breed,
+            detectedColors: qualityCheckResult.detectedColors,
+            hasHeterochromia: qualityCheckResult.hasHeterochromia,
+            heterochromiaDetails: qualityCheckResult.heterochromiaDetails,
+            complexPattern: qualityCheckResult.complexPattern,
+            multiplePets: qualityCheckResult.multiplePets
+          } : null  // If no result, backend will analyze
         }),
-          signal: controller.signal
+        signal: controller.signal
       })
 
         clearTimeout(timeoutId)
@@ -1593,10 +1630,15 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           <div className="border-t border-gray-200 px-6 py-4">
             <Button
               onClick={handleGenerate}
-              disabled={!selectedStyle || isCheckingAuth}
+              disabled={!selectedStyle || isCheckingAuth || isDetailedAnalysisRunning}
               className="w-full bg-coral hover:bg-orange-600 text-white font-semibold h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isCheckingAuth ? (
+              {isDetailedAnalysisRunning ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Analyzing pet features...
+                </>
+              ) : isCheckingAuth ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Checking login status...
@@ -1613,7 +1655,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </>
               )}
             </Button>
-            {!user && !isCheckingAuth && (
+            {isDetailedAnalysisRunning && (
+              <p className="text-xs text-center text-gray-500 mt-2 animate-pulse">
+                🔍 Analyzing pet features for best results...
+              </p>
+            )}
+            {!user && !isCheckingAuth && !isDetailedAnalysisRunning && (
               <p className="text-xs text-center text-gray-500 mt-2">
                 Create an account to start generating
               </p>

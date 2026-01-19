@@ -503,7 +503,8 @@ export async function POST(request: NextRequest) {
       strength, // Accept from frontend but don't set default here
       guidance, // Accept guidance from frontend
       petName = '', // Pet name for Art Card title generation
-      testMode = false // Test mode: skip DB operations
+      testMode = false, // Test mode: skip DB operations
+      detailedAnalysis = null // 🔥 Frontend detailed analysis results (race condition fix)
     } = body
 
     if (!style) {
@@ -559,18 +560,40 @@ export async function POST(request: NextRequest) {
       keyFeatures: 'standard pet'
     }
     
-    if (imageUrl) {
+    // 🔥 RACE CONDITION FIX: Prioritize frontend detailed analysis results
+    if (detailedAnalysis) {
+      console.log('✅ Using frontend detailed analysis:', detailedAnalysis)
+      petComplexity = {
+        petType: detailedAnalysis.petType || petType,
+        detectedColors: detailedAnalysis.detectedColors || '',
+        hasHeterochromia: detailedAnalysis.hasHeterochromia || false,
+        heterochromiaDetails: detailedAnalysis.heterochromiaDetails || '',
+        complexPattern: detailedAnalysis.complexPattern || false,
+        patternDetails: '', // Frontend doesn't provide patternDetails
+        multiplePets: detailedAnalysis.multiplePets || 1,
+        breed: detailedAnalysis.breed || 'unknown',
+        keyFeatures: 'standard pet' // Frontend doesn't provide keyFeatures
+      }
+      console.log('✅ Frontend Pet Complexity:', {
+        heterochromia: petComplexity.hasHeterochromia,
+        complexPattern: petComplexity.complexPattern,
+        pets: petComplexity.multiplePets,
+        breed: petComplexity.breed,
+        colors: petComplexity.detectedColors
+      })
+    } else if (imageUrl) {
+      // Fallback: Backend analyzes if frontend didn't provide results
       try {
-        console.log('🔍 Starting vision analysis...')
+        console.log('🔍 Frontend analysis not available, running backend vision analysis...')
         petComplexity = await analyzePetFeatures(imageUrl)
-        console.log('✅ Pet Complexity Analysis:', {
+        console.log('✅ Backend Pet Complexity Analysis:', {
           heterochromia: petComplexity.hasHeterochromia,
           complexPattern: petComplexity.complexPattern,
           pets: petComplexity.multiplePets,
           breed: petComplexity.breed
         })
       } catch (error: any) {
-        console.error('⚠️ Vision analysis failed, continuing without it:', error.message)
+        console.error('⚠️ Backend vision analysis failed, using defaults:', error.message)
         // Continue with default values
       }
     }
@@ -631,6 +654,10 @@ export async function POST(request: NextRequest) {
       startFilteredFeaturesCollection()
       
       try {
+        // 0. Determine final pet type early (needed for logging)
+        // 🚨 CRITICAL: Use petType from detailed analysis (most accurate)
+        const finalPetType = petComplexity.petType || petType || 'pet'
+        
         // 1. Parse user input (from "Add Your Creative Touch" field)
         const userPromptResult = parseUserPrompt(userPrompt || '')
         logger.promptBuild('User Features Parsed (before filter)', userPromptResult)
@@ -667,9 +694,6 @@ export async function POST(request: NextRequest) {
         }
         
         // 2. Parse Qwen analysis results
-        // 🚨 CRITICAL: Use petType from detailed analysis (most accurate)
-        // Fallback to request body petType if detailed analysis didn't return it
-        const finalPetType = petComplexity.petType || petType || 'pet'
         const qwenFeaturesWithPetType = {
           ...petComplexity,
           petType: finalPetType
