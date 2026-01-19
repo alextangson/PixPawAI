@@ -102,8 +102,18 @@ export async function POST(request: NextRequest) {
       }
 
       // 获取用户邮箱
-      const { data: authData } = await adminClient.auth.admin.getUserById(targetUserId)
-      targetUserEmail = authData?.user?.email || 'Unknown'
+      if (targetUserId) {
+        const { data: authData } = await adminClient.auth.admin.getUserById(targetUserId)
+        targetUserEmail = authData?.user?.email || 'Unknown'
+      }
+    }
+
+    // Ensure we have a valid user ID
+    if (!targetUserId) {
+      return NextResponse.json(
+        { error: 'Failed to identify user' },
+        { status: 400 }
+      )
     }
 
     // 4. 如果是扣除操作，先检查余额
