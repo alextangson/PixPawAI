@@ -267,7 +267,7 @@ If no pet detected but safe:
     // Log error to database (non-blocking)
     try {
       const adminSupabase = createAdminClient()
-      await adminSupabase
+      const { error: insertError } = await adminSupabase
         .from('api_error_logs')
         .insert({
           api_endpoint: '/api/check-quality',
