@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStyles } from '@/lib/hooks/use-styles';
@@ -120,20 +121,23 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
               )}
 
               {/* Full-Bleed Background Image with Zoom Effect */}
-              <div className="relative overflow-hidden">
+              <div className="relative overflow-hidden h-44 sm:h-52 md:h-56 lg:h-48 xl:h-52 2xl:h-64 3xl:h-72">
                 {style.image && style.image.trim() !== '' ? (
-                  <img
+                  <Image
                     src={style.image}
                     alt={style.name}
-                    className={`w-full h-44 sm:h-52 md:h-56 lg:h-48 xl:h-52 2xl:h-64 3xl:h-72 object-cover transition-transform duration-700 ${
+                    fill
+                    className={`object-cover transition-transform duration-700 ${
                       style.isComingSoon 
                         ? 'filter grayscale opacity-60' 
                         : 'group-hover:scale-110'
                     }`}
                     loading="lazy"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    quality={85}
                   />
                 ) : (
-                  <div className="w-full h-72 md:h-80 bg-gray-200 flex items-center justify-center">
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                     <span className="text-gray-400 text-sm">No preview available</span>
                   </div>
                 )}

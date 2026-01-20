@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Upload, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -80,10 +81,14 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
 
             {/* Visual: Processing Animation */}
             <div className="relative aspect-video max-h-48 mb-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl overflow-hidden">
-              <img
+              <Image
                 src="/how-it-works/after.jpg"
                 alt="AI Processing"
-                className="w-full h-full object-cover opacity-30"
+                fill
+                className="object-cover opacity-30"
+                loading="lazy"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                quality={80}
               />
               {/* Scanning Effect Overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent animate-pulse" />
@@ -117,10 +122,14 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
             <div className="relative aspect-video max-h-48 mb-6 flex items-center justify-center">
               <div className="w-32 h-48 bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border-4 border-gray-800 relative">
                 {/* Phone Screen */}
-                <img
+                <Image
                   src="/how-it-works/Preview-Customize.jpg"
                   alt="Result preview"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  loading="lazy"
+                  sizes="128px"
+                  quality={85}
                 />
                 {/* Success Checkmark */}
                 <div className="absolute bottom-2 right-2 bg-green-500 rounded-full p-2">

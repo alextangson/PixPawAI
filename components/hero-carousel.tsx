@@ -90,6 +90,7 @@ export function HeroCarousel({
             fill
             className="object-cover"
             priority={index === 0}  // 首张图片优先加载
+            fetchPriority={index === 0 ? "high" : "auto"}  // LCP 优化
             sizes="(max-width: 768px) 100vw, 50vw"
             quality={90}
           />
@@ -102,19 +103,26 @@ export function HeroCarousel({
       ))}
 
       {/* Dot Indicators */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
         {CAROUSEL_IMAGES.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
             className={cn(
-              'w-2 h-2 rounded-full transition-all duration-300',
-              index === currentIndex 
-                ? 'bg-white w-8' 
-                : 'bg-white/50 hover:bg-white/75'
+              'min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-300 touch-target',
+              'focus:outline-none focus:ring-2 focus:ring-white/50'
             )}
             aria-label={`Go to slide ${index + 1}`}
-          />
+          >
+            <span
+              className={cn(
+                'rounded-full transition-all duration-300',
+                index === currentIndex 
+                  ? 'w-8 h-2 bg-white' 
+                  : 'w-2 h-2 bg-white/50'
+              )}
+            />
+          </button>
         ))}
       </div>
 

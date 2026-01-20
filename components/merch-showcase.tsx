@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 interface MerchShowcaseProps {
   dict: {
     merch: {
@@ -70,11 +72,14 @@ export function MerchShowcase({ dict }: MerchShowcaseProps) {
             >
               {/* Product Image */}
               <div className="relative w-full overflow-hidden bg-gray-100 h-[180px] sm:h-[200px] md:h-[220px] lg:h-[200px] xl:h-[220px] 2xl:h-[260px] 3xl:h-[280px] flex items-center justify-center">
-                <img
+                <Image
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  className="object-contain group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  quality={85}
                 />
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 pointer-events-none" />

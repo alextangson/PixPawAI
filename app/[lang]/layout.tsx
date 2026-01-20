@@ -97,6 +97,10 @@ export default async function RootLayout({
   
   return (
     <html lang={lang} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body 
         className={`${inter.variable} ${playfair.variable} font-sans`}
         suppressHydrationWarning
