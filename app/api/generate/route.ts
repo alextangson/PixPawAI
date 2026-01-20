@@ -1221,9 +1221,14 @@ export async function POST(request: NextRequest) {
       // 9.5. Pre-generate default Art Card for faster UX (non-blocking)
       try {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        // Extract cookies from original request to pass authentication
+        const cookieHeader = request.headers.get('cookie') || ''
         const defaultCardResponse = await fetch(`${siteUrl}/api/create-share-card`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': cookieHeader
+          },
           body: JSON.stringify({
             generation_id: generation.id,
             custom_title: artCardTitle,
