@@ -61,8 +61,12 @@ export async function getUser() {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
 
+  // 静默处理未登录情况，不记录错误日志
   if (error) {
-    console.error('Error getting user:', error)
+    // AuthSessionMissingError 是正常情况（用户未登录），不需要记录
+    if (error.name !== 'AuthSessionMissingError') {
+      console.error('Error getting user:', error)
+    }
     return null
   }
 

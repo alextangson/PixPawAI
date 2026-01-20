@@ -27,6 +27,10 @@ const nextConfig = {
     // 配置允许的图片质量值
     qualities: [75, 90, 100],
   },
+  // 抑制 sharp 库的 Fontconfig 警告（不影响功能）
+  env: {
+    FONTCONFIG_PATH: process.env.FONTCONFIG_PATH || '',
+  },
 }
 
 module.exports = nextConfig
