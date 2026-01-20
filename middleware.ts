@@ -97,6 +97,12 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Skip i18n redirect for SEO files (sitemap, robots)
+  // These must be accessible at root level for search engines
+  if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
+    return supabaseResponse || NextResponse.next()
+  }
+
   // Check if there is any supported locale in the pathname
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
