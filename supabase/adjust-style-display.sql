@@ -13,7 +13,7 @@ UPDATE styles SET sort_order = 1 WHERE id = 'Christmas-Vibe';      -- 圣诞哈�
 UPDATE styles SET sort_order = 2 WHERE id = 'emerald-muse';        -- 翡翠缪斯猫
 UPDATE styles SET sort_order = 3 WHERE id = 'Smart-Casual';        -- 智能休闲狗
 UPDATE styles SET sort_order = 4 WHERE id = 'bordeaux-muse';       -- 酒红缪斯猫
-UPDATE styles SET sort_order = 5 WHERE id = 'Birthday-Party';      -- 生日派对狗
+UPDATE styles SET sort_order = 5 WHERE id = 'birthday-celebration'; -- 生日庆典狗
 UPDATE styles SET sort_order = 6 WHERE id = 'wes-anderson-pop';    -- 韦斯安德森猫
 UPDATE styles SET sort_order = 7 WHERE id = 'Retro-Pop-Art';       -- 复古波普狗
 UPDATE styles SET sort_order = 8 WHERE id = 'magazine-chic';       -- 时尚摄影猫

@@ -37,7 +37,6 @@ function getStyleDisplayName(styleId: string): string {
     'Victorian-Royal': 'Royal Majesty',
     'Christmas-Vibe': 'Holiday Magic',
     'Flower-Crown': 'Blooming Beauty',
-    'Birthday-Party': 'Birthday Star',
     'Embroidery-Art': 'Embroidered Masterpiece',
     'Watercolor-Dream': 'Watercolor Wonder',
     'Pixel-Mosaic': 'Pixel Perfect',

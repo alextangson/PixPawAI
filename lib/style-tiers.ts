@@ -58,15 +58,6 @@ export const STYLE_TIER_MAP: Record<string, StyleTierConfig> = {
     numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
   },
   
-  'Birthday-Party': {
-    tier: 1,
-    strength: 0.92,
-    guidance: 2.0,
-    description: '写实场景 + 生日派对元素',
-    expectedSimilarity: '85-90%',
-    numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-  },
-  
   'Music-Lover': {
     tier: 1,
     strength: 0.92,

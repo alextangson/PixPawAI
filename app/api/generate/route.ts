@@ -28,7 +28,6 @@ function generateArtCardTitle(petName: string, styleName: string): string {
     'Victorian-Royal': ['Royal Majesty', 'Regal Portrait', 'Noble Heritage'],
     'Christmas-Vibe': ['Holiday Magic', 'Christmas Star', 'Festive Joy'],
     'Flower-Crown': ['Blooming Beauty', 'Floral Princess', 'Garden Dream'],
-    'Birthday-Party': ['Birthday Star', 'Celebration Joy', 'Party Pup'],
     'Embroidery-Art': ['Stitched Masterpiece', 'Textile Art', 'Embroidered Beauty'],
     'Watercolor-Dream': ['Watercolor Wonder', 'Painted Dream', 'Artistic Vision'],
     'Pixel-Mosaic': ['Pixel Perfect', 'Digital Mosaic', 'Retro Art'],

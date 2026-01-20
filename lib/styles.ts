@@ -31,13 +31,6 @@ export const STYLES: Style[] = [
     description: 'Trendy look with a sweater and newsboy cap'
   },
   {
-    id: 'Birthday-Party',
-    label: 'Birthday Party',
-    src: '/styles/birthday-party.jpg',
-    promptSuffix: ', celebrating a birthday, wearing a colorful striped party hat, sitting behind a vibrant birthday cake with a burning candle, blurred party background with balloons and fairy lights, warm indoor lighting, joyful celebration.',
-    description: 'Cheerful birthday celebration with cake and hat'
-  },
-  {
     id: 'Music-Lover',
     label: 'Music Lover',
     src: '/styles/music-lover.jpg',
