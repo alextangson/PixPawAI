@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/server'
 
 interface QualityCheckResult {
   isSafe: boolean
@@ -20,6 +21,22 @@ async function analyzeImageQuality(imageUrl: string): Promise<QualityCheckResult
   
   if (!QWEN_API_KEY) {
     throw new Error('QWEN API KEY not configured')
+  }
+  
+  // Validate image URL
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    throw new Error('Invalid imageUrl provided')
+  }
+  
+  // Check if imageUrl is accessible
+  try {
+    const urlTest = new URL(imageUrl)
+    if (!['http:', 'https:'].includes(urlTest.protocol)) {
+      throw new Error('Image URL must be http or https')
+    }
+  } catch (urlError) {
+    console.error('❌ Invalid image URL format:', imageUrl.substring(0, 100))
+    throw new Error(`Invalid image URL: ${urlError instanceof Error ? urlError.message : 'Invalid URL format'}`)
   }
   
   const prompt = `You are a pet photo quality inspector, content moderator, and feature analyst.
@@ -59,12 +76,12 @@ Output ONLY this JSON:
   "petType": "dog",
   "quality": "good",
   "issues": [],
-  "hasHeterochromia": true,
-  "heterochromiaDetails": "left blue, right brown",
-  "breed": "Siberian Husky",
+  "hasHeterochromia": false,
+  "heterochromiaDetails": "",
+  "breed": "Golden Retriever",
   "complexPattern": false,
   "multiplePets": 1,
-  "detectedColors": "black and white fur"
+  "detectedColors": "golden fur"
 }
 
 If UNSAFE content detected:
@@ -143,11 +160,35 @@ If no pet detected but safe:
         ],
         max_tokens: 500,
         temperature: 0.1
-      })
+      }),
+      signal: AbortSignal.timeout(30000) // 30 second timeout
     })
 
     if (!response.ok) {
-      throw new Error(`Qwen API error: ${response.statusText}`)
+      let errorText = ''
+      try {
+        errorText = await response.text()
+      } catch (e) {
+        errorText = 'Failed to read error response'
+      }
+      
+      const errorDetails = {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText.substring(0, 500),
+        imageUrl: imageUrl.substring(0, 100) + '...',
+        promptLength: prompt.length
+      }
+      
+      console.error('❌ Qwen API Error Details:', errorDetails)
+      
+      // Log to a monitoring service if available
+      // For now, we'll throw a more descriptive error
+      const errorMessage = errorText 
+        ? `Qwen API error (${response.status}): ${errorText.substring(0, 200)}`
+        : `Qwen API error: ${response.status} ${response.statusText}`
+      
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
@@ -213,15 +254,54 @@ If no pet detected but safe:
       }
     }
   } catch (error) {
-    console.error('Qwen API Error:', error)
+    console.error('❌ Qwen API Error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      imageUrl: imageUrl.substring(0, 100) + '...'
+    })
+    
+    // Log error to database (non-blocking)
+    try {
+      const adminSupabase = createAdminClient()
+      await adminSupabase
+        .from('api_error_logs')
+        .insert({
+          api_endpoint: '/api/check-quality',
+          error_type: 'qwen_api_error',
+          error_message: errorMessage.substring(0, 500), // Limit length
+          image_url: imageUrl.substring(0, 200), // Truncated for privacy
+          error_details: {
+            stack: errorStack?.substring(0, 1000), // Truncated
+            imageUrlPrefix: imageUrl.substring(0, 100),
+            promptLength: prompt.length
+          },
+          request_body: {
+            hasImageUrl: !!imageUrl,
+            imageUrlLength: imageUrl.length
+          }
+        })
+      
+      if (insertError) {
+        console.error('⚠️ Error log insert failed:', insertError)
+      }
+    } catch (logError) {
+      // Non-critical: if logging fails, just continue
+      console.error('⚠️ Failed to log error to database:', logError)
+    }
+    
     // On API error, skip quality check and proceed (assume safe)
+    // But log the error for debugging
     return {
       isSafe: true,
       unsafeReason: 'none',
       hasPet: true,
       petType: 'unknown',
       quality: 'good',
-      issues: [],
+      issues: ['qwen_api_error'],
       hasHeterochromia: false,
       heterochromiaDetails: '',
       breed: 'unknown',
@@ -249,9 +329,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error('Quality check error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    const isApiError = errorMessage.includes('Qwen API error') || errorMessage.includes('API')
+    
+    // Log error to database (non-blocking)
+    try {
+      const adminSupabase = createAdminClient()
+      const { error: insertError } = await adminSupabase
+        .from('api_error_logs')
+        .insert({
+          api_endpoint: '/api/check-quality',
+          error_type: 'quality_check_error',
+          error_message: errorMessage.substring(0, 500),
+          error_details: {
+            stack: errorStack?.substring(0, 1000),
+            isApiError
+          },
+          request_body: {
+            hasImageUrl: !!body?.imageUrl,
+            imageUrlLength: body?.imageUrl?.length || 0
+          }
+        })
+      
+      if (insertError) {
+        console.error('⚠️ Error log insert failed:', insertError)
+      }
+    } catch (logError) {
+      // Non-critical: if logging fails, just continue
+      console.error('⚠️ Failed to log error to database:', logError)
+    }
+    
+    // Return detailed error for debugging (in production, you might want to hide details)
     return NextResponse.json(
-      { error: 'Failed to check image quality' },
-      { status: 500 }
+      { 
+        error: 'Failed to check image quality',
+        details: isApiError ? errorMessage : undefined, // Only expose API errors
+        // Return safe fallback result instead of error
+        isSafe: true,
+        unsafeReason: 'none' as const,
+        hasPet: true,
+        petType: 'unknown',
+        quality: 'good' as const,
+        issues: ['quality_check_failed'],
+        hasHeterochromia: false,
+        heterochromiaDetails: '',
+        breed: 'unknown',
+        complexPattern: false,
+        multiplePets: 1,
+        detectedColors: ''
+      },
+      { status: 200 } // Return 200 with fallback data instead of 500
     )
   }
 }
