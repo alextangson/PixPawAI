@@ -96,6 +96,30 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
+  
+  /* iOS Safe Area Support */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+  
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  /* Touch Target Optimization */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    .hover\:scale-105,
+    .hover\:scale-110,
+    .group-hover\:scale-110 {
+      transform: none !important;
+    }
+  }
 
   /* Fade-in animation for share card */
   @keyframes fadeIn {

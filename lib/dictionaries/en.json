@@ -152,44 +152,52 @@
     "title": "Frequently Asked Questions",
     "questions": [
       {
-        "question": "What types of pets can I use?",
-        "answer": "Dogs, cats, bunnies, birds, and even hamsters! Our AI works with virtually any pet. The key is having a clear photo of your pet's face."
+        "question": "What types of pets can I create portraits for?",
+        "answer": "Dogs, cats, rabbits, birds, and even hamsters! Our AI works with virtually any pet. The key is having a clear photo of your pet's face with good lighting."
+      },
+      {
+        "question": "How long does it take to generate a portrait?",
+        "answer": "Most portraits are ready in 20-40 seconds! Our AI analyzes your pet's unique features and applies your chosen style incredibly fast. Complex styles may take up to 60 seconds."
       },
       {
         "question": "What photo quality do I need?",
-        "answer": "No pro photos needed! Just good lighting and a clear face. Phone photos work perfectly. Avoid blurry images or photos where your pet is too far away."
+        "answer": "Phone photos work perfectly! Just ensure: good lighting (natural light is best), your pet's face is clearly visible, and the image isn't blurry. Our AI will analyze photo quality and give you tips before generating."
       },
       {
-        "question": "How long does it take?",
-        "answer": "About 30-60 seconds! Our AI is incredibly fast. You'll have your stunning portrait ready to download almost instantly."
+        "question": "How many portraits can I create?",
+        "answer": "It depends on your credits! You get 2 free credits when you sign up. Each portrait costs 1 credit. Purchase credit packs anytime - they never expire. Check our Pricing page for available packs."
       },
       {
-        "question": "Can I get a refund if I don't like it?",
-        "answer": "Yes! We offer a 'Love it or Free Redo' guarantee. Not satisfied? We'll regenerate it for free. Still not happy? We'll refund you 100%. No questions asked."
+        "question": "What file format will I receive?",
+        "answer": "You'll receive high-resolution PNG images (up to 2048×2048 pixels) perfect for printing, sharing on social media, or creating custom merchandise like mugs, pillows, and phone cases."
       },
       {
-        "question": "What do I get?",
-        "answer": "High-resolution 4K images suitable for printing! Perfect for framing, canvas prints, or any merchandise. Your pet will look amazing at any size."
+        "question": "Can I choose specific art styles?",
+        "answer": "Absolutely! Choose from 8+ unique styles including 3D Movie Star, Merry Christmas, Royal Portrait, Retro Pop Art, and more. Each style is optimized to preserve your pet's unique features while applying artistic magic."
       },
       {
-        "question": "Is my data safe?",
-        "answer": "Absolutely. We take privacy seriously. We delete user photos after 30 days and never share your data with third parties. Your pet's photos are safe with us."
+        "question": "What if I'm not satisfied with the result?",
+        "answer": "We've got you covered! If you're not happy, we'll refund your credit immediately - no questions asked. You can then try a different style or adjust your photo. We also offer free regeneration for technical issues."
       },
       {
-        "question": "Can I print this on a t-shirt or mug?",
-        "answer": "Absolutely! The 4K resolution is perfect for printing on anything—t-shirts, mugs, pillows, phone cases, canvas prints, you name it."
+        "question": "Where can I view all my created portraits?",
+        "answer": "Visit your Dashboard to see all your creations! You can download them anytime, share to our public gallery to earn a free credit, or create custom Art Cards for social media."
       },
       {
-        "question": "Do you support multiple pets in one photo?",
-        "answer": "Currently, we're focusing on solo portraits for best quality. This ensures each pet gets the detailed, personalized treatment they deserve. Want multiple pets? Just upload them separately!"
+        "question": "Can I edit or modify the generated portrait?",
+        "answer": "While you can't directly edit the AI output, you can regenerate with different styles or add custom prompts (like 'wearing a hat' or 'on the beach') to customize the scene while keeping your pet's features intact."
       },
       {
-        "question": "What styles are available?",
-        "answer": "Choose from 3D Pixar-style, Royal Oil Painting, Watercolor Art, Pop Art, and more! Each style is carefully crafted to bring out your pet's unique personality."
+        "question": "How can I improve the quality of my portrait?",
+        "answer": "Three key tips: (1) Upload a clear, well-lit photo showing your pet's face, (2) Choose a style that matches your pet's personality, (3) For complex features like heterochromia or unique patterns, our AI auto-detects and optimizes parameters for best accuracy."
       },
       {
-        "question": "How do I download my portrait?",
-        "answer": "After your portrait is generated, you'll see a 'Download' button. Click it to save your high-res 4K image to your device. You'll also receive an email with the download link."
+        "question": "Is my data safe and private?",
+        "answer": "Absolutely. We take privacy seriously. Your photos are stored securely on encrypted servers. We never share your data with third parties. You can delete your creations anytime from your Dashboard."
+      },
+      {
+        "question": "Can I use portraits for commercial purposes?",
+        "answer": "Yes! All generated portraits are yours to use. You can print them on merchandise, use them for business, or share on social media. For commercial printing businesses, we recommend our Pro or Master plans for higher resolution."
       }
     ]
   },
@@ -283,7 +291,7 @@
   "pricing": {
     "title": "Simple Pricing, No Monthly Fees",
     "subtitle": "Start for free. Upgrade for high-resolution, watermark-free results.",
-    "trustBadge": "🔒 Secure Payment via Stripe",
+    "trustBadge": "🔒 Secure Payment via PayPal",
     "cards": {
       "free": {
         "title": "Free Trial",

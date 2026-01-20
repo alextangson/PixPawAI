@@ -201,7 +201,13 @@ export function ResultModal({
           .single()
         
         // Admin or paid users don't get watermark
-        if (profile?.role === 'admin' || profile?.tier === 'pro' || profile?.tier === 'starter') {
+        // Free tier = watermark, Starter/Pro/Master = no watermark
+        if (
+          profile?.role === 'admin' || 
+          profile?.tier === 'starter' || 
+          profile?.tier === 'pro' || 
+          profile?.tier === 'master'
+        ) {
           shouldAddWatermark = false
         }
       }
@@ -421,21 +427,21 @@ export function ResultModal({
     <>
       {/* Main Result Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
-        <div className="bg-white w-full h-screen sm:h-[95vh] lg:h-[90vh] lg:max-w-7xl rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
+        <div className="bg-white w-full h-full max-h-screen sm:max-h-[96vh] md:max-h-[94vh] lg:max-h-[92vh] xl:max-h-[90vh] lg:max-w-7xl rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
           
           {/* Close Button (Top Right) */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all"
+            className="absolute top-4 right-4 z-50 p-3 sm:p-2 touch-target bg-white/90 hover:bg-white rounded-full shadow-lg transition-all flex items-center justify-center"
             aria-label="Close modal"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-6 h-6 sm:w-5 sm:h-5 text-gray-600" />
           </button>
 
           {/* LEFT PANEL: The Asset (Image + Actions) */}
-          <div className="lg:w-[65%] flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="lg:w-3/5 xl:w-2/3 flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto">
             {/* Image Display Area */}
-            <div className="flex-1 relative flex items-center justify-center p-4">
+            <div className="flex-1 relative flex items-center justify-center p-4 min-h-[40vh] max-h-[60vh] lg:min-h-0 lg:max-h-none lg:flex-1">
               {/* Skeleton Loader */}
               {/* Skeleton Loader - Show while image is loading */}
               {!imageLoaded && (
@@ -461,7 +467,7 @@ export function ResultModal({
                 src={generatedImageUrl}
                 alt="Your AI-generated pet portrait"
                 className={cn(
-                  "w-full h-full max-w-full max-h-full object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-opacity duration-300",
+                  "w-full h-auto max-w-full max-h-[50vh] lg:max-h-[65vh] object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-opacity duration-300",
                   imageLoaded ? "opacity-100" : "opacity-0"
                 )}
                 onLoad={() => setImageLoaded(true)}
@@ -471,8 +477,8 @@ export function ResultModal({
 
             {/* Action Bar - Only show when Love it */}
             {userChoice === 'love' && (
-            <div className="bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 flex-shrink-0">
-              <div className="max-w-2xl mx-auto space-y-3">
+            <div className="bg-white p-3 sm:p-4 md:p-4 lg:p-5 border-t border-gray-200 flex-shrink-0">
+              <div className="max-w-2xl mx-auto space-y-2 sm:space-y-3">
                 
                 {/* Share Input (Conditional) */}
                 {showShareInput && !isShared && (
@@ -608,7 +614,7 @@ export function ResultModal({
           </div>
 
           {/* RIGHT PANEL: Dynamic Content */}
-          <div className="lg:w-[35%] bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-y-auto">
+          <div className="lg:w-2/5 xl:w-1/3 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-y-auto">
             
             {!userChoice ? (
               /* Initial State: Choice Buttons - Vertically Centered */
@@ -752,7 +758,7 @@ export function ResultModal({
                 {/* Back Button */}
                 <button 
                   onClick={() => setUserChoice(null)}
-                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors mb-4"
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors mb-4 p-2 -ml-2 touch-target rounded-lg hover:bg-gray-100"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Change Response

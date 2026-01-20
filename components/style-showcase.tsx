@@ -80,20 +80,20 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
   const displayStyles = styles.slice(0, 8)
 
   return (
-    <section className="py-20 bg-cream">
+    <section className="py-10 sm:py-12 md:py-14 lg:py-16 xl:py-18 2xl:py-20 bg-cream">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Section Title */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+        <div className="text-center mb-6 sm:mb-8 md:mb-10 lg:mb-10">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-bold mb-3 sm:mb-4">
             {dict.styles.title}
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto">
             {dict.styles.subtitle}
           </p>
         </div>
 
-        {/* Grid Layout - 2 rows x 4 columns */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Grid Layout - 2 Columns like Products */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           {displayStyles.map((style, index) => (
             <button
               key={index}
@@ -125,11 +125,12 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                   <img
                     src={style.image}
                     alt={style.name}
-                    className={`w-full h-72 md:h-80 object-cover transition-transform duration-700 ${
+                    className={`w-full h-44 sm:h-52 md:h-56 lg:h-48 xl:h-52 2xl:h-64 3xl:h-72 object-cover transition-transform duration-700 ${
                       style.isComingSoon 
                         ? 'filter grayscale opacity-60' 
                         : 'group-hover:scale-110'
                     }`}
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-72 md:h-80 bg-gray-200 flex items-center justify-center">
@@ -160,12 +161,12 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                 )}
               </div>
 
-              {/* Glassmorphism Text Panel at Bottom - Fixed Height */}
-              <div className="absolute bottom-0 left-0 right-0 h-24 p-4 backdrop-blur-lg bg-white/10 border-t border-white/20 z-10 flex flex-col justify-center">
-                <h3 className="text-lg font-bold mb-1 text-white drop-shadow-lg line-clamp-1">
+              {/* Text Panel at Bottom - Optimized for Mobile */}
+              <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/80 to-transparent z-10 flex flex-col justify-end min-h-[80px] sm:min-h-[96px]">
+                <h3 className="text-sm sm:text-base md:text-lg font-bold mb-0.5 sm:mb-1 text-white drop-shadow-lg line-clamp-1">
                   {style.name}
                 </h3>
-                <p className="text-white/90 text-xs leading-relaxed drop-shadow line-clamp-2">
+                <p className="text-white/95 text-[10px] sm:text-xs leading-snug sm:leading-relaxed drop-shadow line-clamp-2">
                   {style.description}
                 </p>
               </div>

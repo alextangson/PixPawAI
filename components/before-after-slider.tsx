@@ -118,7 +118,7 @@ export function BeforeAfterSlider({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center">
           {/* Left Arrow */}
           <svg
-            className="w-3 h-3 text-coral absolute left-2"
+            className="w-4 h-4 sm:w-3 sm:h-3 text-coral absolute left-2"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -132,7 +132,7 @@ export function BeforeAfterSlider({
           </svg>
           {/* Right Arrow */}
           <svg
-            className="w-3 h-3 text-coral absolute right-2"
+            className="w-4 h-4 sm:w-3 sm:h-3 text-coral absolute right-2"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

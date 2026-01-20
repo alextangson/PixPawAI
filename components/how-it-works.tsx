@@ -28,17 +28,17 @@ interface HowItWorksProps {
 
 export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-10 sm:py-12 md:py-14 lg:py-16 xl:py-18 2xl:py-20 bg-white">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Section Title */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+        <div className="text-center mb-6 sm:mb-8 md:mb-10 lg:mb-10">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-bold mb-3 sm:mb-4">
             How It Works
           </h2>
         </div>
 
         {/* Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 md:gap-7 lg:gap-8">
           {/* Step 1: Pick Your Best Shot (Interactive) */}
           <button
             onClick={onOpenUpload}
@@ -51,7 +51,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
               </div>
 
               {/* Visual: Upload Zone */}
-              <div className="relative h-48 mb-6 bg-white rounded-2xl border-2 border-dashed border-coral/30 flex flex-col items-center justify-center group-hover:border-coral group-hover:bg-coral/5 transition-all">
+              <div className="relative aspect-video max-h-48 mb-6 bg-white rounded-2xl border-2 border-dashed border-coral/30 flex flex-col items-center justify-center group-hover:border-coral group-hover:bg-coral/5 transition-all">
                 <Upload className="w-12 h-12 text-coral mb-3 group-hover:scale-110 transition-transform" />
                 <div className="bg-coral hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg flex items-center gap-2 transition-colors">
                   Select Photo
@@ -79,7 +79,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
             </div>
 
             {/* Visual: Processing Animation */}
-            <div className="relative h-48 mb-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl overflow-hidden">
+            <div className="relative aspect-video max-h-48 mb-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl overflow-hidden">
               <img
                 src="/how-it-works/after.jpg"
                 alt="AI Processing"
@@ -114,7 +114,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
             </div>
 
             {/* Visual: Phone Mockup with Result */}
-            <div className="relative h-48 mb-6 flex items-center justify-center">
+            <div className="relative aspect-video max-h-48 mb-6 flex items-center justify-center">
               <div className="w-32 h-48 bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border-4 border-gray-800 relative">
                 {/* Phone Screen */}
                 <img

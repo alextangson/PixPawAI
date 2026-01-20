@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: GalleryImagePageProps): Promi
   const supabase = await createClient();
   const { data: image } = await supabase
     .from('generations')
-    .select('title, alt_text, output_url, style, pet_type, prompt')
+    .select('title, alt_text, output_url, share_card_url, style, pet_type, prompt')
     .eq('id', id)
     .eq('is_public', true)
     .single();
@@ -34,6 +34,11 @@ export async function generateMetadata({ params }: GalleryImagePageProps): Promi
   const title = image.title || 'AI Pet Portrait';
   const description = image.alt_text || image.prompt?.substring(0, 160) || 'AI generated pet portrait in stunning artistic style';
 
+  // Use Art Card for social sharing if available, fallback to original image
+  const ogImage = image.share_card_url || image.output_url;
+  const ogWidth = image.share_card_url ? 2000 : 1024;
+  const ogHeight = image.share_card_url ? 2400 : 1024;
+
   return {
     title: `${title} - PixPaw AI Gallery`,
     description,
@@ -42,9 +47,9 @@ export async function generateMetadata({ params }: GalleryImagePageProps): Promi
       description,
       images: [
         {
-          url: image.output_url,
-          width: 1024,
-          height: 1024,
+          url: ogImage,
+          width: ogWidth,
+          height: ogHeight,
           alt: image.alt_text || title,
         },
       ],
@@ -54,7 +59,7 @@ export async function generateMetadata({ params }: GalleryImagePageProps): Promi
       card: 'summary_large_image',
       title: `${title} - PixPaw AI`,
       description,
-      images: [image.output_url],
+      images: [ogImage],
     },
     alternates: {
       canonical: `https://pixpawai.com/${lang}/gallery/${id}`,

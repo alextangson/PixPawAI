@@ -30,6 +30,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: Loc
       description: 'Discover stunning AI-generated pet portraits in Pixar style',
       type: 'website',
     },
+    alternates: {
+      canonical: `https://pixpawai.com/${lang}/gallery`,
+    },
   };
 }
 

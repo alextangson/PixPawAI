@@ -9,6 +9,7 @@ import { WallOfLove } from '@/components/wall-of-love'
 import { FAQSection } from '@/components/faq-section'
 import { FinalCta } from '@/components/final-cta'
 import { UploadModalWizard } from '@/components/upload-modal-wizard'
+import { HomeSchema } from '@/components/home-schema'
 import { type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
 import { useParams } from 'next/navigation'
@@ -109,10 +110,10 @@ export default function Home() {
 
   if (!dict) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-cream">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-coral border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-base text-gray-600 font-medium">Loading amazing pet portraits...</p>
         </div>
       </div>
     )
@@ -120,6 +121,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
+      {/* Structured Data for SEO */}
+      <HomeSchema 
+        lang={lang}
+        faqs={dict.faq?.items?.map((item: any) => ({
+          question: item.question,
+          answer: item.answer
+        }))}
+      />
+      
       {/* Hero Section */}
       <HeroSection dict={dict} onOpenUpload={() => handleOpenUpload()} lang={lang} />
       

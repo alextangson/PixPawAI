@@ -111,10 +111,59 @@ export default async function RefundPage({
           </section>
 
           <section className="pt-6 border-t">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Credit Pack Purchases</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Important Notice</h3>
+                <p className="leading-relaxed">
+                  Credit pack purchases (Starter, Pro, Master) are <strong>final and non-refundable</strong>. 
+                  This is because credits are delivered instantly and can be used immediately.
+                </p>
+              </div>
+              
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <p className="text-blue-900 font-medium">
+                  💡 However, you can get individual generation refunds! If you're not satisfied with a specific 
+                  generation, click "Not quite" and we'll refund that 1 credit so you can try again.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Exceptional Circumstances</h3>
+                <p className="leading-relaxed">
+                  In rare cases of technical issues or duplicate charges, we may issue credit pack refunds 
+                  at our discretion. Contact support with your PayPal transaction ID.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="pt-6 border-t">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">PayPal Refund Processing</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Refund Timeline</h3>
+                <p className="leading-relaxed">
+                  If a refund is approved, it will be processed through PayPal within 3-5 business days. 
+                  The refund will appear in your PayPal account or original payment method.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Automatic vs Manual Refunds</h3>
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
+                  <li><strong>Generation refunds:</strong> Automatic and instant (credit restored immediately)</li>
+                  <li><strong>Payment refunds:</strong> Manual review required, processed within 3-5 business days</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section className="pt-6 border-t">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Payment Disputes</h2>
             <p className="leading-relaxed">
               If you believe you were charged incorrectly, please contact us at support@pixpawai.com 
-              within 30 days of the charge. Include your transaction ID and reason for dispute.
+              within 30 days of the charge. Include your PayPal transaction ID and reason for dispute.
             </p>
           </section>
 

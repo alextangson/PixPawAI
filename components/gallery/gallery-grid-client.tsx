@@ -476,63 +476,63 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
                 {selectedImage.title || 'AI Pet Portrait'}
               </DialogTitle>
               
-              {/* Compact Vertical Layout */}
-              <div className="relative max-h-[95vh] overflow-y-auto">
+              {/* Compact Vertical Layout - No Scroll */}
+              <div className="relative flex flex-col max-h-[90vh]">
                 {/* Close Button */}
                 <button
                   onClick={handleCloseModal}
-                  className="absolute top-4 right-4 z-50 bg-white/90 hover:bg-white rounded-full p-2.5 shadow-lg transition-all"
+                  className="absolute top-3 right-3 z-50 bg-white/90 hover:bg-white rounded-full p-2.5 shadow-lg transition-all touch-target"
                   aria-label="Close dialog"
                 >
                   <X className="w-5 h-5 text-gray-700" />
                 </button>
 
-                {/* Main Image - Optimized for square images */}
-                <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+                {/* Main Image - Flexible Height */}
+                <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-3 sm:p-4 md:p-5 flex items-center justify-center flex-shrink min-h-0">
                   <img
                     src={selectedImage.output_url}
                     alt={selectedImage.alt_text || selectedImage.title || 'AI generated pet portrait'}
-                    className="w-full max-h-[55vh] object-contain rounded-xl shadow-lg"
+                    className="w-full max-h-[35vh] sm:max-h-[40vh] md:max-h-[45vh] h-auto object-contain rounded-xl shadow-lg"
                   />
                 </div>
 
-                {/* Content Section */}
-                <div className="p-6 space-y-4">
+                {/* Content Section - Fixed Height */}
+                <div className="p-3 sm:p-4 md:p-5 space-y-2 sm:space-y-3 flex-shrink-0 bg-white">
                   {/* Stats Row - Compact */}
-                  <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Eye className="w-5 h-5" />
-                        <span className="text-sm font-medium">{selectedImage.views ?? 0}</span>
+                  <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <Eye className="w-4 h-4" />
+                        <span className="text-xs sm:text-sm font-medium">{selectedImage.views ?? 0}</span>
                       </div>
                       <button
                         onClick={handleLike}
                         disabled={hasLiked.has(selectedImage.id)}
-                        className={`flex items-center gap-2 transition-all ${
+                        className={`flex items-center gap-1.5 transition-all ${
                           hasLiked.has(selectedImage.id)
                             ? 'text-pink-600 cursor-not-allowed'
                             : 'text-gray-600 hover:text-pink-600 cursor-pointer'
                         }`}
                       >
-                        <Heart className={`w-5 h-5 ${hasLiked.has(selectedImage.id) ? 'fill-pink-600' : ''}`} />
-                        <span className="text-sm font-medium">{selectedImage.likes ?? 0}</span>
+                        <Heart className={`w-4 h-4 ${hasLiked.has(selectedImage.id) ? 'fill-pink-600' : ''}`} />
+                        <span className="text-xs sm:text-sm font-medium">{selectedImage.likes ?? 0}</span>
                       </button>
                     </div>
                     
-                    {/* Logo - Double Size */}
+                    {/* Logo - Compact */}
                     <img 
                       src="/brand/logo-orange.svg" 
                       alt="PixPawAI" 
-                      className="h-16 w-auto"
+                      className="h-10 sm:h-12 w-auto"
                     />
                   </div>
 
-                  {/* Title & Style Tag (Text Only) */}
+                  {/* Title & Style Tag */}
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-1">
                       {selectedImage.title || 'Untitled'}
                     </h2>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-500 text-xs sm:text-sm">
                       Style: <span className="text-orange-600 font-semibold">{selectedImage.style}</span>
                     </p>
                   </div>
@@ -540,9 +540,9 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
                   {/* Remix Button */}
                   <button
                     onClick={handleRemixStyle}
-                    className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
                   >
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                     Remix this Style
                   </button>
                 </div>

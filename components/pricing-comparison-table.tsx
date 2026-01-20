@@ -212,11 +212,11 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
       </div>
 
       {/* Mobile Cards */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-3 sm:space-y-4">
         {['free', 'starter', 'pro', 'master'].map((tier) => (
           <div
             key={tier}
-            className={`bg-white rounded-xl shadow-lg p-6 border-2 ${
+            className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 border-2 ${
               tier === 'pro'
                 ? 'border-coral'
                 : tier === 'master'

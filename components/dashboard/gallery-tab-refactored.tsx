@@ -301,6 +301,9 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
               </DialogDescription>
             </DialogHeader>
           </div>
+          <div className="sr-only">
+            <DialogDescription>Share your pet portrait to the public gallery and get a free credit reward</DialogDescription>
+          </div>
           
           {/* Input Section */}
           <div className="space-y-6">
@@ -380,6 +383,9 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
               </DialogHeader>
             </div>
           </div>
+          <div className="sr-only">
+            <DialogDescription>Permanently delete this pet portrait from your gallery</DialogDescription>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6">
@@ -444,6 +450,9 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
               Performance metrics for your shared artwork
             </DialogDescription>
           </DialogHeader>
+          <div className="sr-only">
+            <DialogDescription>View analytics and performance metrics for your shared pet portrait</DialogDescription>
+          </div>
 
           {selectedGenerationForAnalytics && (
             <div className="space-y-4">
@@ -512,7 +521,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
       </Dialog>
 
       {/* Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6">
         {succeededGenerations.map((generation) => (
           <div
             key={generation.id}
@@ -526,7 +535,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                 fill
                 className="object-cover"
                 loading="lazy"
-                unoptimized
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
               />
               
               {/* Delete Menu (Top Right) - Destructive actions only */}
@@ -546,9 +555,9 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
             </div>
             
             {/* Info & Actions */}
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               {/* Date & Status */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 min-h-[24px]">
                 <span className="text-xs text-gray-500" suppressHydrationWarning>
                   {new Date(generation.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -575,32 +584,40 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                 )}
               </div>
 
-              {/* Title */}
-              {generation.title && (
-                <p className="text-sm font-medium text-gray-800 mb-3 line-clamp-1">
-                  {generation.title}
-                </p>
-              )}
+              {/* Title - Always reserve space */}
+              <div className="mb-2 sm:mb-3 min-h-[20px]">
+                {generation.title ? (
+                  <p className="text-xs sm:text-sm font-medium text-gray-800 line-clamp-1">
+                    {generation.title}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">No title</p>
+                )}
+              </div>
 
-              {/* Stats (if public) */}
-              {generation.is_public && (
-                <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                  <span className="flex items-center gap-1">
-                    <Eye className="w-3.5 h-3.5" />
-                    {generation.views ?? 0}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Heart className="w-3.5 h-3.5" />
-                    {generation.likes ?? 0}
-                  </span>
-                </div>
-              )}
+              {/* Stats - Always reserve space for consistent height */}
+              <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 min-h-[20px]">
+                {generation.is_public ? (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5" />
+                      {generation.views ?? 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Heart className="w-3.5 h-3.5" />
+                      {generation.likes ?? 0}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-gray-400">Not shared yet</span>
+                )}
+              </div>
 
-              {/* Action Buttons - PERMANENT 3-BUTTON LAYOUT */}
+              {/* Action Buttons - Responsive 3-BUTTON LAYOUT */}
               <div className="flex gap-2">
                 {generation.status === 'succeeded' ? (
                   <>
-                    {/* Button 1: Download (TOOLS - Always Active) */}
+                    {/* Button 1: Download */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -609,7 +626,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                           className="flex-1"
                         >
                           <Download className="w-4 h-4 mr-1" />
-                          Download
+                          <span className="text-xs">DL</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
@@ -627,7 +644,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                       </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Button 2: Status (Toggle - Share or Download Card) */}
+                    {/* Button 2: Share or Card */}
                     {!generation.is_public ? (
                       <Button
                         size="sm"
@@ -636,7 +653,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                         onClick={() => handleShareClick(generation)}
                       >
                         <Share2 className="w-4 h-4 mr-1" />
-                        Share
+                        <span className="text-xs">Share</span>
                       </Button>
                     ) : (
                       <Button
@@ -649,11 +666,11 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                         }}
                       >
                         <Sparkles className="w-4 h-4 mr-1" />
-                        Card
+                        <span className="text-xs">Card</span>
                       </Button>
                     )}
 
-                    {/* Button 3: Shop (COMMERCE - Always Active) */}
+                    {/* Button 3: Shop */}
                     <Button
                       size="sm"
                       variant="outline"
@@ -661,7 +678,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                       onClick={() => handleShopClick(generation)}
                     >
                       <ShoppingBag className="w-4 h-4 mr-1" />
-                      Shop
+                      <span className="text-xs">Shop</span>
                     </Button>
                   </>
                 ) : generation.status === 'processing' ? (

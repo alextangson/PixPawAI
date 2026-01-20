@@ -16,17 +16,17 @@ interface WallOfLoveProps {
 
 export function WallOfLove({ dict }: WallOfLoveProps) {
   return (
-    <section className="py-20 bg-cream">
+    <section className="py-10 sm:py-12 md:py-14 lg:py-16 xl:py-18 2xl:py-20 bg-cream">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Section Title */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+        <div className="text-center mb-6 sm:mb-8 md:mb-10 lg:mb-10">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-bold mb-3 sm:mb-4">
             {dict.testimonials.title}
           </h2>
         </div>
 
         {/* Masonry Grid of Reviews */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
           {dict.testimonials.reviews.map((review, index) => (
             <div
               key={index}

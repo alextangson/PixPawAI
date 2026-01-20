@@ -164,18 +164,18 @@ export function ArtCardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-[90vw] lg:max-w-[1200px] h-auto max-h-[90vh] !p-0 overflow-y-auto !block">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-y-auto !block">
         {/* Hidden title for screen readers */}
         <DialogTitle className="sr-only">Customize Your Art Card</DialogTitle>
         
         {/* Modal Layout: Vertical on Mobile, Side-by-Side on Desktop */}
         <div className="flex flex-col md:flex-row h-full w-full">
           
-          {/* Left Panel: Preview Area (55% on desktop) */}
-          <div className="md:w-[55%] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6 sm:p-8 lg:p-12 relative min-h-[40vh] max-h-[50vh] md:min-h-full md:max-h-full">
+          {/* Left Panel: Preview Area */}
+          <div className="md:w-1/2 lg:w-[55%] xl:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 sm:p-6 md:p-6 lg:p-8 relative min-h-[50vh] max-h-[60vh] sm:min-h-[60vh] md:min-h-full md:max-h-none">
             <div className="w-full max-w-lg">
               {/* Simulated Card with CSS */}
-              <div className="bg-white p-6 md:p-8 rounded-xl shadow-2xl">
+              <div className="bg-white p-4 sm:p-6 md:p-6 lg:p-8 rounded-xl shadow-2xl">
                 {/* Image */}
                 <div className="relative aspect-square mb-4 overflow-hidden rounded">
                   <img
@@ -186,7 +186,7 @@ export function ArtCardModal({
                 </div>
 
                 {/* Footer - Redesigned Layout */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-2.5">
                   {/* Title & Date */}
                   <div>
                     <div className="font-bold text-gray-900 truncate text-sm">
@@ -201,7 +201,7 @@ export function ArtCardModal({
                   <div className="border-t border-gray-200"></div>
 
                   {/* Slogan - Georgia Italic (matches downloaded card exactly) */}
-                  <div className="text-gray-700 text-xl leading-relaxed italic min-h-[3rem] flex items-center justify-center text-center" style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}>
+                  <div className="text-gray-700 text-base sm:text-lg lg:text-xl leading-snug sm:leading-relaxed italic min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center text-center" style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}>
                     {selectedSlogan}
                   </div>
 
@@ -209,11 +209,11 @@ export function ArtCardModal({
                   <div className="border-t border-gray-200"></div>
 
                   {/* Logo + URL in Bottom Right (Stacked) */}
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-0.5 sm:gap-1">
                     <img 
                       src={BRANDING.logos.svg.color} 
                       alt="PixPaw AI"
-                      className="h-12 opacity-90"
+                      className="h-10 sm:h-12 opacity-90"
                     />
                     <span className="text-gray-600 text-xs font-medium">
                       PixPawAI.com
@@ -224,22 +224,22 @@ export function ArtCardModal({
             </div>
           </div>
 
-          {/* Right Panel: Controls & Actions (45% on desktop) */}
-          <div className="md:w-[45%] bg-white p-6 sm:p-8 lg:p-10 overflow-y-auto">
+          {/* Right Panel: Controls & Actions */}
+          <div className="md:w-1/2 lg:w-[45%] xl:w-2/5 bg-white p-4 sm:p-6 md:p-6 lg:p-8 overflow-y-auto">
             
             {/* Header */}
-            <div className="mb-10">
-              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl lg:text-2xl font-bold text-gray-900 mb-1.5 sm:mb-2">
                 Customize Your Art Card
               </h2>
-              <p className="text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Personalize before downloading
               </p>
             </div>
 
             {/* Title Input */}
-            <div className="mb-7">
-              <label className="block text-base lg:text-lg font-semibold text-gray-700 mb-2">
+            <div className="mb-5 sm:mb-6">
+              <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                 Artwork Title
               </label>
               <input
@@ -256,8 +256,8 @@ export function ArtCardModal({
             </div>
 
             {/* Slogan Selector */}
-            <div className="mb-10">
-              <label className="block text-base lg:text-lg font-semibold text-gray-700 mb-2">
+            <div className="mb-5 sm:mb-6">
+              <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                 Cinematic Slogan
               </label>
               <div className="relative">
@@ -281,7 +281,7 @@ export function ArtCardModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 mb-10">
+            <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
               <Button
                 onClick={handleDownload}
                 disabled={isDownloading || !customTitle.trim()}
@@ -310,12 +310,12 @@ export function ArtCardModal({
             </div>
 
             {/* Social Share Section */}
-            <div className="text-center pt-8 border-t border-gray-200">
-              <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="text-center pt-5 sm:pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
-                  className="group p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="group p-2.5 sm:p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                   title="Copy Link"
                 >
                   {isCopied ? (

@@ -69,11 +69,49 @@ export default async function PrivacyPage({
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Cookies</h2>
-            <p className="leading-relaxed">
-              We use cookies to maintain your session and improve your experience. 
-              By using PixPaw AI, you consent to our use of cookies as described in this policy.
-            </p>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Cookies and Tracking Technologies</h2>
+            <div className="space-y-4">
+              <p className="leading-relaxed">
+                We use cookies and similar technologies to enhance your experience, maintain security, 
+                and improve our services. By using PixPaw AI, you consent to our use of cookies.
+              </p>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">6.1 Essential Cookies</h3>
+                <p className="leading-relaxed">
+                  Required for the website to function properly:
+                </p>
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-sm">
+                  <li><strong>Authentication:</strong> Keep you logged in (Supabase auth tokens)</li>
+                  <li><strong>Session:</strong> Remember your preferences and settings</li>
+                  <li><strong>Security:</strong> Protect against fraud and abuse</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">6.2 Payment Cookies</h3>
+                <p className="leading-relaxed">
+                  When you make a payment through PayPal, PayPal may set cookies to process your transaction 
+                  securely. These cookies are governed by PayPal's privacy policy.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">6.3 Performance Cookies (Optional)</h3>
+                <p className="leading-relaxed">
+                  We may use analytics cookies to understand how users interact with our service and 
+                  improve our features. You can opt out of these through your browser settings.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">6.4 Managing Cookies</h3>
+                <p className="leading-relaxed">
+                  You can control cookies through your browser settings. However, disabling essential 
+                  cookies may affect your ability to use certain features of PixPaw AI.
+                </p>
+              </div>
+            </div>
           </section>
 
           <section>

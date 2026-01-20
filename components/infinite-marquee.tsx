@@ -27,7 +27,7 @@ const petCards: PolaroidCard[] = [
 
 function PolaroidCard({ petName, imageUrl }: PolaroidCard) {
   return (
-    <div className="relative flex-shrink-0 w-48 mx-4">
+    <div className="relative flex-shrink-0 w-36 sm:w-40 md:w-48 mx-3 sm:mx-4">
       {/* Polaroid frame with shadow */}
       <div className="bg-white p-3 pb-12 shadow-md rounded-sm transform rotate-2 hover:rotate-0 transition-transform duration-300">
         {/* Photo */}

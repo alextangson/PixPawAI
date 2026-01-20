@@ -59,7 +59,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo - Left */}
           <Link href={`/${lang}`} className="flex items-center gap-2 group">
-            <div className="relative w-40 h-14 sm:w-48 sm:h-16 group-hover:scale-105 transition-transform">
+            <div className="relative w-36 h-12 sm:w-40 sm:h-14 md:w-44 md:h-15 lg:w-48 lg:h-16 xl:w-52 xl:h-17 group-hover:scale-105 transition-transform">
               <Image 
                 src="/brand/logo-orange.svg" 
                 alt="PixPaw AI Logo" 

@@ -19,6 +19,15 @@ const config = {
       },
     },
     extend: {
+      screens: {
+        'xs': '475px',      // 大手机 (iPhone 14 Pro Max横屏等)
+        'sm': '640px',      // 小平板
+        'md': '768px',      // 平板
+        'lg': '1024px',     // 小笔记本
+        'xl': '1280px',     // 桌面
+        '2xl': '1536px',    // 大桌面
+        '3xl': '1920px',    // 2K屏幕
+      },
       fontFamily: {
         sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],

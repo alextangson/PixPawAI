@@ -10,7 +10,7 @@ import { PricingComparisonTable } from '@/components/pricing-comparison-table';
 import { StatsBadges, TestimonialCarousel } from '@/components/pricing-social-proof';
 import { UpgradeModal } from '@/components/pricing-upgrade-modal';
 import { PricingCountdown, LimitedSlots } from '@/components/pricing-countdown';
-import { PricingFakeDoorModal } from '@/components/pricing-fake-door-modal';
+import { PaymentModal } from '@/components/payment/payment-modal';
 import { trackPricingPageView, trackPricingCTAClick } from '@/lib/pricing-analytics';
 import { ReferralLinkModal } from '@/components/referral-link-modal';
 
@@ -21,9 +21,9 @@ export default function PricingPage() {
   
   const [dict, setDict] = useState<any>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showFakeDoor, setShowFakeDoor] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<{tier: 'starter' | 'pro' | 'master', price: string} | null>(null);
+  const [selectedTier, setSelectedTier] = useState<{tier: 'starter' | 'pro' | 'master', price: string, credits: number} | null>(null);
 
   useEffect(() => {
     getDictionary(lang).then(setDict);
@@ -32,16 +32,17 @@ export default function PricingPage() {
     trackPricingPageView('optimized');
   }, [lang]);
 
-  const handleStartCreating = (tier: 'free' | 'starter' | 'pro' | 'master' = 'free', price?: string) => {
+  const handleStartCreating = (tier: 'free' | 'starter' | 'pro' | 'master' = 'free', price?: string, credits?: number) => {
     trackPricingCTAClick(tier, 'card', 'optimized');
     
     if (tier === 'free') {
       // Free tier直接跳转到上传
       router.push(`/${lang}#upload`);
     } else {
-      // 付费套餐显示fake door
-      setSelectedTier({ tier: tier as 'starter' | 'pro' | 'master', price: price || '' });
-      setShowFakeDoor(true);
+      // 付费套餐显示真实支付弹窗
+      const tierCredits = credits || (tier === 'starter' ? 15 : tier === 'pro' ? 50 : 100);
+      setSelectedTier({ tier: tier as 'starter' | 'pro' | 'master', price: price || '', credits: tierCredits });
+      setShowPaymentModal(true);
     }
   };
 
@@ -62,9 +63,9 @@ export default function PricingPage() {
     return (
       <>
         <FreeCard dict={dict} onCTA={() => handleStartCreating('free')} />
-        <StarterCard dict={dict} onCTA={() => handleStartCreating('starter', dict.pricing.cards.starter.price)} />
-        <ProCard dict={dict} onCTA={() => handleStartCreating('pro', dict.pricing.cards.pro.price)} featured />
-        <MasterCard dict={dict} onCTA={() => handleStartCreating('master', dict.pricing.cards.master.salePrice)} />
+        <StarterCard dict={dict} onCTA={() => handleStartCreating('starter', dict.pricing.cards.starter.price, 15)} />
+        <ProCard dict={dict} onCTA={() => handleStartCreating('pro', dict.pricing.cards.pro.price, 50)} featured />
+        <MasterCard dict={dict} onCTA={() => handleStartCreating('master', dict.pricing.cards.master.salePrice, 200)} />
       </>
     );
   };
@@ -81,7 +82,7 @@ export default function PricingPage() {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-6xl font-extrabold text-gray-900 mb-6">
               {dict.pricing.title}
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-6">
@@ -109,14 +110,14 @@ export default function PricingPage() {
 
           {/* Mobile: Vertical stack with Pro first for emphasis */}
           <div className="md:hidden space-y-6 max-w-md mx-auto">
-            <ProCard dict={dict} onCTA={() => handleStartCreating('pro', dict.pricing.cards.pro.price)} featured />
-            <MasterCard dict={dict} onCTA={() => handleStartCreating('master', dict.pricing.cards.master.salePrice)} />
-            <StarterCard dict={dict} onCTA={() => handleStartCreating('starter', dict.pricing.cards.starter.price)} />
+            <ProCard dict={dict} onCTA={() => handleStartCreating('pro', dict.pricing.cards.pro.price, 50)} featured />
+            <MasterCard dict={dict} onCTA={() => handleStartCreating('master', dict.pricing.cards.master.salePrice, 200)} />
+            <StarterCard dict={dict} onCTA={() => handleStartCreating('starter', dict.pricing.cards.starter.price, 15)} />
             <FreeCard dict={dict} onCTA={() => handleStartCreating('free')} />
           </div>
           
           {/* Mobile Sticky CTA Bar */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-coral shadow-2xl p-4 z-50 safe-area-inset-bottom">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-coral shadow-2xl p-4 pb-safe z-50">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
                 <div className="text-xs text-gray-600 font-medium">Best Value</div>
@@ -124,7 +125,7 @@ export default function PricingPage() {
                 <div className="text-sm text-coral font-semibold">{dict.pricing.cards.pro.price}</div>
               </div>
               <Button
-                onClick={() => handleStartCreating('pro', dict.pricing.cards.pro.price)}
+                onClick={() => handleStartCreating('pro', dict.pricing.cards.pro.price, 50)}
                 className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold px-6 py-3 shadow-xl"
               >
                 Get Pro
@@ -254,13 +255,14 @@ export default function PricingPage() {
         dict={dict}
       />
 
-      {/* Fake Door Modal */}
+      {/* Payment Modal */}
       {selectedTier && (
-        <PricingFakeDoorModal
-          isOpen={showFakeDoor}
-          onClose={() => setShowFakeDoor(false)}
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
           tier={selectedTier.tier}
           price={selectedTier.price}
+          credits={selectedTier.credits}
         />
       )}
 
@@ -433,7 +435,7 @@ function StarterCard({ dict, onCTA }: { dict: any; onCTA: () => void }) {
 function ProCard({ dict, onCTA, featured }: { dict: any; onCTA: () => void; featured?: boolean }) {
   return (
     <div className={`relative bg-gradient-to-br from-orange-50 via-orange-50/50 to-white rounded-2xl border-3 border-coral p-6 shadow-2xl ${
-      featured ? 'md:scale-[1.08]' : 'md:scale-[1.08]'
+      featured ? 'md:scale-105 lg:scale-[1.08] xl:scale-105' : 'md:scale-105 lg:scale-[1.08] xl:scale-105'
     } hover:shadow-3xl transition-all duration-300 flex flex-col z-10`}>
       {/* Best Value Badge - More Prominent */}
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
@@ -521,7 +523,7 @@ function ProCard({ dict, onCTA, featured }: { dict: any; onCTA: () => void; feat
 
 function MasterCard({ dict, onCTA }: { dict: any; onCTA: () => void }) {
   return (
-    <div className="relative bg-white rounded-2xl border-2 border-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col md:scale-[1.03]">
+    <div className="relative bg-white rounded-2xl border-2 border-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col md:scale-[1.02] lg:scale-[1.03] xl:scale-100">
       {/* Professional Badge */}
       <div className="mb-3">
         <span className="inline-block bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-full">

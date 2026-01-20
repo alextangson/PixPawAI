@@ -851,44 +851,75 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   // ============================================
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white shadow-2xl w-full h-[95vh] sm:h-auto max-h-[95vh] overflow-hidden flex flex-col max-w-7xl rounded-t-3xl sm:rounded-3xl p-4 sm:p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            {step === 'configure' && (
-              <button
-                onClick={() => setStep('upload')}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-            )}
-            <div>
-              <h2 className="text-2xl font-serif font-bold text-gray-900">
-                {step === 'upload' && 'Upload Your Photo'}
-                {step === 'quality-check' && 'Checking Photo Quality'}
-                {step === 'configure' && 'Configure Your Portrait'}
-                {step === 'generating' && 'Creating Your Portrait...'}
-              </h2>
-              <p className="text-sm text-gray-600 font-sans">
-                {step === 'upload' && 'Start by uploading a photo of your pet'}
-                {step === 'quality-check' && 'Making sure your photo is ready for the best results'}
-                {step === 'configure' && 'Customize the style and prompt'}
-                {step === 'generating' && 'This may take 10-30 seconds...'}
-              </p>
+      <div className="bg-white shadow-2xl w-full max-h-[98vh] overflow-hidden flex flex-col max-w-7xl rounded-t-3xl sm:rounded-3xl p-4 sm:p-6">
+        {/* Header with Progress Indicator */}
+        <div className="bg-white border-b border-gray-200">
+          {/* Progress Steps - Mobile Only */}
+          <div className="sm:hidden px-4 pt-4 pb-2">
+            <div className="flex items-center justify-between mb-3">
+              {['upload', 'quality-check', 'configure', 'generating'].map((s, idx) => {
+                const stepIndex = ['upload', 'quality-check', 'configure', 'generating'].indexOf(step)
+                const currentStepIndex = ['upload', 'quality-check', 'configure', 'generating'].indexOf(s)
+                const isActive = currentStepIndex === stepIndex
+                const isCompleted = currentStepIndex < stepIndex
+                
+                return (
+                  <div key={s} className="flex items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                      isActive ? 'bg-coral text-white scale-110' : 
+                      isCompleted ? 'bg-green-500 text-white' : 
+                      'bg-gray-200 text-gray-400'
+                    }`}>
+                      {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+                    </div>
+                    {idx < 3 && (
+                      <div className={`flex-1 h-1 mx-1 rounded-full transition-all ${
+                        isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                      }`} />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            disabled={step === 'generating'}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
+          
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {step === 'configure' && (
+                <button
+                  onClick={() => setStep('upload')}
+                  className="p-3 sm:p-2 touch-target hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center shrink-0"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-600" />
+                </button>
+              )}
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-serif font-bold text-gray-900 truncate">
+                  {step === 'upload' && 'Upload Your Photo'}
+                  {step === 'quality-check' && 'Checking Photo Quality'}
+                  {step === 'configure' && 'Configure Your Portrait'}
+                  {step === 'generating' && 'Creating Your Portrait...'}
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-600 font-sans hidden sm:block">
+                  {step === 'upload' && 'Start by uploading a photo of your pet'}
+                  {step === 'quality-check' && 'Making sure your photo is ready for the best results'}
+                  {step === 'configure' && 'Customize the style and prompt'}
+                  {step === 'generating' && 'This may take 10-30 seconds...'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={step === 'generating'}
+              className="p-3 sm:p-2 touch-target hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
+            >
+              <X className="w-6 h-6 sm:w-5 sm:h-5 text-gray-600" />
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-hidden overflow-y-auto p-4 sm:p-6">
+        {/* Content - Unified Background */}
+        <div className="flex-1 overflow-hidden overflow-y-auto p-4 sm:p-6 bg-gradient-to-b from-white to-gray-50">
           {/* Error Display */}
           {error && (
             <div className={`mb-6 rounded-xl p-6 ${
@@ -1047,7 +1078,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
           {/* STEP A: UPLOAD */}
           {step === 'upload' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               {/* Rate Limit Warning */}
               {isUploadBlocked && uploadCooldown > 0 && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 flex items-center gap-3">
@@ -1081,23 +1112,23 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div className="text-center">
-                  <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-coral transition-colors" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <Upload className="w-12 sm:w-16 h-12 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4 group-hover:text-coral transition-colors" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                     Drop your pet's photo here
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
                     or click to browse
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     JPG, PNG up to 10MB
                   </p>
                 </div>
               </div>
 
               {/* Tips */}
-              <div className="bg-blue-50 rounded-xl p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Tips for best results:</h4>
-                <ul className="space-y-1 text-sm text-blue-800">
+              <div className="bg-blue-50 rounded-xl p-3 sm:p-4">
+                <h4 className="text-sm sm:text-base font-semibold text-blue-900 mb-2">Tips for best results:</h4>
+                <ul className="space-y-1 text-xs sm:text-sm text-blue-800">
                   <li>• Clear, well-lit photos work best</li>
                   <li>• Face should be visible and in focus</li>
                   <li>• Avoid blurry or dark images</li>
@@ -1108,7 +1139,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
           {/* STEP A.5: QUALITY CHECK */}
           {step === 'quality-check' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               {/* Checking State */}
               {isCheckingQuality && (
                 <div className="flex flex-col items-center py-12">
@@ -1254,15 +1285,33 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
           )}
 
-          {/* STEP B: CONFIGURE - Double Column Layout */}
+          {/* STEP B: CONFIGURE - Optimized Layout */}
           {step === 'configure' && (
-            <div className="flex flex-col lg:flex-row h-full min-h-[700px] -m-6">
+            <div className="flex flex-col overflow-hidden -m-6 animate-in fade-in slide-in-from-right-4 duration-300">
               
-              {/* LEFT PANEL: Image Preview + Pet Name (50%) */}
-              <div className="lg:w-1/2 bg-gradient-to-br from-gray-50 to-gray-100 p-6 lg:p-8 flex flex-col items-center justify-center">
+              {/* MOBILE: Pet Name at Top */}
+              <div className="lg:hidden bg-gradient-to-b from-white to-gray-50 px-4 py-3 border-b border-gray-100">
+                <label className="block mb-2">
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    Your Pet's Name
+                    <span className="text-[10px] sm:text-xs font-normal text-gray-500">(Optional)</span>
+                  </span>
+                </label>
+                <Input
+                  value={petName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPetName(e.target.value)}
+                  placeholder="e.g., Max, Luna, Bella..."
+                  className="text-sm sm:text-base h-11"
+                />
+              </div>
+              
+              <div className="flex flex-col lg:flex-row overflow-hidden flex-1">
+              
+              {/* LEFT PANEL: Image Preview (Desktop includes Pet Name) */}
+              <div className="lg:w-1/2 bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center overflow-y-auto lg:overflow-visible">
                 
                 {/* Image Preview */}
-                <div className="relative w-full max-w-md mb-6">
+                <div className="relative w-full max-w-md mb-4 lg:mb-6">
                   <img 
                     src={previewUrl} 
                     className="rounded-2xl shadow-2xl w-full"
@@ -1285,8 +1334,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </button>
               </div>
 
-                {/* Pet Name Input */}
-                <div className="w-full max-w-md">
+                {/* Pet Name Input - Desktop Only */}
+                <div className="hidden lg:block w-full max-w-md">
                   <label className="block mb-2">
                     <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       Your Pet's Name
@@ -1306,14 +1355,14 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               </div>
               
               {/* RIGHT PANEL: Style + Configuration (50%) */}
-              <div className="lg:w-1/2 bg-white p-6 lg:p-8 overflow-y-auto max-h-[700px]">
+              <div className="lg:w-1/2 bg-gradient-to-b from-white to-gray-50 p-4 sm:p-6 lg:p-8 overflow-y-auto flex-1 lg:max-h-[700px] xl:max-h-[750px] 2xl:max-h-[800px]">
 
               {/* Style Selector */}
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   {isStyleLocked && selectedStyle ? (
                     // Remix Mode: Show locked style with elegant display
                     <div>
-                      <h3 className="text-lg font-bold mb-3">Selected Style (Locked for Remix)</h3>
+                      <h3 className="text-base sm:text-lg font-bold mb-3">Selected Style (Locked for Remix)</h3>
                       <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4">
                         {(() => {
                           const style = STYLES.find(s => s.id === selectedStyle);
@@ -1346,20 +1395,20 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   ) : (
                     // Normal Mode: Full style selector
                     <>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-bold">Choose a Style</h3>
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <h3 className="text-base sm:text-lg font-bold">Choose a Style</h3>
                         {/* Removed Shuffle button - only 5 styles, all visible */}
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         {displayedStyles.map((style) => (
                           <button
                             key={style.id}
                             onClick={() => setSelectedStyle(style.id)}
                             className={cn(
-                              "relative rounded-xl overflow-hidden border-2 transition-all aspect-[4/3]",
+                              "relative rounded-xl overflow-hidden border-2 transition-all duration-300 aspect-[4/3] active:scale-95",
                               selectedStyle === style.id 
-                                ? "border-coral ring-2 ring-coral/20 scale-105" 
-                                : "border-gray-200 hover:border-gray-300"
+                                ? "border-coral ring-2 ring-coral/20 shadow-lg scale-105" 
+                                : "border-gray-200 hover:border-coral/30 shadow-md hover:shadow-lg"
                             )}
                           >
                             {style.src && style.src.trim() !== '' ? (
@@ -1369,11 +1418,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                                 <span className="text-gray-400 text-xs">No preview</span>
                               </div>
                             )}
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                              <p className="text-white text-xs font-medium truncate">{style.label}</p>
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2">
+                              <p className="text-white text-[10px] sm:text-xs font-semibold truncate drop-shadow-lg">{style.label}</p>
                             </div>
                             {selectedStyle === style.id && (
-                              <div className="absolute top-2 right-2 bg-coral text-white rounded-full p-1">
+                              <div className="absolute top-2 right-2 bg-gradient-to-br from-coral to-orange-600 text-white rounded-full p-1 shadow-lg animate-in zoom-in-50 duration-200">
                                 <CheckCircle className="w-4 h-4" />
                               </div>
                             )}
@@ -1384,19 +1433,19 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   )}
               </div>
 
-                {/* Aspect Ratio Selector - 3x2 Grid */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold mb-3">Output Size</h3>
-                  <div className="grid grid-cols-3 gap-2">
+                {/* Aspect Ratio Selector - Responsive Grid */}
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-bold mb-2 sm:mb-3">Output Size</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-2">
                     {aspectRatios.map((ratio) => (
                 <button
                         key={ratio.value}
                         onClick={() => setAspectRatio(ratio.value)}
                         className={cn(
-                          "flex flex-col items-center p-3 rounded-xl border-2 transition-all hover:scale-105",
+                          "flex flex-col items-center p-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95",
                           aspectRatio === ratio.value 
-                            ? "border-coral bg-coral/5" 
-                            : "border-gray-200 hover:border-gray-300"
+                            ? "border-coral bg-gradient-to-br from-coral/10 to-orange/5 shadow-md" 
+                            : "border-gray-200 hover:border-coral/30 hover:shadow-sm"
                         )}
                       >
                         <div
@@ -1407,65 +1456,85 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                           style={ratio.style}
                         />
                         <span className={cn(
-                          "text-xs font-medium text-center",
+                          "text-[10px] sm:text-xs font-medium text-center",
                           aspectRatio === ratio.value ? "text-coral" : "text-gray-700"
                         )}>
                           {ratio.label}
-                  </span>
-                        <span className="text-[10px] text-gray-500 mt-0.5">
+                        </span>
+                        <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">
                           {ratio.dimensions}
-                  </span>
+                        </span>
                 </button>
                     ))}
                   </div>
                 </div>
 
-                {/* AI Optimization Notice - Replaces manual slider */}
-                <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-bold text-gray-900 mb-1">
-                        🤖 AI-Optimized Parameters
-                      </h4>
-                      <p className="text-xs text-gray-700 leading-relaxed">
-                        Our system automatically selects the best generation parameters based on:
-                      </p>
-                      <ul className="mt-2 space-y-1 text-xs text-gray-600">
-                        <li>✓ Selected style (realistic vs artistic)</li>
-                        <li>✓ Detected pet features (heterochromia, patterns)</li>
-                        <li>✓ Image complexity (multiple pets, fur texture)</li>
-                      </ul>
-                      <div className="mt-3 bg-white rounded-lg p-2 text-xs text-center">
-                        <span className="text-gray-600">This ensures </span>
-                        <span className="font-bold text-blue-600">maximum similarity</span>
-                        <span className="text-gray-600"> to your pet!</span>
+                {/* AI Detection Results - Show Qwen Analysis */}
+                {qualityCheckResult && (
+                  <div className="mb-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 sm:p-4 border-2 border-green-200">
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-gray-900 mb-1">
+                          🎯 AI Photo Analysis Complete
+                        </h4>
+                        <div className="space-y-1.5 sm:space-y-2 text-xs text-gray-700">
+                          <div className="flex items-start gap-2">
+                            <span className="text-green-600 font-semibold shrink-0">Pet:</span>
+                            <span className="break-words">
+                              {qualityCheckResult.petType === 'dog' ? '🐕 Dog' : qualityCheckResult.petType === 'cat' ? '🐈 Cat' : '🐾 Pet'}
+                              {qualityCheckResult.breed && qualityCheckResult.breed !== 'unknown' && ` - ${qualityCheckResult.breed}`}
+                            </span>
+                          </div>
+                          {qualityCheckResult.detectedColors && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-green-600 font-semibold shrink-0">Colors:</span>
+                              <span className="break-words">{qualityCheckResult.detectedColors}</span>
+                            </div>
+                          )}
+                          {qualityCheckResult.complexPattern && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-green-600 font-semibold">Pattern:</span>
+                              <span>Complex fur pattern detected</span>
+                            </div>
+                          )}
+                          {qualityCheckResult.multiplePets > 1 && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-green-600 font-semibold">Pets:</span>
+                              <span>{qualityCheckResult.multiplePets} pets in photo</span>
+                            </div>
+                          )}
+                          <div className="mt-2 bg-white rounded-lg p-2 text-center">
+                            <span className="text-[10px] sm:text-xs text-gray-600">Parameters optimized for </span>
+                            <span className="text-[10px] sm:text-xs font-bold text-green-600">best accuracy</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
                 
                 {/* Prompt Input */}
-                <div className="mb-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                <div className="mb-4 sm:mb-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4 border border-gray-200">
                   <label className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-coral" />
-                    <span className="text-sm font-semibold text-gray-900">
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-coral" />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">
                       Customize Scene & Style
                     </span>
-                    <span className="text-xs text-gray-500 font-normal">(Optional)</span>
-                      </label>
+                    <span className="text-[10px] sm:text-xs text-gray-500 font-normal">(Optional)</span>
+                  </label>
                   <Input
                     value={userPrompt}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
                     placeholder="e.g., wearing a hat, on the beach, close-up portrait..."
-                    className="h-11 border-gray-300 focus:border-coral bg-white"
+                    className="text-sm sm:text-base h-11 border-gray-300 focus:border-coral bg-white"
                   />
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1.5 sm:mt-2">
                     Add accessories, change background, or adjust composition. Your pet's features stay the same!
-                    </p>
-                  </div>
+                  </p>
+                </div>
 
                 {/* AI Detected Features */}
                 {qualityCheckResult?.hasHeterochromia && (
@@ -1480,21 +1549,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                         <p className="text-xs text-blue-600 mt-1 italic">
                           Our system will automatically optimize parameters to preserve this unique feature.
                         </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
                 )}
               </div>
+            </div>
             </div>
           )}
 
           {/* STEP C: GENERATING */}
           {step === 'generating' && (
             <>
-            <div className="flex flex-col lg:flex-row gap-6 py-2">
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-center justify-center lg:h-[500px] xl:h-[550px] py-4 lg:py-0 animate-in fade-in zoom-in-95 duration-500">
               {/* LEFT PANEL: Original Image with Magic Effect */}
               <div className="lg:w-1/2 flex items-center justify-center">
-              <div className="w-full max-w-sm rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
+              <div className="w-full max-w-xs lg:max-w-sm rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
                 <div 
                   className="relative overflow-hidden"
                   style={{
@@ -1540,18 +1610,18 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               </div>
 
               {/* RIGHT PANEL: Progress + Fun Facts */}
-              <div className="lg:w-1/2 flex flex-col justify-center space-y-3 px-4">
+              <div className="lg:w-1/2 flex flex-col justify-center space-y-2 lg:space-y-3 px-4">
                 {/* Logo */}
                 <div className="flex justify-center">
                   <img 
                     src="/brand/logo-orange.svg" 
                     alt="PixPaw AI"
-                    className="h-12 opacity-90"
+                    className="h-10 lg:h-12 opacity-90"
                   />
                 </div>
                 
                 {/* Progress Bar */}
-                <div className="space-y-2">
+                <div className="space-y-1.5 lg:space-y-2">
                   <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="absolute top-0 left-0 h-full bg-gradient-to-r from-coral to-orange-600 rounded-full transition-all duration-300 ease-out"
@@ -1559,15 +1629,15 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     />
                   </div>
                   <div className="text-center">
-                    <p className="text-xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
-                    <p className="text-base text-gray-700 mt-1 font-sans">
+                    <p className="text-lg lg:text-xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
+                    <p className="text-sm lg:text-base text-gray-700 mt-1 font-sans">
                       {funMessages[messageIndex]}
                     </p>
                   </div>
                 </div>
 
                 {/* Fun Facts Section */}
-                <div className="bg-gradient-to-br from-coral/10 to-orange-100/50 rounded-lg p-3 border border-coral/20">
+                <div className="bg-gradient-to-br from-coral/10 to-orange-100/50 rounded-lg p-2.5 lg:p-3 border border-coral/20">
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 w-6 h-6 bg-coral rounded-full flex items-center justify-center">
                       <Sparkles className="w-3 h-3 text-white" />
@@ -1582,27 +1652,32 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </div>
 
                 {/* Configuration Summary */}
-                <div className="bg-white rounded-lg p-3 border border-gray-200 space-y-1.5">
+                <div className="bg-white rounded-lg p-2 lg:p-3 border border-gray-200 space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-600">Style</span>
-                    <span className="font-medium text-gray-900">{STYLES.find(s => s.id === selectedStyle)?.label || selectedStyle}</span>
+                    <span className="font-medium text-gray-900 truncate ml-2">{STYLES.find(s => s.id === selectedStyle)?.label || selectedStyle}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-600">Format</span>
                     <span className="font-medium text-gray-900">{aspectRatio}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">Realism</span>
-                    <span className="font-medium text-gray-900">{Math.round(strength * 100)}%</span>
-                  </div>
+                  {qualityCheckResult && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">Pet</span>
+                      <span className="font-medium text-gray-900 truncate ml-2">
+                        {qualityCheckResult.petType === 'dog' ? 'Dog' : qualityCheckResult.petType === 'cat' ? 'Cat' : 'Pet'}
+                        {qualityCheckResult.breed && qualityCheckResult.breed !== 'unknown' && ` - ${qualityCheckResult.breed}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Warning Text */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 max-w-md mx-auto mt-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 max-w-md mx-auto mt-2 lg:mt-4">
               <p className="text-xs text-amber-800 text-center">
-                ⚠️ <strong>Please keep this tab open.</strong> Good art takes time!
+                ⚠️ <strong>Keep this tab open.</strong> Good art takes time!
               </p>
               </div>
               
@@ -1659,11 +1734,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
         {/* Footer - Generate Button (only show in configure step) */}
         {step === 'configure' && (
-          <div className="border-t border-gray-200 px-6 py-4">
+          <div className="border-t border-gray-100 px-4 sm:px-6 py-3 sm:py-4 bg-white">
             <Button
               onClick={handleGenerate}
               disabled={!selectedStyle || isCheckingAuth || isDetailedAnalysisRunning}
-              className="w-full bg-coral hover:bg-orange-600 text-white font-semibold h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold h-12 sm:h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300"
             >
               {isDetailedAnalysisRunning ? (
                 <>

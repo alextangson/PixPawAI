@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: '/brand/logo-orange.svg',
-        width: 1200,
-        height: 630,
+        url: '/brand/png/logo-orange-256.png',
+        width: 256,
+        height: 256,
         alt: 'PixPaw AI - Turn Your Pet Into a Pixar Star',
       },
     ],
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
     description: "Transform your furry friend into stunning 3D Disney-style artwork in just 30 seconds.",
-    images: ['/brand/logo-orange.svg'],
+    images: ['/brand/png/logo-orange-256.png'],
   },
 }
 

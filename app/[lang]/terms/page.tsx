@@ -52,20 +52,83 @@ export default async function TermsPage({
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Payment and Refunds</h2>
-            <p className="leading-relaxed">
-              All purchases are final unless otherwise stated. We offer a first-time satisfaction guarantee: 
-              if you're not satisfied with your first generation, we'll refund your credit. 
-              See our Refund Policy for more details.
-            </p>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Payment and Credits</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">4.1 Payment Processing</h3>
+                <p className="leading-relaxed">
+                  All payments are securely processed through PayPal. We accept PayPal accounts, credit cards, 
+                  debit cards, and other payment methods supported by PayPal. By making a purchase, you agree to 
+                  PayPal's terms and conditions.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">4.2 Credits System</h3>
+                <p className="leading-relaxed">
+                  Credits are our virtual currency used for generating artwork. Credits purchased never expire 
+                  and remain in your account until used. Credits are non-transferable between accounts.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">4.3 Credit Purchases</h3>
+                <p className="leading-relaxed">
+                  Credit pack purchases are final and non-refundable. However, we offer generation-level refunds: 
+                  if you're not satisfied with a specific generation, we'll refund that credit for you to try again. 
+                  See our Refund Policy for details.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">4.4 Pricing Changes</h3>
+                <p className="leading-relaxed">
+                  We reserve the right to modify pricing at any time. Price changes will not affect credits 
+                  already purchased. Current prices are displayed on our pricing page.
+                </p>
+              </div>
+            </div>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Intellectual Property</h2>
-            <p className="leading-relaxed">
-              You retain ownership of your original photos. Generated artworks are licensed to you for personal use. 
-              By sharing to our public gallery, you grant us a license to display your artwork on our platform.
-            </p>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Intellectual Property & Usage Rights</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">5.1 Your Original Photos</h3>
+                <p className="leading-relaxed">
+                  You retain full ownership of all photos you upload. We do not claim any rights to your original images.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">5.2 Generated Artwork License</h3>
+                <p className="leading-relaxed">
+                  Generated artworks are licensed to you based on your subscription tier:
+                </p>
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
+                  <li><strong>Free Tier:</strong> Personal use only with watermark</li>
+                  <li><strong>Starter Pack:</strong> Personal use, no watermark</li>
+                  <li><strong>Pro Bundle:</strong> Social media commercial use (Instagram, Facebook, etc.)</li>
+                  <li><strong>Master Plan:</strong> Full commercial use license (including merchandise, advertising)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">5.3 Public Gallery</h3>
+                <p className="leading-relaxed">
+                  By sharing to our public gallery, you grant PixPaw AI a non-exclusive license to display, 
+                  reproduce, and promote your artwork on our platform and marketing materials. You retain all ownership rights.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">5.4 Prohibited Use</h3>
+                <p className="leading-relaxed">
+                  You may not resell, redistribute, or claim AI-generated images as your own original artwork. 
+                  You may not use generated images for illegal, harmful, or defamatory purposes.
+                </p>
+              </div>
+            </div>
           </section>
 
           <section>

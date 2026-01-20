@@ -39,7 +39,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProps) {
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden pt-16">
+    <section className="relative min-h-screen flex flex-col overflow-hidden pt-4 sm:pt-8 lg:pt-16">
       {/* Background Pattern - Brand paw prints */}
       <div 
         className="absolute inset-0 opacity-[0.03]"
@@ -58,29 +58,30 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
       </div>
 
       {/* Main Hero Content */}
-      <div className="relative flex-1 flex items-center justify-center px-4 py-12 md:py-20">
+      <div className="relative flex-1 flex items-center justify-center px-4 py-6 sm:py-12 md:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
             {/* Left Column - Text Content */}
-            <div className="text-center lg:text-left space-y-6 md:space-y-8 z-10">
+            <div className="text-center lg:text-left space-y-4 sm:space-y-6 md:space-y-8 z-10 order-2 lg:order-1">
               {/* Social Proof - With Avatar Stack */}
-              <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 rounded-full px-3 py-1 text-sm font-medium">
+              <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 rounded-full px-3 py-1 text-xs sm:text-sm font-medium">
                 <div className="flex -space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
                     🐕
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
                     🐈
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-coral to-orange-700 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-coral to-orange-700 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
                     🐾
                   </div>
                 </div>
-                <span>{dict.hero.socialProof}</span>
+                <span className="hidden sm:inline">{dict.hero.socialProof}</span>
+                <span className="sm:hidden">10,000+ pets</span>
               </div>
 
-              {/* Main Headline (H1) - Final Polished Typography */}
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight max-w-5xl mx-auto lg:mx-0">
+              {/* Main Headline (H1) - Responsive Typography */}
+              <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold tracking-tight leading-tight max-w-5xl mx-auto lg:mx-0">
                 <span className="md:whitespace-nowrap">{dict.hero.title.part1}</span>{' '}
                 <br className="hidden md:block" />
                 <span className="text-coral relative inline-block whitespace-nowrap">
@@ -104,18 +105,18 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               </h1>
 
               {/* Subheadline */}
-              <p className="text-lg sm:text-xl md:text-2xl text-darkgray/70 max-w-xl mx-auto lg:mx-0">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-darkgray/70 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {dict.hero.subtitle}
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                <Button size="xl" className="group" onClick={onOpenUpload}>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 justify-center lg:justify-start max-w-full sm:max-w-md lg:max-w-none">
+                <Button size="xl" className="group w-full sm:w-auto" onClick={onOpenUpload}>
                   {dict.hero.cta.primary}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Link href={`/${lang}/gallery`}>
-                  <Button size="xl" variant="outline" className="group">
+                <Link href={`/${lang}/gallery`} className="w-full sm:w-auto">
+                  <Button size="xl" variant="outline" className="group w-full">
                     <PawIcon size={20} className="group-hover:scale-110 transition-transform" />
                     {dict.hero.cta.secondary}
                   </Button>
@@ -123,11 +124,11 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               </div>
 
               {/* Trust Badges - Refactored to Simple Icons + Text */}
-              <TrustBadgeGroup className="justify-center lg:justify-start pt-2" />
+              <TrustBadgeGroup className="justify-center lg:justify-start pt-0 sm:pt-2 hidden sm:flex" />
             </div>
 
             {/* Right Column - Hero Carousel with PiP */}
-            <div className="relative z-10">
+            <div className="relative z-10 order-1 lg:order-2">
               {/* Auto-playing Carousel with Picture-in-Picture */}
               <HeroCarousel />
             </div>
