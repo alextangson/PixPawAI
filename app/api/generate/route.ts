@@ -535,9 +535,11 @@ export async function POST(request: NextRequest) {
       detailedAnalysis = null, // 🔥 Frontend detailed analysis results (race condition fix)
       quickAnalysis = null, // 🆕 Frontend quick analysis results (fallback strategy)
       // ⚡ Performance optimization parameters (Phase 1)
-      goFast = true,              // Enabled: test speed vs quality trade-off
-      megapixels = "1",           // Default: 1MP (1024x1024)
-      outputQuality = 80,         // Default: 80 quality (recommended, vs 100)
+      // Note: These can be overridden by frontend, but will use database defaults if not provided
+      goFast,                     // Will use database default (enable_go_fast) if not provided
+      megapixels,                 // Will use "1" if not provided
+      outputQuality,              // Will use database default (output_quality) if not provided
+      numInferenceSteps,          // Will use database default (num_inference_steps) if not provided
     } = body
 
     // Validate: Either style ID or promptSuffix must be provided
@@ -644,12 +646,12 @@ export async function POST(request: NextRequest) {
     if (style) {
       // Use existing style from database
       styleConfig = await getStyleConfigWithFallback(style)
-      if (!styleConfig) {
-        return NextResponse.json(
-          { error: `Invalid style: ${style}` },
-          { status: 400 }
-        )
-      }
+    if (!styleConfig) {
+      return NextResponse.json(
+        { error: `Invalid style: ${style}` },
+        { status: 400 }
+      )
+    }
       styleName = styleConfig.label || style
     } else {
       // Create temporary style config from provided prompts (Test Lab "Create New" mode)
@@ -790,16 +792,22 @@ export async function POST(request: NextRequest) {
     const styleSupabase = await createAdminClient()
     const { data: styleData } = await styleSupabase
       .from('styles')
-      .select('recommended_strength_min, recommended_guidance')
+      .select('recommended_strength_min, recommended_guidance, num_inference_steps, output_quality, enable_go_fast')
       .eq('id', style)
       .single()
     
     const defaultStrength = styleData?.recommended_strength_min || 0.45
     const defaultGuidance = styleData?.recommended_guidance || 2.5
+    const defaultNumSteps = styleData?.num_inference_steps || 50
+    const defaultOutputQuality = styleData?.output_quality || 80
+    const defaultGoFast = styleData?.enable_go_fast ?? true
     
     console.log(`🎯 Style Config: ${style}`)
     console.log(`   Strength: ${defaultStrength.toFixed(2)}`)
     console.log(`   Guidance: ${defaultGuidance.toFixed(1)}`)
+    console.log(`   Steps: ${defaultNumSteps}`)
+    console.log(`   Quality: ${defaultOutputQuality}`)
+    console.log(`   Go Fast: ${defaultGoFast}`)
     
     // STEP E: CONSTRUCT TIER-APPROPRIATE PROMPT
     let finalPrompt = ''
@@ -917,7 +925,7 @@ export async function POST(request: NextRequest) {
                                  aspectRatio === '9:16' ? 'tall vertical composition' : 'centered composition'
         
         // Unified prompt strategy: balance feature preservation with style application
-        finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. Preserve exact features from reference image. Apply ${styleName} style.`
+          finalPrompt = `${promptResult.positive}, ${aspectRatioGuide}. Preserve exact features from reference image. Apply ${styleName} style.`
         
         finalNegativePrompt = promptResult.negative
         
@@ -966,14 +974,14 @@ export async function POST(request: NextRequest) {
         }
         
         // Unified prompt strategy: balance feature preservation with style application
-        const cleanSuffix = styleConfig.promptSuffix
-          .replace(/soft white fur/gi, 'fur')
-          .replace(/white and pink/gi, 'colorful')
-          .replace(/pink and white/gi, 'colorful')
-          .replace(/yellow and pink/gi, 'colorful')
-          .replace(/orange turtleneck/gi, 'turtleneck')
-          .replace(/olive green background/gi, 'solid background')
-        
+          const cleanSuffix = styleConfig.promptSuffix
+            .replace(/soft white fur/gi, 'fur')
+            .replace(/white and pink/gi, 'colorful')
+            .replace(/pink and white/gi, 'colorful')
+            .replace(/yellow and pink/gi, 'colorful')
+            .replace(/orange turtleneck/gi, 'turtleneck')
+            .replace(/olive green background/gi, 'solid background')
+          
         finalPrompt = `${featurePrefix}preserve exact fur colors, patterns, and facial features from reference image. ${sanitizedUserPrompt}${cleanSuffix}, ${aspectRatioGuide}. Keep original appearance, only apply ${styleName} artistic style.`
         
         // Add complexity-specific reminders
@@ -1010,14 +1018,20 @@ export async function POST(request: NextRequest) {
       })
       
       try {
-        // Use frontend params or default params from database
+        // Use frontend params or database defaults
+        // Priority: Frontend > Database > Fallback
         const finalStrength = strength !== undefined ? strength : defaultStrength
         const finalGuidance = guidance !== undefined ? guidance : defaultGuidance
+        const finalGoFast = goFast !== undefined ? goFast : defaultGoFast
+        const finalOutputQuality = outputQuality !== undefined ? outputQuality : defaultOutputQuality
+        const finalMegapixels = megapixels || "1"
         
         console.log('🧪 TEST MODE - Calling generateWithReplicate:', {
           userId: user.id,
           strength: finalStrength,
           guidance: finalGuidance,
+          goFast: finalGoFast,
+          outputQuality: finalOutputQuality,
           hasProcessedImage: !!processedImageUrl,
           hasNegativePrompt: !!finalNegativePrompt
         })
@@ -1030,9 +1044,9 @@ export async function POST(request: NextRequest) {
           finalStrength,
           finalGuidance,
           finalNegativePrompt || undefined,
-          goFast,        // ⚡ Performance params
-          megapixels,
-          outputQuality
+          finalGoFast,           // ⚡ Use database or frontend value
+          finalMegapixels,
+          finalOutputQuality     // ⚡ Use database or frontend value
         )
         
         console.log(`🎨 TEST MODE - Generation complete: strength=${finalStrength.toFixed(2)}, guidance=${finalGuidance}`)
@@ -1141,24 +1155,27 @@ export async function POST(request: NextRequest) {
 
     try {
       // STEP F: Call Replicate API with style-specific parameters
-      // Use frontend strength if provided, otherwise use style defaults from database
+      // Priority: Frontend > Database > Fallback
       const finalStrength = strength || defaultStrength
       const finalGuidance = guidance || defaultGuidance
+      const finalGoFast = goFast !== undefined ? goFast : defaultGoFast
+      const finalOutputQuality = outputQuality !== undefined ? outputQuality : defaultOutputQuality
+      const finalMegapixels = megapixels || "1"
       
       const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
         finalPrompt, 
         user.id, 
         generation.id,
         processedImageUrl,  // Pre-processed image (already correct dimensions)
-        finalStrength,  // Use frontend or calculated strength
-        finalGuidance,  // Use frontend or calculated guidance
+        finalStrength,  // Use frontend or database strength
+        finalGuidance,  // Use frontend or database guidance
         finalNegativePrompt || undefined,  // Negative prompt from new system
-        goFast,        // ⚡ Performance params
-        megapixels,
-        outputQuality
+        finalGoFast,        // ⚡ Use database or frontend value
+        finalMegapixels,
+        finalOutputQuality  // ⚡ Use database or frontend value
       )
       
-      console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'calculated'}), guidance=${finalGuidance} (${guidance ? 'frontend' : 'calculated'})`)
+      console.log(`🎨 Final Generation Params: strength=${finalStrength.toFixed(2)} (${strength ? 'frontend' : 'database'}), guidance=${finalGuidance} (${guidance ? 'frontend' : 'database'}), goFast=${finalGoFast}, quality=${finalOutputQuality}`)
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues

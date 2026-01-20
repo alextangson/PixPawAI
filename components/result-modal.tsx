@@ -186,12 +186,36 @@ export function ResultModal({
     try {
       setIsDownloading(true)
       
-      // Check if user is paid (currently all users are considered unpaid)
-      const isPaidUser = false // TODO: Check user subscription status
+      // Check if user is admin or paid user
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
       
-      if (isPaidUser) {
-        // Paid users download without watermark
-        window.open(imageUrl, '_blank')
+      let shouldAddWatermark = true // Default: add watermark for unpaid users
+      
+      if (user) {
+        // Check if user is admin
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, tier')
+          .eq('id', user.id)
+          .single()
+        
+        // Admin or paid users don't get watermark
+        if (profile?.role === 'admin' || profile?.tier === 'pro' || profile?.tier === 'starter') {
+          shouldAddWatermark = false
+        }
+      }
+      
+      if (!shouldAddWatermark) {
+        // Admin/Paid users download without watermark
+        const link = document.createElement('a')
+        link.href = imageUrl
+        link.download = filename
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        setIsDownloading(false)
         return
       }
       
@@ -409,9 +433,9 @@ export function ResultModal({
           </button>
 
           {/* LEFT PANEL: The Asset (Image + Actions) */}
-          <div className="lg:w-[58%] flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="lg:w-[65%] flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
             {/* Image Display Area */}
-            <div className="flex-1 relative flex items-center justify-center p-3 sm:p-4 lg:p-8">
+            <div className="flex-1 relative flex items-center justify-center p-4">
               {/* Skeleton Loader */}
               {/* Skeleton Loader - Show while image is loading */}
               {!imageLoaded && (
@@ -437,10 +461,9 @@ export function ResultModal({
                 src={generatedImageUrl}
                 alt="Your AI-generated pet portrait"
                 className={cn(
-                  "max-w-full max-h-[50vh] sm:max-h-[60vh] lg:max-h-[70vh] object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-opacity duration-300",
+                  "w-full h-full max-w-full max-h-full object-contain rounded-xl shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-opacity duration-300",
                   imageLoaded ? "opacity-100" : "opacity-0"
                 )}
-                style={{ maxHeight: '50vh' }}
                 onLoad={() => setImageLoaded(true)}
                 onClick={() => window.open(generatedImageUrl, '_blank')}
               />
@@ -585,7 +608,7 @@ export function ResultModal({
           </div>
 
           {/* RIGHT PANEL: Dynamic Content */}
-          <div className="lg:w-[42%] bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-y-auto">
+          <div className="lg:w-[35%] bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-y-auto">
             
             {!userChoice ? (
               /* Initial State: Choice Buttons - Vertically Centered */

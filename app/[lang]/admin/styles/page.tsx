@@ -64,16 +64,12 @@ function Button({
 interface Style {
   id: string
   name: string
-  emoji?: string  // 可选，优先显示preview_image_url
   prompt_suffix: string
   negative_prompt?: string
   category?: string
   description?: string
   tags?: string[]
-  tier?: number  // 1=写实, 2=轻艺术, 3=强艺术, 4=极致艺术
-  expected_similarity?: string  // 预期相似度 (如 "85-90%")
   recommended_strength_min?: number
-  recommended_strength_max?: number
   recommended_guidance?: number
   preview_image_url?: string
   example_image_url?: string
@@ -104,16 +100,12 @@ export default function StylesManagementPage() {
   const [formData, setFormData] = useState<Partial<Style>>({
     id: '',
     name: '',
-    emoji: '',
     prompt_suffix: '',
     negative_prompt: '',
     category: 'artistic',
     description: '',
-    tier: 2,  // 默认 Tier 2 (轻艺术)
-    expected_similarity: '70-80%',
-    recommended_strength_min: 0.33,
-    recommended_strength_max: 0.37,
-    recommended_guidance: 2.5,
+    recommended_strength_min: 0.92,
+    recommended_guidance: 3.5,
     sort_order: 999,
     is_enabled: true,
     is_premium: false
@@ -200,16 +192,12 @@ export default function StylesManagementPage() {
       setFormData({
         id: '',
         name: '',
-        emoji: '',
         prompt_suffix: '',
         negative_prompt: '',
         category: 'artistic',
         description: '',
-        tier: 2,
-        expected_similarity: '70-80%',
-        recommended_strength_min: 0.33,
-        recommended_strength_max: 0.37,
-        recommended_guidance: 2.5,
+        recommended_strength_min: 0.92,
+        recommended_guidance: 3.5,
         sort_order: 999,
         is_enabled: true,
         is_premium: false
@@ -299,7 +287,7 @@ export default function StylesManagementPage() {
       `确定要恢复到版本 ${versionNumber} 吗？\n\n` +
       `当前配置将被保存为新版本。\n\n` +
       `版本 ${versionNumber} 参数:\n` +
-      `Strength: ${version.recommended_strength_min?.toFixed(2) || 'N/A'} - ${version.recommended_strength_max?.toFixed(2) || 'N/A'}\n` +
+      `Strength: ${version.recommended_strength_min?.toFixed(2) || 'N/A'}\n` +
       `Guidance: ${version.recommended_guidance?.toFixed(1) || 'N/A'}`
     )
     
@@ -461,18 +449,6 @@ export default function StylesManagementPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
-                Emoji (可选)
-              </label>
-              <input
-                type="text"
-                value={formData.emoji}
-                onChange={(e) => setFormData({...formData, emoji: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg"
-                placeholder="🎨"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
                 分类
               </label>
               <select
@@ -572,66 +548,19 @@ export default function StylesManagementPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Tier 等级 *
-                    </label>
-                    <select
-                      value={formData.tier}
-                      onChange={(e) => setFormData({...formData, tier: parseInt(e.target.value)})}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    >
-                      <option value={1}>Tier 1 - 写实增强 (85-90%相似度)</option>
-                      <option value={2}>Tier 2 - 轻艺术 (70-80%相似度)</option>
-                      <option value={3}>Tier 3 - 强艺术 (60-70%相似度)</option>
-                      <option value={4}>Tier 4 - 极致艺术 (50-60%相似度)</option>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      决定写实度和风格化程度
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      预期相似度
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.expected_similarity}
-                      onChange={(e) => setFormData({...formData, expected_similarity: e.target.value})}
-                      className="w-full px-3 py-2 border rounded-lg"
-                      placeholder="70-80%"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Strength Min (最小)
+                      Strength (推荐强度)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0.20"
-                      max="0.80"
+                      max="1.00"
                       value={formData.recommended_strength_min}
                       onChange={(e) => setFormData({...formData, recommended_strength_min: parseFloat(e.target.value)})}
                       className="w-full px-3 py-2 border rounded-lg"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      0.25-0.30 (写实) | 0.35-0.42 (轻艺术)
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Strength Max (最大)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.20"
-                      max="0.80"
-                      value={formData.recommended_strength_max}
-                      onChange={(e) => setFormData({...formData, recommended_strength_max: parseFloat(e.target.value)})}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      0.50-0.60 (强艺术) | 0.65-0.75 (极致)
+                      写实风格: 0.92-0.95 | 艺术风格: 0.75-0.85
                     </p>
                   </div>
                   <div>
@@ -720,15 +649,6 @@ export default function StylesManagementPage() {
                       className="w-full px-2 py-1 border rounded text-sm"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1">Emoji</label>
-                    <input
-                      type="text"
-                      value={style.emoji || ''}
-                      onChange={(e) => updateStyle(style.id, { emoji: e.target.value })}
-                      className="w-full px-2 py-1 border rounded text-sm"
-                    />
-                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1">Prompt Suffix (风格提示词)</label>
@@ -777,35 +697,14 @@ export default function StylesManagementPage() {
                   <p className="text-xs font-semibold text-blue-900 mb-2">生成参数配置</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium mb-1">Tier</label>
-                      <select
-                        value={style.tier || 2}
-                        onChange={(e) => updateStyle(style.id, { tier: parseInt(e.target.value) })}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      >
-                        <option value={1}>T1-写实</option>
-                        <option value={2}>T2-轻艺术</option>
-                        <option value={3}>T3-强艺术</option>
-                        <option value={4}>T4-极致</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">Strength Min</label>
+                      <label className="block text-xs font-medium mb-1">Strength</label>
                       <input
                         type="number"
                         step="0.01"
-                        value={style.recommended_strength_min || 0.35}
+                        min="0.20"
+                        max="1.00"
+                        value={style.recommended_strength_min || 0.92}
                         onChange={(e) => updateStyle(style.id, { recommended_strength_min: parseFloat(e.target.value) })}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">Strength Max</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={style.recommended_strength_max || 0.40}
-                        onChange={(e) => updateStyle(style.id, { recommended_strength_max: parseFloat(e.target.value) })}
                         className="w-full px-2 py-1 border rounded text-sm"
                       />
                     </div>
@@ -814,7 +713,9 @@ export default function StylesManagementPage() {
                       <input
                         type="number"
                         step="0.1"
-                        value={style.recommended_guidance || 2.5}
+                        min="1.5"
+                        max="10.0"
+                        value={style.recommended_guidance || 3.5}
                         onChange={(e) => updateStyle(style.id, { recommended_guidance: parseFloat(e.target.value) })}
                         className="w-full px-2 py-1 border rounded text-sm"
                       />
@@ -844,15 +745,13 @@ export default function StylesManagementPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    {/* 优先显示图片，其次emoji，最后默认图标 */}
+                    {/* 显示预览图 */}
                     {style.preview_image_url ? (
                       <img 
                         src={style.preview_image_url} 
                         alt={style.name}
                         className="w-12 h-12 rounded-lg object-cover border border-gray-200"
                       />
-                    ) : style.emoji ? (
-                      <span className="text-2xl">{style.emoji}</span>
                     ) : (
                       <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
                         🎨
@@ -876,23 +775,13 @@ export default function StylesManagementPage() {
                   {style.description && (
                     <p className="text-sm text-gray-600">{style.description}</p>
                   )}
-                  {/* Tier 配置信息 */}
-                  {(style.tier || style.recommended_strength_min || style.recommended_guidance) && (
+                  {/* 生成参数信息 */}
+                  {(style.recommended_strength_min || style.recommended_guidance) && (
                     <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
                       <p className="font-medium text-blue-900 mb-1">🎯 生成参数</p>
                       <div className="grid grid-cols-2 gap-1 text-blue-700">
-                        {style.tier && (
-                          <div>Tier: {style.tier} ({
-                            style.tier === 1 ? '写实增强' :
-                            style.tier === 2 ? '轻艺术' :
-                            style.tier === 3 ? '强艺术' : '极致艺术'
-                          })</div>
-                        )}
-                        {style.expected_similarity && (
-                          <div>相似度: {style.expected_similarity}</div>
-                        )}
                         {style.recommended_strength_min !== undefined && (
-                          <div>Strength: {style.recommended_strength_min.toFixed(2)}-{(style.recommended_strength_max || 0).toFixed(2)}</div>
+                          <div>Strength: {style.recommended_strength_min.toFixed(2)}</div>
                         )}
                         {style.recommended_guidance && (
                           <div>Guidance: {style.recommended_guidance.toFixed(1)}</div>
@@ -1014,22 +903,15 @@ export default function StylesManagementPage() {
                         
                         <div className="grid grid-cols-3 gap-3 text-sm">
                           <div className="bg-white p-3 rounded">
-                            <div className="text-gray-500 text-xs mb-1">Strength Range</div>
+                            <div className="text-gray-500 text-xs mb-1">Strength</div>
                             <div className="font-mono font-semibold">
-                              {currentStyle.recommended_strength_min?.toFixed(2) || 'N/A'} - 
-                              {currentStyle.recommended_strength_max?.toFixed(2) || 'N/A'}
+                              {currentStyle.recommended_strength_min?.toFixed(2) || 'N/A'}
                             </div>
                           </div>
                           <div className="bg-white p-3 rounded">
                             <div className="text-gray-500 text-xs mb-1">Guidance</div>
                             <div className="font-mono font-semibold">
                               {currentStyle.recommended_guidance?.toFixed(1) || 'N/A'}
-                            </div>
-                          </div>
-                          <div className="bg-white p-3 rounded">
-                            <div className="text-gray-500 text-xs mb-1">Tier</div>
-                            <div className="font-semibold">
-                              {currentStyle.tier || 'N/A'}
                             </div>
                           </div>
                         </div>
@@ -1092,12 +974,11 @@ export default function StylesManagementPage() {
                         </div>
                       )}
                       
-                      <div className="grid grid-cols-3 gap-3 text-sm">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
                         <div className="bg-gray-50 p-3 rounded">
-                          <div className="text-gray-500 text-xs mb-1">Strength Range</div>
+                          <div className="text-gray-500 text-xs mb-1">Strength</div>
                           <div className="font-mono font-semibold">
-                            {version.recommended_strength_min?.toFixed(2) || 'N/A'} - 
-                            {version.recommended_strength_max?.toFixed(2) || 'N/A'}
+                            {version.recommended_strength_min?.toFixed(2) || 'N/A'}
                           </div>
                         </div>
                         <div className="bg-gray-50 p-3 rounded">

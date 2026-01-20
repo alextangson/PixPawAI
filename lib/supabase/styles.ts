@@ -5,12 +5,10 @@
 
 import { createAdminClient } from './server'
 import { STYLES, getStyleById, type Style } from '@/lib/styles'
-import { type StyleTierConfig } from '@/lib/style-tiers'
 
 interface DatabaseStyle {
   id: string
   name: string
-  emoji?: string
   prompt_suffix: string
   negative_prompt?: string
   category?: string
@@ -19,11 +17,17 @@ interface DatabaseStyle {
   sort_order: number
   is_enabled: boolean
   is_premium: boolean
-  tier?: number
-  expected_similarity?: string
   recommended_strength_min?: number
-  recommended_strength_max?: number
   recommended_guidance?: number
+  // Generation quality parameters (per-style control)
+  num_inference_steps?: number    // 28-80, default 50
+  output_quality?: number         // 0-100, default 80
+  enable_go_fast?: boolean        // Performance vs quality, default true
+  // Multi-model routing support
+  model_provider?: string  // 'replicate', 'doubao', 'midjourney', etc.
+  model_id?: string        // Specific model identifier
+  lora_url?: string        // Optional LoRA URL for FLUX/SDXL
+  model_params?: any       // JSON object with model-specific parameters
 }
 
 /**
@@ -119,52 +123,3 @@ export async function getAllEnabledStyles(): Promise<Style[]> {
   }
 }
 
-/**
- * Get style tier config from database
- * Returns StyleTierConfig or undefined if not found/configured
- */
-export async function getStyleTierFromDatabase(styleId: string): Promise<StyleTierConfig | undefined> {
-  try {
-    const supabase = await createAdminClient()
-    
-    const { data, error } = await supabase
-      .from('styles')
-      .select('tier, expected_similarity, recommended_strength_min, recommended_strength_max, recommended_guidance')
-      .eq('id', styleId)
-      .eq('is_enabled', true)
-      .single()
-    
-    if (error || !data || !data.tier) {
-      return undefined
-    }
-    
-    // Convert database style to StyleTierConfig format
-    const tierConfig: StyleTierConfig = {
-      tier: data.tier as 1 | 2 | 3 | 4,
-      strength: data.recommended_strength_min || 0.35,
-      guidance: data.recommended_guidance || 2.5,
-      description: getTierDescription(data.tier),
-      expectedSimilarity: data.expected_similarity || '70-80%',
-      numVariants: { free: 1, starter: 1, pro: 3, master: 5 }
-    }
-    
-    console.log(`✅ Loaded tier config from database for ${styleId}:`, tierConfig)
-    return tierConfig
-  } catch (error) {
-    console.error(`Error fetching tier config for ${styleId}:`, error)
-    return undefined
-  }
-}
-
-/**
- * Get tier description by tier number
- */
-function getTierDescription(tier: number): string {
-  switch (tier) {
-    case 1: return '写实增强'
-    case 2: return '轻艺术'
-    case 3: return '强艺术'
-    case 4: return '极致艺术'
-    default: return '默认配置'
-  }
-}

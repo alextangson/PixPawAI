@@ -65,74 +65,135 @@ Output ONLY this JSON (no explanations):
       endpoint: 'https://api.siliconflow.com/v1/chat/completions'
     })
 
-    const response = await fetch('https://api.siliconflow.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${QWEN_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'Qwen/Qwen2.5-VL-72B-Instruct',
-        messages: [
-          {
-            role: 'user',
-            content: [
+    // 🔄 Retry logic with exponential backoff
+    let lastError: Error | null = null
+    const maxRetries = 2
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000) // 1s, 2s max
+          console.log(`⏳ Retry attempt ${attempt}/${maxRetries} after ${delay}ms delay...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+        
+        const response = await fetch('https://api.siliconflow.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${QWEN_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+            messages: [
               {
-                type: 'image_url',
-                image_url: {
-                  url: base64DataUrl
-                }
-              },
-              {
-                type: 'text',
-                text: prompt
+                role: 'user',
+                content: [
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: base64DataUrl
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: prompt
+                  }
+                ]
               }
-            ]
+            ],
+            max_tokens: 100,
+            temperature: 0.5
+          }),
+          signal: AbortSignal.timeout(30000) // 30 second timeout for AI processing (VL models are slow)
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error(`❌ Qwen API Error Response (attempt ${attempt + 1}):`, errorText)
+          
+          // Parse error to check if retryable
+          try {
+            const errorJson = JSON.parse(errorText)
+            // Error codes that should not be retried
+            const nonRetryableErrors = [400, 401, 403, 404]
+            if (nonRetryableErrors.includes(response.status)) {
+              throw new Error(`Qwen API error (non-retryable): ${response.statusText} - ${errorText}`)
+            }
+          } catch (parseError) {
+            // If can't parse, treat as retryable
           }
-        ],
-        max_tokens: 100,
-        temperature: 0.5
-      }),
-      signal: AbortSignal.timeout(30000) // 30 second timeout for AI processing (VL models are slow)
-    })
+          
+          lastError = new Error(`Qwen API error: ${response.statusText} - ${errorText}`)
+          continue // Retry
+        }
+        
+        // Success! Break retry loop
+        
+        // Success! Break retry loop
+        const data = await response.json()
+        const content = data.choices?.[0]?.message?.content?.trim() || ''
+        
+        console.log('⚡ Quick Check Raw Response:', content)
+        
+        // Try to extract JSON
+        const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*?\}/)
+        let result: QuickQualityCheckResult
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ Qwen API Error Response:', errorText)
-      throw new Error(`Qwen API error: ${response.statusText} - ${errorText}`)
-    }
+        if (jsonMatch) {
+          const jsonText = jsonMatch[1] || jsonMatch[0]
+          result = JSON.parse(jsonText)
+        } else {
+          // Fallback parsing if JSON not found
+          console.warn('Qwen did not return valid JSON, attempting fallback parsing:', content)
+          const lowerContent = content.toLowerCase()
+          result = {
+            hasPet: lowerContent.includes('haspet": true') || lowerContent.includes('yes') && !lowerContent.includes('no pet'),
+            isClear: lowerContent.includes('clear') || lowerContent.includes('good'),
+            petType: (content.match(/"petType":\s*"(.*?)"/)?.[1] || 'other') as any,
+            quality: lowerContent.includes('poor') || lowerContent.includes('blurry') ? 'poor' : 'good'
+          }
+        }
 
-    const data = await response.json()
-    const content = data.choices?.[0]?.message?.content?.trim() || ''
-    
-    console.log('⚡ Quick Check Raw Response:', content)
-    
-    // Try to extract JSON
-    const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*?\}/)
-    let result: QuickQualityCheckResult
-
-    if (jsonMatch) {
-      const jsonText = jsonMatch[1] || jsonMatch[0]
-      result = JSON.parse(jsonText)
-    } else {
-      // Fallback parsing if JSON not found
-      console.warn('Qwen did not return valid JSON, attempting fallback parsing:', content)
-      const lowerContent = content.toLowerCase()
-      result = {
-        hasPet: lowerContent.includes('haspet": true') || lowerContent.includes('yes') && !lowerContent.includes('no pet'),
-        isClear: lowerContent.includes('clear') || lowerContent.includes('good'),
-        petType: (content.match(/"petType":\s*"(.*?)"/)?.[1] || 'other') as any,
-        quality: lowerContent.includes('poor') || lowerContent.includes('blurry') ? 'poor' : 'good'
+        console.log('✅ Quick Check Result:', result)
+        return NextResponse.json(result)
+        
+      } catch (attemptError) {
+        lastError = attemptError as Error
+        if (attempt === maxRetries) {
+          // Last attempt failed
+          break
+        }
+        // Continue to next retry
       }
     }
+    
+    // All retries failed - return graceful fallback
+    console.error('❌ All Qwen API retry attempts failed, returning safe fallback')
+    console.error('Last error:', lastError)
+    
+    // 🛡️ Graceful degradation: return safe defaults
+    return NextResponse.json({
+      hasPet: true,          // Assume pet (fail-open)
+      isClear: true,         // Assume clear
+      petType: 'pet',        // Generic type
+      quality: 'good',       // Assume good
+      fallback: true,        // Flag indicating this is a fallback
+      error: lastError?.message || 'Qwen API unavailable'
+    })
 
-    console.log('✅ Quick Check Result:', result)
-    return NextResponse.json(result)
   } catch (error) {
     console.error('Error in quick quality check API:', error)
+    
+    // 🛡️ Graceful degradation even for outer errors
     return NextResponse.json({ 
+      hasPet: true,
+      isClear: true,
+      petType: 'pet',
+      quality: 'good',
+      fallback: true,
       error: 'Failed to process quick quality check',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    }, { status: 200 }) // Return 200 with fallback data instead of 500
   }
 }

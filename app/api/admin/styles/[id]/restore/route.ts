@@ -102,7 +102,6 @@ export async function POST(
         prompt_suffix: currentStyle.prompt_suffix,
         negative_prompt: currentStyle.negative_prompt,
         recommended_strength_min: currentStyle.recommended_strength_min,
-        recommended_strength_max: currentStyle.recommended_strength_max,
         recommended_guidance: currentStyle.recommended_guidance,
         created_by: authCheck.user?.id,
         notes: `Auto-backup before restoring to v${version_number}`
@@ -123,7 +122,6 @@ export async function POST(
         prompt_suffix: version.prompt_suffix,
         negative_prompt: version.negative_prompt,
         recommended_strength_min: version.recommended_strength_min,
-        recommended_strength_max: version.recommended_strength_max,
         recommended_guidance: version.recommended_guidance,
         updated_at: new Date().toISOString()
       })

@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { BeforeAfterSlider } from '@/components/before-after-slider'
+import { HeroCarousel } from '@/components/hero-carousel'
 import { InfiniteMarquee } from '@/components/infinite-marquee'
 import { TrustBadgeGroup } from '@/components/trust-badges'
 import { PawIcon } from '@/components/ui/paw-icon'
@@ -126,23 +126,10 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               <TrustBadgeGroup className="justify-center lg:justify-start pt-2" />
             </div>
 
-            {/* Right Column - Before/After Slider (Clean Focus) */}
+            {/* Right Column - Hero Carousel with PiP */}
             <div className="relative z-10">
-              {/* Floating AI Badge */}
-              <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-2 z-10 animate-pulse">
-                <Sparkles className="w-5 h-5 text-coral" />
-                <span className="text-sm font-semibold text-darkgray">{dict.hero.badges.aiPowered}</span>
-              </div>
-
-              {/* Before/After Slider - Sole Visual Element */}
-              <div className="relative">
-                <BeforeAfterSlider
-                  beforeImage="/styles/before.jpg"
-                  afterImage="/how-it-works/after.jpg"
-                  beforeAlt={dict.hero.slider.beforeAlt}
-                  afterAlt={dict.hero.slider.afterAlt}
-                />
-              </div>
+              {/* Auto-playing Carousel with Picture-in-Picture */}
+              <HeroCarousel />
             </div>
           </div>
         </div>

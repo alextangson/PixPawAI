@@ -76,11 +76,8 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
     },
   ]
   
-  // Only add "Coming Soon" if we have less than 8 total
-  if (styles.length < 8) {
-    const neededPlaceholders = Math.min(3, 8 - styles.length)
-    styles.push(...comingSoonPlaceholders.slice(0, neededPlaceholders))
-  }
+  // Limit to exactly 8 styles for 2 rows x 4 columns layout
+  const displayStyles = styles.slice(0, 8)
 
   return (
     <section className="py-20 bg-cream">
@@ -95,9 +92,9 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
           </p>
         </div>
 
-        {/* Light Masonry Grid */}
-        <div className="columns-2 md:columns-4 gap-4 space-y-4">
-          {styles.map((style, index) => (
+        {/* Grid Layout - 2 rows x 4 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {displayStyles.map((style, index) => (
             <button
               key={index}
               onClick={() => {
@@ -108,7 +105,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                   onOpenUpload(style.name)
                 }
               }}
-              className={`group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 break-inside-avoid mb-4 w-full block ${
+              className={`group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 w-full block ${
                 style.isComingSoon ? 'cursor-not-allowed' : 'cursor-pointer'
               }`}
             >
@@ -163,12 +160,12 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                 )}
               </div>
 
-              {/* Glassmorphism Text Panel at Bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 backdrop-blur-md bg-white/10 border-t border-white/20 z-10">
-                <h3 className="text-lg font-bold mb-1 text-white drop-shadow-lg">
+              {/* Glassmorphism Text Panel at Bottom - Fixed Height */}
+              <div className="absolute bottom-0 left-0 right-0 h-24 p-4 backdrop-blur-lg bg-white/10 border-t border-white/20 z-10 flex flex-col justify-center">
+                <h3 className="text-lg font-bold mb-1 text-white drop-shadow-lg line-clamp-1">
                   {style.name}
                 </h3>
-                <p className="text-white/90 text-xs leading-relaxed drop-shadow">
+                <p className="text-white/90 text-xs leading-relaxed drop-shadow line-clamp-2">
                   {style.description}
                 </p>
               </div>

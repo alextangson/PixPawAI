@@ -76,16 +76,12 @@ export async function PUT(
     const body = await request.json()
     const {
       name,
-      emoji,
       prompt_suffix,
       negative_prompt,
       category,
       description,
       tags,
-      tier,
-      expected_similarity,
       recommended_strength_min,
-      recommended_strength_max,
       recommended_guidance,
       sort_order,
       is_enabled,
@@ -115,7 +111,6 @@ export async function PUT(
       (prompt_suffix !== undefined && prompt_suffix !== currentStyle.prompt_suffix) ||
       (negative_prompt !== undefined && negative_prompt !== currentStyle.negative_prompt) ||
       (recommended_strength_min !== undefined && recommended_strength_min !== currentStyle.recommended_strength_min) ||
-      (recommended_strength_max !== undefined && recommended_strength_max !== currentStyle.recommended_strength_max) ||
       (recommended_guidance !== undefined && recommended_guidance !== currentStyle.recommended_guidance)
     
     // 3. 如果有重要变化，保存当前配置为历史版本
@@ -139,7 +134,6 @@ export async function PUT(
           prompt_suffix: currentStyle.prompt_suffix,
           negative_prompt: currentStyle.negative_prompt,
           recommended_strength_min: currentStyle.recommended_strength_min,
-          recommended_strength_max: currentStyle.recommended_strength_max,
           recommended_guidance: currentStyle.recommended_guidance,
           created_by: authCheck.user?.id,
           notes: body._version_notes || 'Auto-saved before update'
@@ -154,16 +148,12 @@ export async function PUT(
     // 4. 构建更新对象（只更新提供的字段）
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
-    if (emoji !== undefined) updateData.emoji = emoji
     if (prompt_suffix !== undefined) updateData.prompt_suffix = prompt_suffix
     if (negative_prompt !== undefined) updateData.negative_prompt = negative_prompt
     if (category !== undefined) updateData.category = category
     if (description !== undefined) updateData.description = description
     if (tags !== undefined) updateData.tags = tags
-    if (tier !== undefined) updateData.tier = tier
-    if (expected_similarity !== undefined) updateData.expected_similarity = expected_similarity
     if (recommended_strength_min !== undefined) updateData.recommended_strength_min = recommended_strength_min
-    if (recommended_strength_max !== undefined) updateData.recommended_strength_max = recommended_strength_max
     if (recommended_guidance !== undefined) updateData.recommended_guidance = recommended_guidance
     if (sort_order !== undefined) updateData.sort_order = sort_order
     if (is_enabled !== undefined) updateData.is_enabled = is_enabled

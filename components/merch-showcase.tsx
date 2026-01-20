@@ -16,35 +16,35 @@ export function MerchShowcase({ dict }: MerchShowcaseProps) {
   const products = [
     {
       name: 'Framed Wall Art',
-      image: 'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=500&h=500&fit=crop',
+      image: '/products/frame-wall-art.jpg',
     },
     {
       name: 'Custom T-Shirt',
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop',
+      image: '/products/t-shirt.jpg',
     },
     {
       name: 'Plush Pillow',
-      image: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=500&h=500&fit=crop',
+      image: '/products/pillow.jpg',
     },
     {
       name: 'Travel Tumbler',
-      image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&h=500&fit=crop',
-    },
-    {
-      name: 'Floor Mat',
-      image: 'https://images.unsplash.com/photo-1591212372990-e49f71e828af?w=500&h=500&fit=crop',
-    },
-    {
-      name: 'Patterned Socks',
-      image: 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=500&h=500&fit=crop',
+      image: '/products/To-go Cup.jpg',
     },
     {
       name: 'Phone Case',
-      image: 'https://images.unsplash.com/photo-1601593346740-925612772716?w=500&h=500&fit=crop',
+      image: '/products/phonecase.jpg',
     },
     {
       name: 'Ceramic Mug',
-      image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=500&h=500&fit=crop',
+      image: '/products/mug.jpg',
+    },
+    {
+      name: 'Pet Accessories',
+      image: '/products/accessories.jpg',
+    },
+    {
+      name: 'Wallpaper',
+      image: '/products/wallpaper.jpg',
     },
   ];
 

@@ -1491,10 +1491,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           {/* STEP C: GENERATING */}
           {step === 'generating' && (
             <>
-            <div className="flex flex-col lg:flex-row gap-8 py-8">
+            <div className="flex flex-col lg:flex-row gap-6 py-2">
               {/* LEFT PANEL: Original Image with Magic Effect */}
               <div className="lg:w-1/2 flex items-center justify-center">
-              <div className="w-full max-w-md rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
+              <div className="w-full max-w-sm rounded-2xl overflow-hidden border-2 border-coral/30 shadow-xl">
                 <div 
                   className="relative overflow-hidden"
                   style={{
@@ -1540,18 +1540,18 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               </div>
 
               {/* RIGHT PANEL: Progress + Fun Facts */}
-              <div className="lg:w-1/2 flex flex-col justify-center space-y-6 px-4">
+              <div className="lg:w-1/2 flex flex-col justify-center space-y-3 px-4">
                 {/* Logo */}
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center">
                   <img 
                     src="/brand/logo-orange.svg" 
                     alt="PixPaw AI"
-                    className="h-20 opacity-90"
+                    className="h-12 opacity-90"
                   />
                 </div>
                 
                 {/* Progress Bar */}
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="absolute top-0 left-0 h-full bg-gradient-to-r from-coral to-orange-600 rounded-full transition-all duration-300 ease-out"
@@ -1559,22 +1559,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     />
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
-                    <p className="text-lg text-gray-700 mt-2 min-h-[28px] font-sans">
+                    <p className="text-xl font-serif font-bold text-gray-900">{Math.round(progress)}%</p>
+                    <p className="text-base text-gray-700 mt-1 font-sans">
                       {funMessages[messageIndex]}
                     </p>
                   </div>
                 </div>
 
                 {/* Fun Facts Section */}
-                <div className="bg-gradient-to-br from-coral/10 to-orange-100/50 rounded-xl p-6 border-2 border-coral/20">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-coral rounded-full flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-white" />
+                <div className="bg-gradient-to-br from-coral/10 to-orange-100/50 rounded-lg p-3 border border-coral/20">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 w-6 h-6 bg-coral rounded-full flex items-center justify-center">
+                      <Sparkles className="w-3 h-3 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-gray-900 mb-2">Did you know?</h4>
-                      <p className="text-sm text-gray-700 leading-relaxed">
+                      <h4 className="text-xs font-bold text-gray-900 mb-1">Did you know?</h4>
+                      <p className="text-xs text-gray-700 leading-snug">
                         {FUN_FACTS[messageIndex % FUN_FACTS.length]}
                       </p>
                     </div>
@@ -1582,16 +1582,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 </div>
 
                 {/* Configuration Summary */}
-                <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="bg-white rounded-lg p-3 border border-gray-200 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-600">Style</span>
                     <span className="font-medium text-gray-900">{STYLES.find(s => s.id === selectedStyle)?.label || selectedStyle}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-600">Format</span>
                     <span className="font-medium text-gray-900">{aspectRatio}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-600">Realism</span>
                     <span className="font-medium text-gray-900">{Math.round(strength * 100)}%</span>
                   </div>
@@ -1600,8 +1600,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
             </div>
 
             {/* Warning Text */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-md mx-auto mt-6">
-              <p className="text-sm text-amber-800 text-center">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 max-w-md mx-auto mt-2">
+              <p className="text-xs text-amber-800 text-center">
                 ⚠️ <strong>Please keep this tab open.</strong> Good art takes time!
               </p>
               </div>
