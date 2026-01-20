@@ -14,9 +14,15 @@ import Script from 'next/script';
 export function Analytics() {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-  // Don't load in development or if ID is not set
-  if (!measurementId || process.env.NODE_ENV === 'development') {
+  // Don't load if ID is not set
+  // Temporarily enabled in development for testing
+  if (!measurementId) {
     return null;
+  }
+  
+  // Log in development mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [GA4 Dev Mode] Measurement ID:', measurementId);
   }
 
   return (

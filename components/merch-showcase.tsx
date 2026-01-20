@@ -28,7 +28,7 @@ export function MerchShowcase({ dict }: MerchShowcaseProps) {
     },
     {
       name: 'Travel Tumbler',
-      image: '/products/To-go Cup.jpg',
+      image: '/products/to-go-cup.jpg',
     },
     {
       name: 'Phone Case',
