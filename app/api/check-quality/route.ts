@@ -28,15 +28,43 @@ async function analyzeImageQuality(imageUrl: string): Promise<QualityCheckResult
     throw new Error('Invalid imageUrl provided')
   }
   
-  // Check if imageUrl is accessible
+  // Convert image to base64 (handles blob URLs, signed URLs, and regular URLs)
+  let base64DataUrl: string
+  
   try {
-    const urlTest = new URL(imageUrl)
-    if (!['http:', 'https:'].includes(urlTest.protocol)) {
-      throw new Error('Image URL must be http or https')
+    // If already base64 data URL, use it directly
+    if (imageUrl.startsWith('data:')) {
+      base64DataUrl = imageUrl
+      console.log('✅ Using base64 data URL directly')
+    } else {
+      // Fetch image and convert to base64 (handles blob URLs, signed URLs, etc.)
+      console.log('📥 Fetching image from:', imageUrl.substring(0, 100) + '...')
+      
+      const imageResponse = await fetch(imageUrl, {
+        signal: AbortSignal.timeout(20000) // 20 second timeout
+      })
+      
+      if (!imageResponse.ok) {
+        console.error('❌ Failed to fetch image:', imageResponse.status, imageResponse.statusText)
+        throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
+      }
+      
+      const imageBuffer = await imageResponse.arrayBuffer()
+      
+      // Check image size (max 10MB)
+      if (imageBuffer.byteLength > 10 * 1024 * 1024) {
+        throw new Error('Image too large (max 10MB)')
+      }
+      
+      const base64Image = Buffer.from(imageBuffer).toString('base64')
+      const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+      base64DataUrl = `data:${mimeType};base64,${base64Image}`
+      
+      console.log('✅ Image converted to base64, size:', (imageBuffer.byteLength / 1024).toFixed(2), 'KB')
     }
-  } catch (urlError) {
-    console.error('❌ Invalid image URL format:', imageUrl.substring(0, 100))
-    throw new Error(`Invalid image URL: ${urlError instanceof Error ? urlError.message : 'Invalid URL format'}`)
+  } catch (fetchError) {
+    console.error('❌ Failed to process image URL:', fetchError)
+    throw new Error(`Failed to process image: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`)
   }
   
   const prompt = `You are a pet photo quality inspector, content moderator, and feature analyst.
@@ -148,7 +176,7 @@ If no pet detected but safe:
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageUrl
+                  url: base64DataUrl
                 }
               },
               {
@@ -261,7 +289,8 @@ If no pet detected but safe:
     console.error('Error details:', {
       message: errorMessage,
       stack: errorStack,
-      imageUrl: imageUrl.substring(0, 100) + '...'
+      imageUrl: imageUrl.substring(0, 100) + '...',
+      isBase64: imageUrl.startsWith('data:') || base64DataUrl?.startsWith('data:')
     })
     
     // Log error to database (non-blocking)
@@ -277,11 +306,13 @@ If no pet detected but safe:
           error_details: {
             stack: errorStack?.substring(0, 1000), // Truncated
             imageUrlPrefix: imageUrl.substring(0, 100),
+            isBase64: imageUrl.startsWith('data:') || base64DataUrl?.startsWith('data:'),
             promptLength: prompt.length
           },
           request_body: {
             hasImageUrl: !!imageUrl,
-            imageUrlLength: imageUrl.length
+            imageUrlLength: imageUrl.length,
+            isBase64Url: imageUrl.startsWith('data:')
           }
         })
       
@@ -313,9 +344,10 @@ If no pet detected but safe:
 }
 
 export async function POST(request: NextRequest) {
+  let imageUrl: string | undefined
   try {
     const body = await request.json()
-    const { imageUrl } = body
+    imageUrl = body.imageUrl
     
     if (!imageUrl) {
       return NextResponse.json(
@@ -347,8 +379,9 @@ export async function POST(request: NextRequest) {
             isApiError
           },
           request_body: {
-            hasImageUrl: !!body?.imageUrl,
-            imageUrlLength: body?.imageUrl?.length || 0
+            hasImageUrl: !!imageUrl,
+            imageUrlLength: imageUrl?.length || 0,
+            isBase64Url: imageUrl?.startsWith('data:') || false
           }
         })
       
