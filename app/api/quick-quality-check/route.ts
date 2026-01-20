@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import sharp from 'sharp'
 
 interface QuickQualityCheckResult {
   hasPet: boolean
@@ -33,18 +34,31 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
     }
     
-    const imageBuffer = await imageResponse.arrayBuffer()
+    const originalBuffer = Buffer.from(await imageResponse.arrayBuffer())
     
     // Check image size (max 10MB)
-    if (imageBuffer.byteLength > 10 * 1024 * 1024) {
+    if (originalBuffer.byteLength > 10 * 1024 * 1024) {
       throw new Error('Image too large (max 10MB)')
     }
     
-    const base64Image = Buffer.from(imageBuffer).toString('base64')
-    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-    const base64DataUrl = `data:${mimeType};base64,${base64Image}`
+    // Compress and resize image for SiliconFlow API (max 1024x1024 to reduce base64 size)
+    // This helps avoid API errors due to large payloads
+    const compressedBuffer = await sharp(originalBuffer)
+      .resize(1024, 1024, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer()
     
-    console.log('✅ Image converted to base64, size:', (imageBuffer.byteLength / 1024).toFixed(2), 'KB')
+    const base64Image = compressedBuffer.toString('base64')
+    const base64DataUrl = `data:image/jpeg;base64,${base64Image}`
+    
+    console.log('✅ Image compressed and converted to base64:', {
+      original: (originalBuffer.byteLength / 1024).toFixed(2) + ' KB',
+      compressed: (compressedBuffer.byteLength / 1024).toFixed(2) + ' KB',
+      base64Size: (base64Image.length / 1024).toFixed(2) + ' KB'
+    })
 
     const prompt = `Quick image check (answer in 3 seconds):
 1. Is this a pet (dog/cat/animal)? YES/NO
@@ -60,7 +74,8 @@ Output ONLY this JSON (no explanations):
 }`
 
     console.log('⚡ Quick Quality Check Request:', {
-      imageSize: imageBuffer.byteLength,
+      originalSize: originalBuffer.byteLength,
+      compressedSize: compressedBuffer.byteLength,
       model: 'Qwen/Qwen2.5-VL-72B-Instruct',
       endpoint: 'https://api.siliconflow.com/v1/chat/completions'
     })
