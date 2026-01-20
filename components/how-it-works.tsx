@@ -88,7 +88,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
                 className="object-cover opacity-30"
                 loading="lazy"
                 sizes="(max-width: 768px) 100vw, 50vw"
-                quality={80}
+                quality={85}
               />
               {/* Scanning Effect Overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent animate-pulse" />

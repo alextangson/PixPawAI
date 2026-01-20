@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { HeroSection } from '@/components/hero-section'
 import { HowItWorks } from '@/components/how-it-works'
 import { StyleShowcase } from '@/components/style-showcase'
@@ -8,11 +9,16 @@ import { MerchShowcase } from '@/components/merch-showcase'
 import { WallOfLove } from '@/components/wall-of-love'
 import { FAQSection } from '@/components/faq-section'
 import { FinalCta } from '@/components/final-cta'
-import { UploadModalWizard } from '@/components/upload-modal-wizard'
 import { HomeSchema } from '@/components/home-schema'
 import { type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
 import { useParams } from 'next/navigation'
+
+// 动态导入 UploadModalWizard，减少初始 JS 包大小
+const UploadModalWizard = dynamic(
+  () => import('@/components/upload-modal-wizard').then(mod => ({ default: mod.UploadModalWizard })),
+  { ssr: false }
+)
 
 export default function Home() {
   const params = useParams()

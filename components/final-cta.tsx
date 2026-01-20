@@ -42,7 +42,7 @@ export function FinalCta({ dict, lang, onOpenUpload }: FinalCtaProps) {
           </h2>
 
           {/* Subheadline */}
-          <p className="text-lg sm:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-white mb-8 max-w-2xl mx-auto">
             {dict.finalCta.subtitle}
           </p>
 
@@ -57,7 +57,7 @@ export function FinalCta({ dict, lang, onOpenUpload }: FinalCtaProps) {
           </Button>
 
           {/* Trust Badge */}
-          <div className="mt-6 flex items-center justify-center gap-2 text-white/80 text-sm">
+          <div className="mt-6 flex items-center justify-center gap-2 text-white text-sm">
             <svg
               className="w-5 h-5"
               fill="currentColor"

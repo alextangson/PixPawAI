@@ -82,7 +82,7 @@ export function Footer({ dict, lang }: FooterProps) {
 
           {/* Column 2: Discover (SEO Internal Links) */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">{dict.footer.discover.title}</h4>
+            <h2 className="text-lg font-semibold mb-4 text-white">{dict.footer.discover.title}</h2>
             <ul className="space-y-2 text-gray-400">
               <li>
                 <Link href={`/${lang}/gallery?style=pixar-dogs`} className="hover:text-coral transition-colors">
@@ -104,7 +104,7 @@ export function Footer({ dict, lang }: FooterProps) {
 
           {/* Column 3: Support */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">{dict.footer.support.title}</h4>
+            <h2 className="text-lg font-semibold mb-4 text-white">{dict.footer.support.title}</h2>
             <ul className="space-y-2 text-gray-400">
               <li>
                 <Link href={`/${lang}#faq`} className="hover:text-coral transition-colors">
@@ -126,7 +126,7 @@ export function Footer({ dict, lang }: FooterProps) {
 
           {/* Column 4: Legal */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">{dict.footer.legal.title}</h4>
+            <h2 className="text-lg font-semibold mb-4 text-white">{dict.footer.legal.title}</h2>
             <ul className="space-y-2 text-gray-400">
               <li>
                 <Link href={`/${lang}/privacy`} className="hover:text-coral transition-colors">

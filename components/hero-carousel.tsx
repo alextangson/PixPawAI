@@ -91,12 +91,12 @@ export function HeroCarousel({
             className="object-cover"
             priority={index === 0}  // 首张图片优先加载
             fetchPriority={index === 0 ? "high" : "auto"}  // LCP 优化
-            sizes="(max-width: 768px) 100vw, 50vw"
-            quality={90}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
+            quality={85}
           />
           
           {/* Style Badge */}
-          <div className="absolute top-4 right-4 bg-coral/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+          <div className="absolute top-4 right-4 bg-coral backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
             {image.style}
           </div>
         </div>

@@ -25,7 +25,12 @@ const nextConfig = {
     ],
     formats: ['image/webp', 'image/avif'],
     // 配置允许的图片质量值
-    qualities: [75, 90, 100],
+    qualities: [75, 85, 90, 100],
+    // 最小化优化器错误
+    minimumCacheTTL: 60,
+    // 图片优化器配置
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // 抑制 sharp 库的 Fontconfig 警告（不影响功能）
   env: {
