@@ -67,50 +67,50 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px] w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto p-0 overflow-hidden rounded-3xl shadow-2xl border-0 bg-gradient-to-br from-coral via-orange-500 to-orange-600">
+      <DialogContent className="sm:max-w-[420px] w-[calc(100vw-2rem)] max-h-[90vh] overflow-hidden p-0 rounded-3xl shadow-2xl border-0 bg-gradient-to-br from-coral via-orange-500 to-orange-600 flex flex-col">
         
         {/* Brand Color Background with White Logo & Card */}
-        <div className="px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-16 text-center">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 text-center flex-1 overflow-hidden flex flex-col">
           
           {/* White Logo */}
-          <div className="mb-6 sm:mb-10">
+          <div className="mb-2 sm:mb-3 flex-shrink-0">
             <Image
               src={BRANDING.logos.svg.white}
               alt="PixPaw AI"
-              width={280}
-              height={90}
-              className="mx-auto opacity-95 w-48 sm:w-[280px] h-auto"
+              width={200}
+              height={65}
+              className="mx-auto opacity-95 w-24 sm:w-32 h-auto"
             />
           </div>
           
           {/* White Card Container */}
-          <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-6 lg:p-10 max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 max-w-sm mx-auto flex-1 flex flex-col min-h-0">
             
             {/* Headline */}
-            <DialogHeader className="mb-6 sm:mb-8">
-              <DialogTitle className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-2">
+            <DialogHeader className="mb-3 sm:mb-4 flex-shrink-0">
+              <DialogTitle className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight mb-0.5">
                 Sign in
               </DialogTitle>
-              <DialogDescription className="text-sm text-gray-500">
+              <DialogDescription className="text-[11px] sm:text-xs text-gray-500">
                 to continue to PixPaw AI
               </DialogDescription>
             </DialogHeader>
 
             {/* Login Options */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 sm:gap-2.5 flex-1 min-h-0">
 
               {/* Google Sign In */}
               <Button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full min-h-[48px] sm:h-[52px] bg-white hover:bg-gray-50 text-gray-900 border-[1.5px] border-gray-300 font-medium flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all rounded-xl touch-manipulation"
+                className="w-full h-9 sm:h-10 bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 font-normal flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all rounded-lg touch-manipulation text-xs sm:text-sm"
                 variant="outline"
               >
                 {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-600" />
                 ) : (
                   <>
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -134,38 +134,38 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
               </Button>
 
               {/* Divider */}
-              <div className="relative my-2">
+              <div className="relative my-1 flex-shrink-0">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-gray-200" />
                 </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-4 text-gray-400 font-medium uppercase tracking-wider">
+                <div className="relative flex justify-center text-[10px]">
+                  <span className="bg-white px-2.5 text-gray-400 font-medium uppercase tracking-wider">
                     or
                   </span>
                 </div>
               </div>
 
               {/* Email Magic Link */}
-              <form onSubmit={handleEmailSignIn} className="flex flex-col gap-3">
+              <form onSubmit={handleEmailSignIn} className="flex flex-col gap-2 sm:gap-2.5">
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="email"
                     placeholder="Email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
-                    className="w-full min-h-[48px] sm:h-[52px] pl-12 pr-4 border-[1.5px] border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral transition-all text-gray-900 placeholder:text-gray-400 bg-white text-base"
+                    className="w-full h-9 sm:h-10 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral focus:border-coral transition-all text-gray-900 placeholder:text-gray-400 bg-white text-xs sm:text-sm"
                     required
                   />
                 </div>
                 <Button
                   type="submit"
                   disabled={isLoading || !email}
-                  className="w-full min-h-[48px] sm:h-[52px] bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                  className="w-full h-9 sm:h-10 bg-gray-900 hover:bg-gray-800 text-white font-normal rounded-lg shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-xs sm:text-sm"
                 >
                   {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     'Get Magic Link'
                   )}
@@ -174,7 +174,7 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
 
               {/* Success/Error Message */}
               {message && (
-                <div className={`text-xs text-center p-3 rounded-lg font-medium ${
+                <div className={`text-[11px] text-center p-2 rounded-lg font-normal flex-shrink-0 ${
                   message.includes('error') || message.includes('Failed')
                     ? 'bg-red-50 text-red-600 border border-red-100'
                     : 'bg-green-50 text-green-700 border border-green-100'
@@ -188,7 +188,7 @@ export function LoginButton({ children, redirectTo = '/' }: LoginButtonProps) {
           </div>
 
           {/* Footer - White Text on Brand Background */}
-          <p className="text-xs text-white/80 mt-6 sm:mt-8 leading-relaxed px-2">
+          <p className="text-[10px] text-white/80 mt-2 leading-relaxed px-2 flex-shrink-0">
             By continuing, you agree to our{' '}
             <a href="#" className="text-white hover:text-white/90 underline font-medium">
               Terms
