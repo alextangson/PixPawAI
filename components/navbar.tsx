@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Heart, Image } from 'lucide-react';
+import { Menu, X, Heart, Image as ImageIcon } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { LoginButton } from '@/components/auth/login-button';
@@ -195,7 +195,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                     className="text-gray-700 hover:text-coral font-medium py-2 px-4 rounded-lg hover:bg-orange-50 transition-colors flex items-center gap-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Image className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4" />
                     My Gallery
                   </Link>
                   {/* Mobile CTA */}
