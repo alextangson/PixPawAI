@@ -64,7 +64,7 @@ export async function generateMetadata({
       description: dict.metadata.description,
       url: `https://pixpawai.com/${lang}`,
       siteName: "PixPaw AI",
-      locale: lang === 'en' ? 'en_US' : lang === 'zh-CN' ? 'zh_CN' : lang,
+      locale: 'en_US',
       type: "website",
       images: [
         {

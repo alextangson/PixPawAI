@@ -588,30 +588,30 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
               <div className="mb-2 sm:mb-3 min-h-[20px]">
                 {generation.title ? (
                   <p className="text-xs sm:text-sm font-medium text-gray-800 line-clamp-1">
-                    {generation.title}
-                  </p>
+                  {generation.title}
+                </p>
                 ) : (
                   <p className="text-xs text-gray-400 italic">No title</p>
-                )}
+              )}
               </div>
 
               {/* Stats - Always reserve space for consistent height */}
               <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 min-h-[20px]">
                 {generation.is_public ? (
                   <>
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5" />
-                      {generation.views ?? 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3.5 h-3.5" />
-                      {generation.likes ?? 0}
-                    </span>
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-3.5 h-3.5" />
+                    {generation.views ?? 0}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Heart className="w-3.5 h-3.5" />
+                    {generation.likes ?? 0}
+                  </span>
                   </>
                 ) : (
                   <span className="text-gray-400">Not shared yet</span>
                 )}
-              </div>
+                </div>
 
               {/* Action Buttons - Responsive 3-BUTTON LAYOUT */}
               <div className="flex gap-2">

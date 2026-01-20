@@ -885,36 +885,36 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              {step === 'configure' && (
-                <button
-                  onClick={() => setStep('upload')}
+            {step === 'configure' && (
+              <button
+                onClick={() => setStep('upload')}
                   className="p-3 sm:p-2 touch-target hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center shrink-0"
-                >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </button>
-              )}
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
               <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl font-serif font-bold text-gray-900 truncate">
-                  {step === 'upload' && 'Upload Your Photo'}
-                  {step === 'quality-check' && 'Checking Photo Quality'}
-                  {step === 'configure' && 'Configure Your Portrait'}
-                  {step === 'generating' && 'Creating Your Portrait...'}
-                </h2>
+                {step === 'upload' && 'Upload Your Photo'}
+                {step === 'quality-check' && 'Checking Photo Quality'}
+                {step === 'configure' && 'Configure Your Portrait'}
+                {step === 'generating' && 'Creating Your Portrait...'}
+              </h2>
                 <p className="text-xs sm:text-sm text-gray-600 font-sans hidden sm:block">
-                  {step === 'upload' && 'Start by uploading a photo of your pet'}
-                  {step === 'quality-check' && 'Making sure your photo is ready for the best results'}
-                  {step === 'configure' && 'Customize the style and prompt'}
-                  {step === 'generating' && 'This may take 10-30 seconds...'}
-                </p>
-              </div>
+                {step === 'upload' && 'Start by uploading a photo of your pet'}
+                {step === 'quality-check' && 'Making sure your photo is ready for the best results'}
+                {step === 'configure' && 'Customize the style and prompt'}
+                {step === 'generating' && 'This may take 10-30 seconds...'}
+              </p>
             </div>
-            <button
-              onClick={onClose}
-              disabled={step === 'generating'}
+          </div>
+          <button
+            onClick={onClose}
+            disabled={step === 'generating'}
               className="p-3 sm:p-2 touch-target hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
-            >
+          >
               <X className="w-6 h-6 sm:w-5 sm:h-5 text-gray-600" />
-            </button>
+          </button>
           </div>
         </div>
 
@@ -1460,10 +1460,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                           aspectRatio === ratio.value ? "text-coral" : "text-gray-700"
                         )}>
                           {ratio.label}
-                        </span>
+                  </span>
                         <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">
                           {ratio.dimensions}
-                        </span>
+                  </span>
                 </button>
                     ))}
                   </div>
@@ -1475,11 +1475,11 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     <div className="flex items-start gap-2 sm:gap-3">
                       <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                      </div>
+                    </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-xs sm:text-sm font-bold text-gray-900 mb-1">
                           🎯 AI Photo Analysis Complete
-                        </h4>
+                      </h4>
                         <div className="space-y-1.5 sm:space-y-2 text-xs text-gray-700">
                           <div className="flex items-start gap-2">
                             <span className="text-green-600 font-semibold shrink-0">Pet:</span>
@@ -1487,24 +1487,24 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                               {qualityCheckResult.petType === 'dog' ? '🐕 Dog' : qualityCheckResult.petType === 'cat' ? '🐈 Cat' : '🐾 Pet'}
                               {qualityCheckResult.breed && qualityCheckResult.breed !== 'unknown' && ` - ${qualityCheckResult.breed}`}
                             </span>
-                          </div>
+                      </div>
                           {qualityCheckResult.detectedColors && (
                             <div className="flex items-start gap-2">
                               <span className="text-green-600 font-semibold shrink-0">Colors:</span>
                               <span className="break-words">{qualityCheckResult.detectedColors}</span>
-                            </div>
+                    </div>
                           )}
                           {qualityCheckResult.complexPattern && (
                             <div className="flex items-center gap-2">
                               <span className="text-green-600 font-semibold">Pattern:</span>
                               <span>Complex fur pattern detected</span>
-                            </div>
+                  </div>
                           )}
                           {qualityCheckResult.multiplePets > 1 && (
                             <div className="flex items-center gap-2">
                               <span className="text-green-600 font-semibold">Pets:</span>
                               <span>{qualityCheckResult.multiplePets} pets in photo</span>
-                            </div>
+                </div>
                           )}
                           <div className="mt-2 bg-white rounded-lg p-2 text-center">
                             <span className="text-[10px] sm:text-xs text-gray-600">Parameters optimized for </span>
@@ -1524,7 +1524,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                       Customize Scene & Style
                     </span>
                     <span className="text-[10px] sm:text-xs text-gray-500 font-normal">(Optional)</span>
-                  </label>
+                      </label>
                   <Input
                     value={userPrompt}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPrompt(e.target.value)}
@@ -1533,8 +1533,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                   />
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-1.5 sm:mt-2">
                     Add accessories, change background, or adjust composition. Your pet's features stay the same!
-                  </p>
-                </div>
+                    </p>
+                  </div>
 
                 {/* AI Detected Features */}
                 {qualityCheckResult?.hasHeterochromia && (
@@ -1549,12 +1549,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                         <p className="text-xs text-blue-600 mt-1 italic">
                           Our system will automatically optimize parameters to preserve this unique feature.
                         </p>
-                      </div>
-                    </div>
                   </div>
+                </div>
+              </div>
                 )}
               </div>
-            </div>
+              </div>
             </div>
           )}
 
@@ -1662,13 +1662,13 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     <span className="font-medium text-gray-900">{aspectRatio}</span>
                   </div>
                   {qualityCheckResult && (
-                    <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-600">Pet</span>
                       <span className="font-medium text-gray-900 truncate ml-2">
                         {qualityCheckResult.petType === 'dog' ? 'Dog' : qualityCheckResult.petType === 'cat' ? 'Cat' : 'Pet'}
                         {qualityCheckResult.breed && qualityCheckResult.breed !== 'unknown' && ` - ${qualityCheckResult.breed}`}
                       </span>
-                    </div>
+                  </div>
                   )}
                 </div>
               </div>

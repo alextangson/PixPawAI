@@ -896,7 +896,7 @@ export default function StylesManagementPage() {
                               Current / 当前版本
                             </span>
                             <span className="text-xs text-gray-500">
-                              {new Date(currentStyle.updated_at || currentStyle.created_at || '').toLocaleString('zh-CN')}
+                              {new Date(currentStyle.updated_at || currentStyle.created_at || '').toLocaleString('en-US')}
                             </span>
                           </div>
                         </div>
@@ -957,7 +957,7 @@ export default function StylesManagementPage() {
                             v{version.version_number}
                           </span>
                           <span className="text-xs text-gray-500">
-                            {new Date(version.created_at).toLocaleString('zh-CN')}
+                            {new Date(version.created_at).toLocaleString('en-US')}
                           </span>
                         </div>
                         <button

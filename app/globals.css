@@ -96,7 +96,7 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
-  
+
   /* iOS Safe Area Support */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 1rem);

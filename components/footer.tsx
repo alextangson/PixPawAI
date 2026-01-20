@@ -40,7 +40,6 @@ interface FooterProps {
         label: string;
         languages: {
           en: string;
-          'zh-CN': string;
         };
       };
     };

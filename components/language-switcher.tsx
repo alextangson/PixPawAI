@@ -12,7 +12,6 @@ interface LanguageSwitcherProps {
         label: string
         languages: {
           en: string
-          'zh-CN': string
         }
       }
     }
@@ -22,6 +21,11 @@ interface LanguageSwitcherProps {
 export function LanguageSwitcher({ currentLang, dict }: LanguageSwitcherProps) {
   const pathname = usePathname()
   const router = useRouter()
+
+  // Hide language switcher if only one language is available
+  if (i18n.locales.length <= 1) {
+    return null
+  }
 
   const handleLanguageChange = (newLang: string) => {
     if (!pathname) return
