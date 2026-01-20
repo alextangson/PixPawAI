@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getAllArticleSlugs } from '@/lib/wordpress/blog';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
 
@@ -67,7 +67,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch popular gallery images (limit to top 100 to avoid sitemap bloat)
   let galleryPages: MetadataRoute.Sitemap = [];
   try {
-    const supabase = await createClient();
+    // Use admin client to avoid cookies dependency (sitemap must be static)
+    const supabase = createAdminClient();
     const { data: images } = await supabase
       .from('generations')
       .select('id, created_at')
