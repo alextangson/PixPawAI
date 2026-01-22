@@ -110,6 +110,21 @@ export async function POST(request: NextRequest) {
     const urlFontSize = 24 // Clear URL
     const logoHeight = 100 // Compact logo for Polaroid style
 
+    // Escape XML/HTML special characters to prevent encoding issues
+    const escapeXml = (text: string): string => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+    }
+
+    // Escape text content to prevent encoding issues
+    const escapedTitle = escapeXml(finalTitle)
+    const escapedDate = escapeXml(currentDate)
+    const escapedSlogan = escapeXml(selectedSlogan)
+
     // Single unified SVG for entire canvas (1360x1780) - Polaroid compact layout
     // Image bottom at y=1230 (80+1150), equal spacing: 70px between image-title and title group-line1
     const unifiedSVG = `
@@ -122,7 +137,7 @@ export async function POST(request: NextRequest) {
           font-size="${titleFontSize}" 
           font-weight="700" 
           fill="#1F2937"
-        >${finalTitle}</text>
+        >${escapedTitle}</text>
         
         <!-- Date: y=1350 (50px below title) -->
         <text 
@@ -131,7 +146,7 @@ export async function POST(request: NextRequest) {
           font-family="Inter, -apple-system, sans-serif" 
           font-size="${dateFontSize}" 
           fill="#666666"
-        >${currentDate}</text>
+        >${escapedDate}</text>
 
         <!-- First Separator Line: y=1420 (70px below date, matching image-to-title spacing) -->
         <path 
@@ -150,7 +165,7 @@ export async function POST(request: NextRequest) {
           font-weight="400"
           font-style="italic"
           fill="#374151"
-        >${selectedSlogan}</text>
+        >${escapedSlogan}</text>
 
         <!-- Second Separator Line: y=1570 (150px spacing for slogan area) -->
         <path 

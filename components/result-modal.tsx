@@ -425,7 +425,7 @@ export function ResultModal({
   return (
     <>
       {/* Main Result Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <div className={`fixed inset-0 ${artCardModalOpen ? 'z-40' : 'z-50'} flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in`}>
         <div className="bg-white w-full h-full max-h-screen sm:max-h-[96vh] md:max-h-[94vh] lg:max-h-[92vh] xl:max-h-[90vh] lg:max-w-7xl rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row">
           
           {/* Close Button (Top Right) */}
@@ -479,8 +479,8 @@ export function ResultModal({
             <div className="bg-white p-3 sm:p-4 md:p-4 lg:p-5 border-t border-gray-200 flex-shrink-0">
               <div className="max-w-2xl mx-auto space-y-2 sm:space-y-3">
                 
-                {/* Share Input (Conditional) */}
-                {showShareInput && !isShared && (
+                {/* Share Input (Conditional) - Hide when Art Card Modal is open */}
+                {showShareInput && !isShared && !artCardModalOpen && (
                   <div className="bg-gradient-to-br from-orange-50 to-coral/10 rounded-xl p-4 space-y-3 animate-in slide-in-from-bottom border-2 border-coral/20">
                     <div className="flex items-center justify-between">
                       <label className="block text-base font-semibold text-gray-800">
@@ -537,59 +537,59 @@ export function ResultModal({
                     </div>
                   )}
                   
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Action Buttons - Responsive: single column on mobile, grid on desktop */}
+                  <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
                   {!isShared ? (
-                    <Button
-                      onClick={handleShareClick}
-                      disabled={showShareInput}
-                      className="sm:col-span-2 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-12 text-base shadow-lg"
-                    >
-                      <Sparkles className="w-5 h-5 mr-2" />
+                    <>
+                      <Button
+                        onClick={handleShareClick}
+                        disabled={showShareInput}
+                        className="w-full sm:col-span-2 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-12 text-base shadow-lg"
+                      >
+                        <Sparkles className="w-5 h-5 mr-2" />
                         Share to Gallery (+1 Credit)
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleCreateArtCard}
-                      className="sm:col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 text-white font-bold h-12 text-base shadow-lg"
-                    >
-                      <Sparkles className="w-5 h-5 mr-2" />
-                        Create Art Card
-                    </Button>
-                  )}
-
-                  {!isShared ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                          <ChevronDown className="w-4 h-4 ml-2" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuItem onClick={handleDownloadOriginal}>
-                          <Download className="w-4 h-4 mr-2" />
-                          Original High-Res
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleCreateArtCard}>
-                          <Sparkles className="w-4 h-4 mr-2" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                            <ChevronDown className="w-4 h-4 ml-2" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          <DropdownMenuItem onClick={handleDownloadOriginal}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Original High-Res
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleCreateArtCard}>
+                            <Sparkles className="w-4 h-4 mr-2" />
                             Create Art Card
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
                   ) : (
-                    <Button
-                      onClick={handleDownloadOriginal}
-                      variant="outline"
-                      className="sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Original
-                    </Button>
+                    <>
+                      <Button
+                        onClick={handleCreateArtCard}
+                        className="w-full sm:col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 text-white font-bold h-12 text-base shadow-lg"
+                      >
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Create Art Card
+                      </Button>
+                      <Button
+                        onClick={handleDownloadOriginal}
+                        variant="outline"
+                        className="w-full sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Original
+                      </Button>
+                    </>
                   )}
                 </div>
                 
