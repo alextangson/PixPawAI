@@ -133,6 +133,7 @@ export async function GET(request: Request) {
                   ...options,
                   sameSite: 'lax',
                   secure: process.env.NODE_ENV === 'production',
+                  path: '/',
                 })
               })
             } catch (error) {
@@ -186,8 +187,35 @@ export async function GET(request: Request) {
       // Revalidate to update UI
       revalidatePath('/', 'layout')
       
-      // Redirect - Supabase has already set the auth cookies via exchangeCodeForSession
-      return NextResponse.redirect(`${origin}${next}`)
+      // Create redirect response
+      // Supabase cookies are already set in cookieStore via exchangeCodeForSession
+      // We need to explicitly copy them to the redirect response
+      const redirectUrl = `${origin}${next}`
+      const redirectResponse = NextResponse.redirect(redirectUrl)
+      
+      // Copy all cookies from cookieStore to redirect response
+      // This is necessary because NextResponse.redirect() creates a new response
+      // that doesn't automatically include cookies from cookieStore
+      const allCookies = cookieStore.getAll()
+      console.log('📦 Copying cookies to redirect response:', allCookies.map(c => c.name).join(', '))
+      
+      allCookies.forEach((cookie) => {
+        // Copy all cookies, but ensure proper settings for auth cookies
+        const isAuthCookie = cookie.name.includes('auth') || 
+                            cookie.name.startsWith('sb-') ||
+                            cookie.name.includes('supabase')
+        
+        redirectResponse.cookies.set(cookie.name, cookie.value, {
+          path: '/',
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          httpOnly: isAuthCookie,
+          maxAge: isAuthCookie ? 60 * 60 * 24 * 7 : undefined, // 7 days for auth cookies
+        })
+      })
+      
+      console.log('✅ Redirect response prepared with cookies')
+      return redirectResponse
     }
   }
 
