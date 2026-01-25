@@ -17,14 +17,75 @@ if (!WORDPRESS_API_URL) {
 }
 
 /**
+ * Decode HTML entities in text
+ */
+function decodeHtmlEntities(text: string): string {
+  // Create a temporary element to decode HTML entities
+  // This works in both browser and Node.js environments
+  if (typeof window !== 'undefined') {
+    // Browser environment
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  } else {
+    // Node.js environment - decode common HTML entities
+    return text
+      .replace(/&#8230;/g, '...')
+      .replace(/&hellip;/g, '...')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&#8217;/g, "'")
+      .replace(/&#8216;/g, "'")
+      .replace(/&#8220;/g, '"')
+      .replace(/&#8221;/g, '"')
+      .replace(/&#8211;/g, '–')
+      .replace(/&#8212;/g, '—')
+      .replace(/&mdash;/g, '—')
+      .replace(/&ndash;/g, '–')
+      // Decode numeric entities (e.g., &#8230;)
+      .replace(/&#(\d+);/g, (match, dec) => {
+        const charCode = parseInt(dec, 10);
+        return String.fromCharCode(charCode);
+      })
+      // Decode hex entities (e.g., &#x2026;)
+      .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => {
+        const charCode = parseInt(hex, 16);
+        return String.fromCharCode(charCode);
+      });
+  }
+}
+
+/**
+ * Clean and decode text from WordPress
+ */
+function cleanText(text: string): string {
+  // Remove HTML tags first
+  let cleaned = text.replace(/<[^>]*>/g, '');
+  // Decode HTML entities
+  cleaned = decodeHtmlEntities(cleaned);
+  // Clean up whitespace
+  cleaned = cleaned
+    .replace(/\s+/g, ' ')
+    .replace(/\[&hellip;\]/g, '...')
+    .trim();
+  return cleaned;
+}
+
+/**
  * Transform WordPress post to normalized BlogArticle format
  */
 function transformWordPressPost(post: WordPressPost): BlogArticle {
   // Extract featured media
   const featuredMedia = post._embedded?.['wp:featuredmedia']?.[0];
+  const cleanTitle = cleanText(post.title.rendered);
   const coverImage = featuredMedia ? {
     url: featuredMedia.source_url,
-    alt: featuredMedia.alt_text || post.title.rendered,
+    alt: featuredMedia.alt_text || cleanTitle,
     width: featuredMedia.media_details?.width || 1200,
     height: featuredMedia.media_details?.height || 630,
   } : null;
@@ -60,17 +121,13 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     ? post.acf.seo_keywords.split(',').map(k => k.trim()).filter(Boolean)
     : [];
 
-  // Clean excerpt (remove HTML tags)
-  const cleanExcerpt = post.excerpt.rendered
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\[&hellip;\]/g, '...')
-    .trim();
+  // Clean and decode excerpt (title already cleaned above)
+  const cleanExcerpt = cleanText(post.excerpt.rendered);
 
   return {
     id: post.id,
     slug: post.slug,
-    title: post.title.rendered,
+    title: cleanTitle,
     excerpt: cleanExcerpt,
     content: post.content.rendered,
     coverImage,
@@ -81,7 +138,7 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     readingTime: post.acf?.reading_time || calculatedReadingTime,
     isFeatured: post.acf?.featured || false,
     seoKeywords,
-    metaTitle: post.title.rendered,
+    metaTitle: cleanTitle,
     metaDescription: cleanExcerpt.substring(0, 160),
   };
 }
@@ -107,6 +164,14 @@ export async function getBlogArticles(
   // Get all PixPaw categories to filter posts
   const allCategories = await getCategories();
   const pixpawCategoryIds = allCategories.map(cat => cat.id);
+  const pixpawCategorySlugs = allCategories.map(cat => cat.slug);
+
+  // CRITICAL: If no PixPaw categories exist, return empty array
+  // This prevents showing posts from other websites
+  if (pixpawCategoryIds.length === 0) {
+    console.warn('[WordPress] No PixPaw categories found. Returning empty array to prevent showing unrelated content.');
+    return [];
+  }
 
   const params = new URLSearchParams({
     per_page: String(perPage),
@@ -119,12 +184,24 @@ export async function getBlogArticles(
 
   // Add category filter if provided (using custom taxonomy)
   if (category) {
-    const categoryData = await getCategoryBySlug(category);
-    if (categoryData) {
-      params.append('pixpaw_category', String(categoryData.id));
+    // Only allow filtering by valid PixPaw categories
+    if (category === 'uncategorized') {
+      // For uncategorized, we still need to ensure the post belongs to PixPaw taxonomy
+      // We'll filter client-side after fetching
+      params.append('pixpaw_category', pixpawCategoryIds.join(','));
+    } else {
+      const categoryData = await getCategoryBySlug(category);
+      if (categoryData && pixpawCategorySlugs.includes(categoryData.slug)) {
+        params.append('pixpaw_category', String(categoryData.id));
+      } else {
+        // Invalid category, return empty array
+        console.warn(`[WordPress] Invalid category "${category}". Returning empty array.`);
+        return [];
+      }
     }
-  } else if (pixpawCategoryIds.length > 0) {
+  } else {
     // If no specific category, filter by ANY PixPaw category
+    // This ensures we only show PixPaw-related content
     params.append('pixpaw_category', pixpawCategoryIds.join(','));
   }
 
@@ -149,7 +226,26 @@ export async function getBlogArticles(
     }
 
     const posts: WordPressPost[] = await res.json();
-    return posts.map(transformWordPressPost);
+    
+    // Additional client-side filtering to ensure only PixPaw-related posts are shown
+    // This is a safety measure in case WordPress API returns unexpected results
+    const filteredPosts = posts.filter(post => {
+      // Check if post has any PixPaw category assigned
+      const postCategories = post._embedded?.['wp:term']?.[0] || [];
+      const hasPixPawCategory = postCategories.some(
+        (term: any) => term.taxonomy === 'pixpaw_category' && pixpawCategoryIds.includes(term.id)
+      );
+      
+      // If filtering by uncategorized, check if post has no PixPaw category
+      if (category === 'uncategorized') {
+        return !hasPixPawCategory;
+      }
+      
+      // Otherwise, ensure post has at least one PixPaw category
+      return hasPixPawCategory;
+    });
+    
+    return filteredPosts.map(transformWordPressPost);
   } catch (error) {
     console.error('[WordPress] Error fetching articles:', error);
     return [];
@@ -166,8 +262,18 @@ export async function getBlogArticle(slug: string): Promise<BlogArticle | null> 
   }
 
   try {
+    // Get PixPaw categories first to validate the post
+    const allCategories = await getCategories();
+    const pixpawCategoryIds = allCategories.map(cat => cat.id);
+    
+    // If no PixPaw categories exist, don't show any posts
+    if (pixpawCategoryIds.length === 0) {
+      console.warn('[WordPress] No PixPaw categories found. Returning null.');
+      return null;
+    }
+
     const res = await fetch(
-      `${WORDPRESS_API_URL}/posts?slug=${slug}&_embed=true`,
+      `${WORDPRESS_API_URL}/posts?slug=${slug}&_embed=true&pixpaw_category=${pixpawCategoryIds.join(',')}`,
       {
         next: { revalidate: 3600 }, // ISR: Revalidate every 1 hour
         headers: {
@@ -186,7 +292,19 @@ export async function getBlogArticle(slug: string): Promise<BlogArticle | null> 
       return null;
     }
 
-    return transformWordPressPost(posts[0]);
+    // Additional validation: ensure post belongs to PixPaw taxonomy
+    const post = posts[0];
+    const postCategories = post._embedded?.['wp:term']?.[0] || [];
+    const hasPixPawCategory = postCategories.some(
+      (term: any) => term.taxonomy === 'pixpaw_category' && pixpawCategoryIds.includes(term.id)
+    );
+
+    if (!hasPixPawCategory) {
+      console.warn(`[WordPress] Post "${slug}" does not belong to PixPaw taxonomy. Returning null.`);
+      return null;
+    }
+
+    return transformWordPressPost(post);
   } catch (error) {
     console.error(`[WordPress] Error fetching article "${slug}":`, error);
     return null;
@@ -226,6 +344,15 @@ export async function getRelatedArticles(
   }
 
   try {
+    // Validate that categoryId belongs to PixPaw taxonomy
+    const allCategories = await getCategories();
+    const pixpawCategoryIds = allCategories.map(cat => cat.id);
+    
+    if (!pixpawCategoryIds.includes(categoryId)) {
+      console.warn(`[WordPress] Invalid categoryId ${categoryId}. Returning empty array.`);
+      return [];
+    }
+
     const params = new URLSearchParams({
       pixpaw_category: String(categoryId),
       exclude: String(excludeId),
@@ -251,7 +378,16 @@ export async function getRelatedArticles(
     }
 
     const posts: WordPressPost[] = await res.json();
-    return posts.map(transformWordPressPost);
+    
+    // Additional client-side filtering to ensure only PixPaw-related posts
+    const filteredPosts = posts.filter(post => {
+      const postCategories = post._embedded?.['wp:term']?.[0] || [];
+      return postCategories.some(
+        (term: any) => term.taxonomy === 'pixpaw_category' && pixpawCategoryIds.includes(term.id)
+      );
+    });
+    
+    return filteredPosts.map(transformWordPressPost);
   } catch (error) {
     console.error('[WordPress] Error fetching related articles:', error);
     return [];
@@ -330,8 +466,18 @@ export async function getAllArticleSlugs(): Promise<string[]> {
   }
 
   try {
+    // Get PixPaw categories first to filter posts
+    const allCategories = await getCategories();
+    const pixpawCategoryIds = allCategories.map(cat => cat.id);
+    
+    // If no PixPaw categories exist, return empty array
+    if (pixpawCategoryIds.length === 0) {
+      console.warn('[WordPress] No PixPaw categories found. Returning empty slugs array.');
+      return [];
+    }
+
     const res = await fetch(
-      `${WORDPRESS_API_URL}/posts?per_page=100&status=publish&_fields=slug`,
+      `${WORDPRESS_API_URL}/posts?per_page=100&status=publish&pixpaw_category=${pixpawCategoryIds.join(',')}&_fields=slug`,
       {
         next: { revalidate: 3600 },
         headers: {
