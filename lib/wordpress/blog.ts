@@ -113,8 +113,40 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     height: featuredMedia.media_details?.height || 630,
   } : null;
 
-  // Extract category (take first one)
-  const categoryData = post._embedded?.['wp:term']?.[0]?.[0];
+  // Extract category - prioritize pixpaw_category over default WordPress category
+  // post._embedded['wp:term'] is a 2D array: [taxonomy1_terms[], taxonomy2_terms[], ...]
+  // Each taxonomy array contains terms for that taxonomy
+  let categoryData = null;
+  
+  if (post._embedded?.['wp:term']) {
+    // First, try to find pixpaw_category taxonomy
+    for (const taxonomyTerms of post._embedded['wp:term']) {
+      if (taxonomyTerms && taxonomyTerms.length > 0) {
+        const firstTerm = taxonomyTerms[0];
+        if (firstTerm.taxonomy === 'pixpaw_category') {
+          categoryData = firstTerm;
+          break;
+        }
+      }
+    }
+    
+    // If no pixpaw_category found, use the first available category
+    if (!categoryData) {
+      for (const taxonomyTerms of post._embedded['wp:term']) {
+        if (taxonomyTerms && taxonomyTerms.length > 0) {
+          const firstTerm = taxonomyTerms[0];
+          // Prefer 'category' over other taxonomies like 'post_tag'
+          if (firstTerm.taxonomy === 'category' || !categoryData) {
+            categoryData = firstTerm;
+            if (firstTerm.taxonomy === 'category') {
+              break; // Found default category, use it
+            }
+          }
+        }
+      }
+    }
+  }
+  
   const category = categoryData ? {
     id: categoryData.id,
     name: categoryData.name,
@@ -124,6 +156,21 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     name: 'Uncategorized',
     slug: 'uncategorized',
   };
+  
+  // Log category extraction for debugging
+  if (post._embedded?.['wp:term']) {
+    const allTerms = post._embedded['wp:term'].flat().map((t: any) => ({
+      taxonomy: t.taxonomy,
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+    }));
+    console.log(`[WordPress] transformWordPressPost - Post ${post.id} (${post.slug}):`, {
+      allTerms,
+      selectedCategory: category,
+      selectedFromTaxonomy: categoryData?.taxonomy,
+    });
+  }
 
   // Extract author
   const authorData = post._embedded?.author?.[0];
