@@ -30,6 +30,9 @@ export async function generateMetadata({
       description: 'Master the art of AI pet portraits with expert tutorials and guides',
       type: 'website',
     },
+    alternates: {
+      canonical: `/${lang}/how-to`,
+    },
   };
 }
 
@@ -71,7 +74,7 @@ export default async function HowToGuidePage({
               <BookOpen className="w-5 h-5 text-coral" />
               <span className="text-sm font-semibold text-gray-700">Knowledge Center</span>
             </div>
-            
+
             <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
               AI Pet Portrait Tutorials & Guides
             </h1>
@@ -100,27 +103,25 @@ export default async function HowToGuidePage({
             <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
               <Link
                 href={`/${lang}/how-to`}
-                className={`px-6 py-3 rounded-full font-semibold transition-all ${
-                  !category
+                className={`px-6 py-3 rounded-full font-semibold transition-all ${!category
                     ? 'bg-gradient-to-r from-coral to-orange-600 text-white shadow-md'
                     : 'bg-cream text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 All Articles
               </Link>
-              
+
               {BLOG_CATEGORIES.map((cat) => {
                 const IconComponent = ICON_MAP[cat.icon as keyof typeof ICON_MAP];
-                
+
                 return (
                   <Link
                     key={cat.slug}
                     href={`/${lang}/how-to?category=${cat.slug}`}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
-                      category === cat.slug
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${category === cat.slug
                         ? 'bg-gradient-to-r from-coral to-orange-600 text-white shadow-md'
                         : 'bg-cream text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     <IconComponent className="w-4 h-4" />
                     {cat.name}
@@ -149,8 +150,8 @@ export default async function HowToGuidePage({
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">No Articles Yet</h3>
                 <p className="text-gray-600 mb-8">
-                  {category 
-                    ? 'No articles found in this category. Try browsing all articles.' 
+                  {category
+                    ? 'No articles found in this category. Try browsing all articles.'
                     : 'We are working on creating helpful content for you. Check back soon!'}
                 </p>
                 {category && (

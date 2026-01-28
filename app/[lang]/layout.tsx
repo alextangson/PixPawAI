@@ -9,13 +9,13 @@ import { getUser } from '@/lib/auth/actions'
 import { ReferralWelcomeToast } from '@/components/referral-welcome-toast'
 import { Analytics } from '@/components/analytics'
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: '--font-sans',
   display: 'swap',
 })
 
-const playfair = Playfair_Display({ 
+const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: '--font-serif',
   display: 'swap',
@@ -33,7 +33,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params
   const dict = await getDictionary(lang)
-  
+
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com'),
     title: dict.metadata.title,
@@ -49,6 +49,15 @@ export async function generateMetadata({
       // 3. Choose "HTML tag" method
       // 4. Copy the content value from: <meta name="google-site-verification" content="YOUR_CODE" />
       // 5. Add to .env.local: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=YOUR_CODE
+    },
+    alternates: {
+      canonical: `/${lang}`,
+      languages: {
+        'en': '/en',
+        'x-default': '/en',
+        // Add more languages when available:
+        // 'zh': '/zh',
+      },
     },
     icons: {
       icon: [
@@ -94,14 +103,14 @@ export default async function RootLayout({
   const { lang } = await params
   const dict = await getDictionary(lang as Locale)
   const user = await getUser()
-  
+
   return (
     <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body 
+      <body
         className={`${inter.variable} ${playfair.variable} font-sans`}
         suppressHydrationWarning
       >

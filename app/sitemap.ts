@@ -10,13 +10,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
+  // Note: Root path (/) is excluded because it redirects to /en
+  // Including it would cause duplicate content issues in Google Search Console
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: SITE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
     {
       url: `${SITE_URL}/en`,
       lastModified: new Date(),
@@ -53,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let blogPages: MetadataRoute.Sitemap = [];
   try {
     const articleSlugs = await getAllArticleSlugs();
-    
+
     blogPages = articleSlugs.map((slug) => ({
       url: `${SITE_URL}/en/how-to/${slug}`,
       lastModified: new Date(),

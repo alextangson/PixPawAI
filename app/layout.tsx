@@ -20,11 +20,15 @@ const pacifico = Pacifico({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com'),
   title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
   description: "Transform your furry friend into stunning 3D Disney-style artwork in just 30 seconds. AI-powered pet portraits with 4K downloads and custom merchandise.",
   keywords: ["pet portraits", "AI art", "Pixar style", "Disney pets", "3D pet art", "custom pet merchandise"],
   authors: [{ name: "PixPaw AI" }],
   manifest: '/manifest.json',
+  alternates: {
+    canonical: '/en',
+  },
   icons: {
     icon: [
       { url: '/favicons/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -37,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
     description: "Transform your furry friend into stunning 3D Disney-style artwork in just 30 seconds.",
-    url: "https://pixpawai.com",
+    url: "https://pixpawai.com/en",
     siteName: "PixPaw AI",
     locale: "en_US",
     type: "website",
