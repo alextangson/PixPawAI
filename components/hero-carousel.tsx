@@ -48,7 +48,7 @@ interface HeroCarouselProps {
   autoPlayInterval?: number  // milliseconds
 }
 
-export function HeroCarousel({ 
+export function HeroCarousel({
   className,
   autoPlayInterval = 2500  // 加快到 2.5 秒
 }: HeroCarouselProps) {
@@ -69,7 +69,7 @@ export function HeroCarousel({
   return (
     <div
       className={cn(
-        'relative w-full aspect-[3/2] overflow-hidden rounded-2xl shadow-2xl',
+        'relative w-full aspect-[4/3] sm:aspect-[3/2] overflow-hidden rounded-2xl shadow-2xl',
         className
       )}
       onMouseEnter={() => setIsPaused(true)}
@@ -94,7 +94,7 @@ export function HeroCarousel({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
             quality={85}
           />
-          
+
           {/* Style Badge */}
           <div className="absolute top-4 right-4 bg-coral backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
             {image.style}
@@ -117,8 +117,8 @@ export function HeroCarousel({
             <span
               className={cn(
                 'rounded-full transition-all duration-300',
-                index === currentIndex 
-                  ? 'w-8 h-2 bg-white' 
+                index === currentIndex
+                  ? 'w-8 h-2 bg-white'
                   : 'w-2 h-2 bg-white/50'
               )}
             />

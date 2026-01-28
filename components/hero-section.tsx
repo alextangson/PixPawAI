@@ -41,7 +41,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden pt-4 sm:pt-8 lg:pt-16">
       {/* Background Pattern - Brand paw prints */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `url('/brand/paw-orange.svg')`,
@@ -58,11 +58,11 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
       </div>
 
       {/* Main Hero Content */}
-      <div className="relative flex-1 flex items-center justify-center px-4 py-6 sm:py-12 md:py-16 lg:py-20">
+      <div className="relative flex-1 flex items-center justify-center px-4 py-8 sm:py-12 md:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 lg:gap-16 items-center">
             {/* Left Column - Text Content */}
-            <div className="text-center lg:text-left space-y-4 sm:space-y-6 md:space-y-8 z-10 order-2 lg:order-1">
+            <div className="text-center lg:text-left space-y-4 sm:space-y-5 md:space-y-6 lg:space-y-8 z-10 order-2 lg:order-1">
               {/* Social Proof - With Avatar Stack */}
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 rounded-full px-3 py-1 text-xs sm:text-sm font-medium">
                 <div className="flex -space-x-2">
@@ -81,7 +81,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               </div>
 
               {/* Main Headline (H1) - Responsive Typography */}
-              <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold tracking-tight leading-tight max-w-5xl mx-auto lg:mx-0">
+              <h1 className="text-3xl xs:text-4xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold tracking-tight leading-[1.1] sm:leading-tight max-w-5xl mx-auto lg:mx-0">
                 <span className="md:whitespace-nowrap">{dict.hero.title.part1}</span>{' '}
                 <br className="hidden md:block" />
                 <span className="text-coral relative inline-block whitespace-nowrap">
@@ -105,7 +105,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               </h1>
 
               {/* Subheadline */}
-              <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-darkgray/70 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-sm sm:text-base md:text-lg lg:text-lg xl:text-xl text-darkgray/70 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {dict.hero.subtitle}
               </p>
 
