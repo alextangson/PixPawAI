@@ -62,17 +62,17 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 // Generate static params for all articles (ISR)
 export async function generateStaticParams() {
   const slugs = await getAllArticleSlugs();
-  
+
   // Generate for all supported languages
   const params: Array<{ lang: string; slug: string }> = [];
   const languages = ['en']; // Add more languages as needed
-  
+
   for (const lang of languages) {
     for (const slug of slugs) {
       params.push({ lang, slug });
     }
   }
-  
+
   return params;
 }
 
@@ -208,27 +208,27 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
         {/* Article Content & Sidebar */}
         <div className="container mx-auto px-4 pb-20">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
               {/* Main Content */}
-              <div className="lg:col-span-8">
-                <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+              <div className="lg:col-span-9">
+                <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16">
                   {/* Article Content */}
                   <div
-                    className="prose prose-lg max-w-none 
+                    className="prose prose-lg md:prose-xl max-w-none 
                       prose-headings:font-bold prose-headings:text-gray-900
-                      prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-6 prose-h1:font-extrabold prose-h1:text-gray-900
-                      prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:pb-3 prose-h2:border-b prose-h2:border-gray-200 prose-h2:font-bold
-                      prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4 prose-h3:font-semibold
-                      prose-h4:text-xl prose-h4:mt-6 prose-h4:mb-3 prose-h4:font-semibold
-                      prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-base
+                      prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:mt-8 prose-h1:mb-6 prose-h1:font-extrabold prose-h1:text-gray-900
+                      prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:pb-3 prose-h2:border-b prose-h2:border-gray-200 prose-h2:font-bold
+                      prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-4 prose-h3:font-semibold
+                      prose-h4:text-lg prose-h4:md:text-xl prose-h4:mt-6 prose-h4:mb-3 prose-h4:font-semibold
+                      prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-base prose-p:md:text-lg
                       prose-a:text-coral prose-a:no-underline hover:prose-a:underline prose-a:font-medium
                       prose-strong:text-gray-900 prose-strong:font-bold
                       prose-ul:my-6 prose-ol:my-6
-                      prose-li:text-gray-700 prose-li:my-2
+                      prose-li:text-gray-700 prose-li:my-2 prose-li:text-base prose-li:md:text-lg
                       prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8
                       prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-coral prose-code:text-sm prose-code:font-mono
                       prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
-                      prose-blockquote:border-l-4 prose-blockquote:border-coral prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600"
+                      prose-blockquote:border-l-4 prose-blockquote:border-coral prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-8"
                     dangerouslySetInnerHTML={{ __html: article.content }}
                   />
 
@@ -284,8 +284,10 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
               </div>
 
               {/* Sidebar - Desktop Only */}
-              <aside className="hidden lg:block lg:col-span-4">
-                <BlogTableOfContents content={article.content} />
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-24">
+                  <BlogTableOfContents content={article.content} />
+                </div>
               </aside>
             </div>
           </div>
