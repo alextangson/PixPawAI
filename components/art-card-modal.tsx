@@ -164,16 +164,16 @@ export function ArtCardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-hidden !block !z-[100]">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-y-auto !block !z-[100]">
         {/* Hidden title for screen readers */}
         <DialogTitle className="sr-only">Customize Your Art Card</DialogTitle>
         
         {/* Modal Layout: Vertical on Mobile, Side-by-Side on Desktop */}
-        <div className="flex flex-col md:flex-row h-full w-full max-h-[90vh]">
+        <div className="flex flex-col md:flex-row w-full">
           
-          {/* Left Panel: Preview Area - Scrollable on mobile */}
-          <div className="md:w-1/2 lg:w-[55%] xl:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 flex items-start md:items-center justify-center p-4 sm:p-6 md:p-6 lg:p-8 relative overflow-y-auto md:overflow-y-visible">
-            <div className="w-full max-w-sm md:max-w-lg my-4 md:my-0">
+          {/* Left Panel: Preview Area - Full height on mobile */}
+          <div className="md:w-1/2 lg:w-[55%] xl:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 sm:p-6 md:p-6 lg:p-8 relative min-h-[400px] md:min-h-[600px]">
+            <div className="w-full max-w-xs sm:max-w-sm md:max-w-lg">
               {/* Simulated Card with CSS */}
               <div className="bg-white p-3 sm:p-4 md:p-6 lg:p-8 rounded-xl shadow-2xl">
                 {/* Image */}
@@ -224,8 +224,8 @@ export function ArtCardModal({
             </div>
           </div>
 
-          {/* Right Panel: Controls & Actions - Scrollable */}
-          <div className="md:w-1/2 lg:w-[45%] xl:w-2/5 bg-white p-4 sm:p-6 md:p-6 lg:p-8 overflow-y-auto flex-shrink-0">
+          {/* Right Panel: Controls & Actions */}
+          <div className="md:w-1/2 lg:w-[45%] xl:w-2/5 bg-white p-4 sm:p-6 md:p-6 lg:p-8 flex-shrink-0">
             
             {/* Header */}
             <div className="mb-6 sm:mb-8">

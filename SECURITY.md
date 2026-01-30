@@ -155,7 +155,7 @@ Upload → Quality Check → [GATE] → Configure → Generate
 - [x] Upload state management
 
 ### Phase 2: This Week (High Priority)
-- [ ] Vercel KV + Rate Limiting (IP-based, 5 uploads/minute)
+- [ ] Vercel KV + Rate Limiting (IP-based, 5 uploads/minute) - **文档已准备：docs/RATE_LIMITING_IMPLEMENTATION.md**
 - [ ] Cost monitoring alerts (Supabase + Replicate)
 
 ### Phase 3: Next Week (Important)
@@ -221,7 +221,9 @@ Upload → Quality Check → [GATE] → Configure → Generate
 - [x] File size limits
 - [x] Dual-bucket isolation
 - [x] Quality check gating
-- [ ] Server-side rate limiting
+- [x] Payment race condition protection (2026-01-30)
+- [x] Dependabot configuration (2026-01-30)
+- [ ] Server-side rate limiting (文档已准备)
 - [ ] IP tracking/blocking
 - [ ] CAPTCHA protection
 - [ ] Cost monitoring
@@ -275,5 +277,30 @@ Upload → Quality Check → [GATE] → Configure → Generate
 
 ---
 
-**Last Updated**: 2026-01-17  
-**Next Review**: 2026-01-24
+## 🆕 最新更新（2026-01-30）
+
+### ✅ 已完成的安全改进
+
+1. **支付系统竞态条件修复**
+   - 创建新函数 `increment_credits_safe()` 带支付 ID 验证
+   - 添加 `FOR UPDATE` 锁防止并发处理
+   - 添加唯一约束 `payments_provider_payment_id_unique`
+   - 更新 `capture-order` API 使用新函数
+   - 文件：`supabase/migrations/20260130_fix_payment_race_condition.sql`
+
+2. **Dependabot 自动依赖更新**
+   - 配置每周一自动检查更新
+   - 分组管理（React、Supabase、Tailwind 等）
+   - 自动创建 PR 并打标签
+   - 文件：`.github/dependabot.yml`
+
+3. **服务端 Rate Limiting 实施文档**
+   - 完整的 Upstash Redis + Vercel Edge 方案
+   - 包含代码示例和配置建议
+   - 预计实施时间：1-2 小时
+   - 文件：`docs/RATE_LIMITING_IMPLEMENTATION.md`
+
+---
+
+**Last Updated**: 2026-01-30  
+**Next Review**: 2026-02-06

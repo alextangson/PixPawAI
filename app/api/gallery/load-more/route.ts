@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Apply pet type filter if provided
     if (petTypeFilter) {
-      const petTypes = petTypeFilter.split(',').map(pt => pt.trim());
+      const petTypes = petTypeFilter.split(',').map(pt => pt.trim().toLowerCase());
       query = query.in('pet_type', petTypes);
     }
 

@@ -97,6 +97,102 @@ export async function GET(
 
 ---
 
+## 🔐 安全规范（强制执行）
+
+### 1. 数据库安全（RLS）
+**所有新建表必须启用 Row Level Security！**
+
+```sql
+-- ✅ 正确：创建表后立即启用 RLS
+CREATE TABLE my_table (...);
+
+ALTER TABLE my_table ENABLE ROW LEVEL SECURITY;
+
+-- 添加策略确保用户只能访问自己的数据
+CREATE POLICY "Users can only access their own data"
+ON my_table
+FOR ALL
+USING (auth.uid() = user_id);
+```
+
+### 2. API 密钥管理
+**严禁硬编码任何密钥！**
+
+```typescript
+// ✅ 正确：从环境变量读取
+const apiKey = process.env.REPLICATE_API_TOKEN;
+
+// ❌ 错误：硬编码
+const apiKey = "r8_abc123..."; // 永远不要这样做！
+
+// ✅ 服务端密钥：不加 NEXT_PUBLIC_ 前缀
+process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// ✅ 客户端公开变量：加 NEXT_PUBLIC_ 前缀
+process.env.NEXT_PUBLIC_SUPABASE_URL
+```
+
+### 3. 竞态条件保护
+**涉及金额、库存、积分的操作必须使用数据库事务！**
+
+```sql
+-- ✅ 正确：使用 FOR UPDATE 锁
+CREATE FUNCTION process_payment(p_payment_id UUID) AS $$
+BEGIN
+  -- 锁定行防止并发
+  PERFORM * FROM payments WHERE id = p_payment_id FOR UPDATE;
+  
+  -- 检查状态
+  IF EXISTS (SELECT 1 FROM payments WHERE id = p_payment_id AND status = 'completed') THEN
+    RAISE EXCEPTION 'Already processed';
+  END IF;
+  
+  -- 原子操作
+  UPDATE profiles SET credits = credits + amount WHERE ...;
+  UPDATE payments SET status = 'completed' WHERE ...;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+```typescript
+// ✅ 正确：在 API 中检查重复处理
+if (payment.status === 'completed') {
+  return NextResponse.json({
+    success: true,
+    message: 'Payment already processed',
+    alreadyCompleted: true,
+  });
+}
+```
+
+### 4. Rate Limiting
+**所有公开 API 端点必须考虑速率限制！**
+
+- 上传端点：5 次/分钟
+- 生成端点：3 次/分钟  
+- 支付端点：10 次/小时
+- 参考：`docs/RATE_LIMITING_IMPLEMENTATION.md`
+
+### 5. 输入验证
+**永远不要信任用户输入！**
+
+```typescript
+// ✅ 正确：验证所有输入
+const { orderId } = await request.json();
+
+if (!orderId || typeof orderId !== 'string') {
+  return NextResponse.json({ error: 'Invalid order ID' }, { status: 400 });
+}
+
+// 验证 UUID 格式
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!uuidRegex.test(orderId)) {
+  return NextResponse.json({ error: 'Invalid UUID format' }, { status: 400 });
+}
+```
+
+---
+
 ## 📐 项目架构规范
 
 ### SEO & SSR（搜索引擎优化）
@@ -207,9 +303,13 @@ type Generation = Database['public']['Tables']['generations']['Row'];
 当生成代码时，按以下优先级检查：
 1. ✅ Next.js 15 params 是否为 Promise 类型？
 2. ✅ API 密钥是否只在服务端使用？
-3. ✅ 图片是否有描述性 alt 文本？
-4. ✅ 响应式布局是否使用 Mobile-First？
-5. ✅ 是否使用完整代码（无占位符）？
+3. ✅ 新建数据库表是否启用了 RLS？
+4. ✅ 涉及金额/积分的操作是否有竞态条件保护？
+5. ✅ 公开 API 是否考虑了速率限制？
+6. ✅ 用户输入是否经过验证？
+7. ✅ 图片是否有描述性 alt 文本？
+8. ✅ 响应式布局是否使用 Mobile-First？
+9. ✅ 是否使用完整代码（无占位符）？
 
 ---
 

@@ -139,10 +139,11 @@ export async function POST(request: NextRequest) {
       // Don't return error - payment succeeded, we'll reconcile later
     }
 
-    // 6. Add credits to user account
-    const { error: creditsError } = await adminClient.rpc('increment_credits', {
-      user_id: user.id,
-      amount: payment.credits_purchased,
+    // 6. Add credits to user account (with race condition protection)
+    const { data: creditsResult, error: creditsError } = await adminClient.rpc('increment_credits_safe', {
+      p_user_id: user.id,
+      p_amount: payment.credits_purchased,
+      p_payment_id: payment.id,
     });
 
     if (creditsError) {
@@ -150,6 +151,19 @@ export async function POST(request: NextRequest) {
       // Critical error - payment succeeded but credits not added
       // Log for manual reconciliation
       console.error(`🚨 CRITICAL: Payment ${payment.id} succeeded but credits not added for user ${user.id}`);
+    } else if (creditsResult && !creditsResult.success) {
+      // Payment already processed (race condition detected)
+      if (creditsResult.error === 'payment_already_processed') {
+        console.log(`⚠️ [PayPal Capture] Race condition detected: ${orderId} already processed`);
+        return NextResponse.json({
+          success: true,
+          message: 'Payment already processed',
+          alreadyCompleted: true,
+        });
+      }
+      console.error('[PayPal Capture] Credits function returned error:', creditsResult);
+    } else {
+      console.log(`💰 [PayPal] Credits added: ${creditsResult.added} (new balance: ${creditsResult.new_credits})`);
     }
 
     // 7. Update user tier

@@ -67,31 +67,15 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
     }
   }, [lang]);
 
-  // Load more images function
+  // Load more images function - don't filter on server since pet_type is null
   const loadMoreImages = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
 
     setIsLoadingMore(true);
     try {
-      // Build filter parameter
-      let petTypeFilter = '';
-      if (activeFilter !== 'All') {
-        const categoryMap: Record<string, string> = {
-          'Dogs': 'dog',
-          'Cats': 'cat',
-          'Rabbits': 'rabbit',
-          'Small Pets': 'hamster,guinea pig,gerbil,mouse,rat,ferret,chinchilla,hedgehog',
-          'Birds': 'bird,parrot,parakeet,cockatiel,macaw,canary,finch',
-          'Reptiles': 'lizard,gecko,snake,turtle,tortoise,iguana,chameleon',
-          'Farm & Other': 'horse,pony,cow,pig,sheep,goat,chicken,duck,donkey,unknown'
-        };
-        petTypeFilter = categoryMap[activeFilter] || '';
-      }
-
       const params = new URLSearchParams({
         offset: images.length.toString(),
-        limit: '12',
-        ...(petTypeFilter && { petType: petTypeFilter }),
+        limit: '50', // Load more to compensate for client-side filtering
         ...(searchQuery && { query: searchQuery })
       });
 
@@ -108,8 +92,8 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
         setImages((prev) => [...prev, ...newImages]);
       }
 
-      // If we got fewer than 12 images, we've reached the end
-      if (newImages.length < 12) {
+      // If we got fewer than requested, we've reached the end
+      if (newImages.length < 50) {
         setHasMore(false);
       }
     } catch (error) {
@@ -117,32 +101,16 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, activeFilter, searchQuery, images.length]);
+  }, [isLoadingMore, hasMore, searchQuery, images.length]);
 
-  // Reset and reload when filter or search changes
+  // Reset and reload when search changes (filter is client-side only)
   useEffect(() => {
     const reloadImages = async () => {
       setIsLoadingMore(true);
       try {
-        // Build filter parameter
-        let petTypeFilter = '';
-        if (activeFilter !== 'All') {
-          const categoryMap: Record<string, string> = {
-            'Dogs': 'dog',
-            'Cats': 'cat',
-            'Rabbits': 'rabbit',
-            'Small Pets': 'hamster,guinea pig,gerbil,mouse,rat,ferret,chinchilla,hedgehog',
-            'Birds': 'bird,parrot,parakeet,cockatiel,macaw,canary,finch',
-            'Reptiles': 'lizard,gecko,snake,turtle,tortoise,iguana,chameleon',
-            'Farm & Other': 'horse,pony,cow,pig,sheep,goat,chicken,duck,donkey,unknown'
-          };
-          petTypeFilter = categoryMap[activeFilter] || '';
-        }
-
         const params = new URLSearchParams({
           offset: '0',
-          limit: '12',
-          ...(petTypeFilter && { petType: petTypeFilter }),
+          limit: '50', // Load more to compensate for client-side filtering
           ...(searchQuery && { query: searchQuery })
         });
 
@@ -151,7 +119,7 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
 
         const data = await response.json();
         setImages(data.images || []);
-        setHasMore((data.images || []).length >= 12);
+        setHasMore((data.images || []).length >= 50);
       } catch (error) {
         console.error('Failed to reload images:', error);
       } finally {
@@ -160,7 +128,7 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
     };
 
     reloadImages();
-  }, [activeFilter, searchQuery]);
+  }, [searchQuery]); // Only reload on search change, not filter change
 
   useEffect(() => {
     const imageId = searchParams.get('id');
@@ -230,8 +198,13 @@ export function GalleryGridClient({ initialImages, lang }: GalleryGridClientProp
     return 'Dogs'; // Default fallback
   };
 
-  // No need for client-side filtering anymore since we do it server-side
-  const filteredItems = images;
+  // Client-side filtering as fallback (when pet_type is null in database)
+  const filteredItems = activeFilter === 'All' 
+    ? images 
+    : images.filter(item => {
+        const category = detectPetCategory(item);
+        return category === activeFilter;
+      });
 
   const handleImageClick = async (item: GalleryImage) => {
     setSelectedImage(item);
