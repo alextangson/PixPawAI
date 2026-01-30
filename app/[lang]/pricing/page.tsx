@@ -62,16 +62,6 @@ export default function PricingPage() {
     }
   };
 
-  const handleSignIn = () => {
-    setShowAuthRequiredDialog(false);
-    router.push(`/${lang}/auth/signin?redirect=${encodeURIComponent(`/${lang}/pricing`)}`);
-  };
-
-  const handleSignUp = () => {
-    setShowAuthRequiredDialog(false);
-    router.push(`/${lang}/auth/signup?redirect=${encodeURIComponent(`/${lang}/pricing`)}`);
-  };
-
   const handleUpgrade = () => {
     router.push(`/${lang}#upload`);
   };
@@ -302,8 +292,6 @@ export default function PricingPage() {
       <AuthRequiredDialog
         isOpen={showAuthRequiredDialog}
         onClose={() => setShowAuthRequiredDialog(false)}
-        onSignIn={handleSignIn}
-        onSignUp={handleSignUp}
       />
     </main>
   );
