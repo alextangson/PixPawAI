@@ -164,18 +164,18 @@ export function ArtCardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-y-auto !block !z-[100]">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-hidden !block !z-[100]">
         {/* Hidden title for screen readers */}
         <DialogTitle className="sr-only">Customize Your Art Card</DialogTitle>
         
         {/* Modal Layout: Vertical on Mobile, Side-by-Side on Desktop */}
-        <div className="flex flex-col md:flex-row h-full w-full">
+        <div className="flex flex-col md:flex-row h-full w-full max-h-[90vh]">
           
-          {/* Left Panel: Preview Area */}
-          <div className="md:w-1/2 lg:w-[55%] xl:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 sm:p-6 md:p-6 lg:p-8 relative min-h-[50vh] max-h-[60vh] sm:min-h-[60vh] md:min-h-full md:max-h-none">
-            <div className="w-full max-w-lg">
+          {/* Left Panel: Preview Area - Scrollable on mobile */}
+          <div className="md:w-1/2 lg:w-[55%] xl:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 flex items-start md:items-center justify-center p-4 sm:p-6 md:p-6 lg:p-8 relative overflow-y-auto md:overflow-y-visible">
+            <div className="w-full max-w-sm md:max-w-lg my-4 md:my-0">
               {/* Simulated Card with CSS */}
-              <div className="bg-white p-4 sm:p-6 md:p-6 lg:p-8 rounded-xl shadow-2xl">
+              <div className="bg-white p-3 sm:p-4 md:p-6 lg:p-8 rounded-xl shadow-2xl">
                 {/* Image */}
                 <div className="relative aspect-square mb-4 overflow-hidden rounded">
                   <img
@@ -186,13 +186,13 @@ export function ArtCardModal({
                 </div>
 
                 {/* Footer - Redesigned Layout */}
-                <div className="space-y-2 sm:space-y-2.5">
+                <div className="space-y-1.5 sm:space-y-2 md:space-y-2.5">
                   {/* Title & Date */}
                   <div>
-                    <div className="font-bold text-gray-900 truncate text-sm">
+                    <div className="font-bold text-gray-900 truncate text-xs sm:text-sm md:text-base">
                       {customTitle || 'Untitled'}
                     </div>
-                    <div className="text-gray-500 text-[10px] mt-0.5">
+                    <div className="text-gray-500 text-[9px] sm:text-[10px] mt-0.5">
                       {previewDate}
                     </div>
                   </div>
@@ -201,7 +201,7 @@ export function ArtCardModal({
                   <div className="border-t border-gray-200"></div>
 
                   {/* Slogan - Georgia Italic (matches downloaded card exactly) */}
-                  <div className="text-gray-700 text-base sm:text-lg lg:text-xl leading-snug sm:leading-relaxed italic min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center text-center" style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}>
+                  <div className="text-gray-700 text-sm sm:text-base md:text-lg lg:text-xl leading-snug sm:leading-relaxed italic min-h-[2rem] sm:min-h-[2.5rem] md:min-h-[3rem] flex items-center justify-center text-center px-1" style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}>
                     {selectedSlogan}
                   </div>
 
@@ -213,9 +213,9 @@ export function ArtCardModal({
                     <img 
                       src={BRANDING.logos.svg.color} 
                       alt="PixPaw AI"
-                      className="h-10 sm:h-12 opacity-90"
+                      className="h-8 sm:h-10 md:h-12 opacity-90"
                     />
-                    <span className="text-gray-600 text-xs font-medium">
+                    <span className="text-gray-600 text-[10px] sm:text-xs font-medium">
                       PixPawAI.com
                     </span>
                   </div>
@@ -224,8 +224,8 @@ export function ArtCardModal({
             </div>
           </div>
 
-          {/* Right Panel: Controls & Actions */}
-          <div className="md:w-1/2 lg:w-[45%] xl:w-2/5 bg-white p-4 sm:p-6 md:p-6 lg:p-8 overflow-y-auto">
+          {/* Right Panel: Controls & Actions - Scrollable */}
+          <div className="md:w-1/2 lg:w-[45%] xl:w-2/5 bg-white p-4 sm:p-6 md:p-6 lg:p-8 overflow-y-auto flex-shrink-0">
             
             {/* Header */}
             <div className="mb-6 sm:mb-8">
