@@ -16,6 +16,7 @@ import { FEATURE_FLAGS } from '@/lib/feature-flags'
 import { logger } from '@/lib/logger'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompt } from '@/lib/prompt-system'
 import { startFilteredFeaturesCollection, logFilteredFeature, getFilteredFeatures } from '@/lib/prompt-system/conflict-cleaner'
+import { checkRateLimitSmart } from '@/lib/rate-limit'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -506,7 +507,7 @@ async function generateWithReplicate(
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Verify user authentication
+    // 1. Verify user authentication (先验证，以便使用用户 ID 进行速率限制)
     const supabase = await createClient()
     const {
       data: { user },
@@ -515,6 +516,34 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 🛡️ Rate Limiting: 智能速率限制（登录用户 5次/分钟，匿名 3次/分钟）
+    const rateLimit = await checkRateLimitSmart(request, 'generate', user?.id)
+    
+    if (!rateLimit.success) {
+      const retryAfter = Math.ceil((rateLimit.reset - Date.now()) / 1000)
+      const limitType = rateLimit.authenticated ? 'authenticated user' : 'IP'
+      console.warn(`[Rate Limit] Generation blocked for ${limitType}`)
+      
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `Too many generation requests. Please wait ${retryAfter} seconds before trying again.`,
+          retryAfter,
+          limit: rateLimit.limit,
+          authenticated: rateLimit.authenticated,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.reset.toString(),
+            'Retry-After': retryAfter.toString(),
+          },
+        }
+      )
     }
 
     // 2. Parse request data

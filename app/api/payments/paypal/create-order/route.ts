@@ -21,10 +21,11 @@ import {
   isValidTier,
   getPayPalAccessToken,
 } from '@/lib/paypal/config';
+import { checkRateLimitSmart } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate user
+    // 1. Authenticate user (先验证，以便使用用户 ID 进行速率限制)
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -33,6 +34,34 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized. Please sign in to continue.' },
         { status: 401 }
       );
+    }
+    
+    // 🛡️ Rate Limiting: 智能速率限制（登录用户 20次/小时，匿名 10次/小时）
+    const rateLimit = await checkRateLimitSmart(request, 'payment', user?.id)
+    
+    if (!rateLimit.success) {
+      const retryAfter = Math.ceil((rateLimit.reset - Date.now()) / 1000)
+      const limitType = rateLimit.authenticated ? 'authenticated user' : 'IP'
+      console.warn(`[Rate Limit] Payment creation blocked for ${limitType}`)
+      
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `Too many payment attempts. Please wait ${Math.ceil(retryAfter / 60)} minutes.`,
+          retryAfter,
+          limit: rateLimit.limit,
+          authenticated: rateLimit.authenticated,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.reset.toString(),
+            'Retry-After': retryAfter.toString(),
+          },
+        }
+      )
     }
 
     // 2. Parse and validate request

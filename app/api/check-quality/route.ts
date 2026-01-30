@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
+import { checkRateLimitSmart } from '@/lib/rate-limit'
 
 interface QualityCheckResult {
   isSafe: boolean
@@ -360,6 +361,38 @@ If no pet detected but safe:
 export async function POST(request: NextRequest) {
   let imageUrl: string | undefined
   try {
+    // 获取用户信息（如果已登录）
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // 🛡️ Rate Limiting: 智能速率限制（登录用户 20次/分钟，匿名 10次/分钟）
+    const rateLimit = await checkRateLimitSmart(request, 'qualityCheck', user?.id)
+    
+    if (!rateLimit.success) {
+      const retryAfter = Math.ceil((rateLimit.reset - Date.now()) / 1000)
+      const limitType = rateLimit.authenticated ? 'authenticated user' : 'IP'
+      console.warn(`[Rate Limit] Quality check blocked for ${limitType}`)
+      
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `Too many quality checks. Please wait ${retryAfter} seconds.`,
+          retryAfter,
+          limit: rateLimit.limit,
+          authenticated: rateLimit.authenticated,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.reset.toString(),
+            'Retry-After': retryAfter.toString(),
+          },
+        }
+      )
+    }
+    
     const body = await request.json()
     imageUrl = body.imageUrl
     
