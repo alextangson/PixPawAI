@@ -3,10 +3,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
 export async function signInWithGoogle(redirectTo: string = '/') {
   const supabase = await createClient()
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  
+  // 从请求头动态获取真实访问的 origin，适配所有环境（localhost:3000/3001/生产域名）
+  const headersList = await headers()
+  const host = headersList.get('host') || 'localhost:3001'
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  const origin = `${protocol}://${host}`
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -27,7 +33,12 @@ export async function signInWithGoogle(redirectTo: string = '/') {
 
 export async function signInWithEmail(email: string, redirectTo: string = '/') {
   const supabase = await createClient()
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  
+  // 从请求头动态获取真实访问的 origin，适配所有环境（localhost:3000/3001/生产域名）
+  const headersList = await headers()
+  const host = headersList.get('host') || 'localhost:3001'
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  const origin = `${protocol}://${host}`
 
   const { error } = await supabase.auth.signInWithOtp({
     email,

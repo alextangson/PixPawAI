@@ -18,9 +18,9 @@ async function loadFonts() {
   const fontsDir = join(process.cwd(), 'public', 'fonts')
   
   const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
-    readFile(join(fontsDir, 'Inter-Regular.woff2')),
-    readFile(join(fontsDir, 'Inter-Bold.woff2')),
-    readFile(join(fontsDir, 'PlayfairDisplay-Italic.woff2')),
+    readFile(join(fontsDir, 'Inter-Regular.ttf')),
+    readFile(join(fontsDir, 'Inter-Bold.ttf')),
+    readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
   ])
   
   interRegular = regularBuffer.buffer.slice(regularBuffer.byteOffset, regularBuffer.byteOffset + regularBuffer.byteLength)
