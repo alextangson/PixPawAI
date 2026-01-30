@@ -521,11 +521,11 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
       </Dialog>
 
       {/* Gallery Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
         {succeededGenerations.map((generation) => (
           <div
             key={generation.id}
-            className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 relative"
+            className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 relative z-0 hover:z-10"
           >
             {/* Image */}
             <div className="relative aspect-square">
@@ -629,7 +629,7 @@ export function GalleryTabRefactored({ generations, onGenerationsUpdate, onLocal
                           <span className="text-xs">DL</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
+                      <DropdownMenuContent align="start" className="z-[100]">
                         <DropdownMenuItem onClick={() => window.open(generation.output_url, '_blank')}>
                           <Download className="w-4 h-4 mr-2" />
                           Original Image
