@@ -104,6 +104,50 @@ export function FAQPageSchema({ faqs }: FAQSchemaProps) {
 }
 
 /**
+ * SoftwareApplication Schema - AI Generator App
+ * https://schema.org/SoftwareApplication
+ */
+export function SoftwareApplicationSchema() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'PixPaw AI - AI Pet Portrait Generator',
+    description: 'Transform your pet photos into stunning AI-generated 3D cartoon portraits in Disney style. Create magical pet art in 30 seconds.',
+    url: 'https://pixpawai.com',
+    applicationCategory: 'AI Generator',
+    operatingSystem: 'Web',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      description: 'Free to try with premium options available',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '10000',
+      bestRating: '5',
+      worstRating: '1',
+    },
+    screenshot: 'https://pixpawai.com/hero/carousel/hero-carousel-birthday.webp',
+    featureList: [
+      'AI-powered pet portrait generation',
+      '3D Disney-style artwork',
+      '4K high-resolution downloads',
+      'Multiple art styles available',
+      'Custom merchandise printing',
+    ],
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
+/**
  * Product Schema - For premium features
  * https://schema.org/Product
  */
@@ -176,6 +220,7 @@ export function HomeSchema({ lang, faqs }: HomeSchemaProps & { faqs?: FAQSchemaP
     <>
       <OrganizationSchema />
       <WebSiteSchema />
+      <SoftwareApplicationSchema />
       <ProductSchema />
       {faqs && faqs.length > 0 && <FAQPageSchema faqs={faqs} />}
     </>

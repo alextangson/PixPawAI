@@ -1,12 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
+import satori from 'satori'
 import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 
+// Load fonts once at module level for performance
+let fontsLoaded = false
+let interRegular: ArrayBuffer
+let interBold: ArrayBuffer
+let playfairItalic: ArrayBuffer
+
+async function loadFonts() {
+  if (fontsLoaded) return
+  
+  const fontsDir = join(process.cwd(), 'public', 'fonts')
+  
+  const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
+    readFile(join(fontsDir, 'Inter-Regular.woff2')),
+    readFile(join(fontsDir, 'Inter-Bold.woff2')),
+    readFile(join(fontsDir, 'PlayfairDisplay-Italic.woff2')),
+  ])
+  
+  interRegular = regularBuffer.buffer.slice(regularBuffer.byteOffset, regularBuffer.byteOffset + regularBuffer.byteLength)
+  interBold = boldBuffer.buffer.slice(boldBuffer.byteOffset, boldBuffer.byteOffset + boldBuffer.byteLength)
+  playfairItalic = playfairBuffer.buffer.slice(playfairBuffer.byteOffset, playfairBuffer.byteOffset + playfairBuffer.byteLength)
+  
+  fontsLoaded = true
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Load fonts first
+    await loadFonts()
+    
     const supabase = await createClient()
     
     // 1. Authenticate user
@@ -77,15 +105,13 @@ export async function POST(request: NextRequest) {
 
     // 6. Fixed dimensions - 1:1 image, Polaroid style
     const imageSize = 1150 // Square image (balanced size)
-    const cardWidth = 1200 // Card width (unchanged)
-    const cardHeight = 1600 // Card height (3:4 ratio)
 
     // 7. Design Parameters (Polaroid-style Compact Layout)
-    const padding = 80
     const canvasWidth = 1360 // Fixed canvas width
     const canvasHeight = 1780 // Polaroid ratio (reduced from 2080)
     const imageRadius = 20 // Rounded corners for image (subtle)
     const cardRadius = 12 // Rounded corners for entire card (subtle)
+    const logoHeight = 100 // Compact logo for Polaroid style
 
     // 8. Prepare the main image - smart crop to 1:1 square
     const resizedImage = await sharp(imageBuffer)
@@ -96,98 +122,178 @@ export async function POST(request: NextRequest) {
       })
       .toBuffer()
 
-    // 9. Create SINGLE SVG with all text and lines (Performance Optimized)
+    // 9. Generate current date
     const currentDate = new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     })
 
-    // Font sizes (Refined for compact Polaroid style)
-    const titleFontSize = 44 // Title (reduced from 52)
-    const dateFontSize = 30 // Date (reduced from 36)
-    const sloganFontSize = 48 // Prominent slogan
-    const urlFontSize = 24 // Clear URL
-    const logoHeight = 100 // Compact logo for Polaroid style
+    // 10. Use satori to generate footer SVG with embedded fonts
+    // Footer height: from y=1230 (image bottom) to y=1780 (canvas bottom) = 550px
+    const footerHeight = 550
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const footerSvg = await satori(
+      ({
+        type: 'div',
+        props: {
+          style: {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'white',
+            padding: '0 80px',
+          },
+          children: [
+            // Title and Date section (70px from top)
+            {
+              type: 'div',
+              props: {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  marginTop: '70px',
+                },
+                children: [
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: '44px',
+                        fontWeight: 700,
+                        fontFamily: 'Inter',
+                        color: '#1F2937',
+                      },
+                      children: finalTitle,
+                    },
+                  },
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: '30px',
+                        fontFamily: 'Inter',
+                        color: '#666666',
+                        marginTop: '10px',
+                      },
+                      children: currentDate,
+                    },
+                  },
+                ],
+              },
+            },
+            // First separator line
+            {
+              type: 'div',
+              props: {
+                style: {
+                  width: '100%',
+                  height: '2px',
+                  backgroundColor: '#EEEEEE',
+                  marginTop: '50px',
+                },
+              },
+            },
+            // Slogan section
+            {
+              type: 'div',
+              props: {
+                style: {
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '150px',
+                  width: '100%',
+                },
+                children: {
+                  type: 'div',
+                  props: {
+                    style: {
+                      fontSize: '48px',
+                      fontWeight: 400,
+                      fontStyle: 'italic',
+                      fontFamily: 'Playfair Display',
+                      color: '#374151',
+                      textAlign: 'center',
+                    },
+                    children: selectedSlogan,
+                  },
+                },
+              },
+            },
+            // Second separator line
+            {
+              type: 'div',
+              props: {
+                style: {
+                  width: '100%',
+                  height: '2px',
+                  backgroundColor: '#EEEEEE',
+                },
+              },
+            },
+            // Logo and URL section
+            {
+              type: 'div',
+              props: {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  marginTop: '30px',
+                  flex: 1,
+                },
+                children: [
+                  // URL
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: '24px',
+                        fontWeight: 500,
+                        fontFamily: 'Inter',
+                        color: '#999999',
+                        marginTop: 'auto',
+                        marginBottom: '30px',
+                      },
+                      children: 'PixPawAI.com',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any),
+      {
+        width: canvasWidth,
+        height: footerHeight,
+        fonts: [
+          {
+            name: 'Inter',
+            data: interRegular,
+            weight: 400,
+            style: 'normal',
+          },
+          {
+            name: 'Inter',
+            data: interBold,
+            weight: 700,
+            style: 'normal',
+          },
+          {
+            name: 'Playfair Display',
+            data: playfairItalic,
+            weight: 400,
+            style: 'italic',
+          },
+        ],
+      }
+    )
 
-    // Escape XML/HTML special characters to prevent encoding issues
-    const escapeXml = (text: string): string => {
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;')
-    }
-
-    // Escape text content to prevent encoding issues
-    const escapedTitle = escapeXml(finalTitle)
-    const escapedDate = escapeXml(currentDate)
-    const escapedSlogan = escapeXml(selectedSlogan)
-
-    // Single unified SVG for entire canvas (1360x1780) - Polaroid compact layout
-    // Image bottom at y=1230 (80+1150), equal spacing: 70px between image-title and title group-line1
-    const unifiedSVG = `
-      <svg width="${canvasWidth}" height="${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
-        <!-- Title: y=1300 (70px below image, left-aligned) -->
-        <text 
-          x="110" 
-          y="1300" 
-          font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" 
-          font-size="${titleFontSize}" 
-          font-weight="700" 
-          fill="#1F2937"
-        >${escapedTitle}</text>
-        
-        <!-- Date: y=1350 (50px below title) -->
-        <text 
-          x="110" 
-          y="1350" 
-          font-family="Inter, -apple-system, sans-serif" 
-          font-size="${dateFontSize}" 
-          fill="#666666"
-        >${escapedDate}</text>
-
-        <!-- First Separator Line: y=1420 (70px below date, matching image-to-title spacing) -->
-        <path 
-          d="M 80 1420 L 1280 1420" 
-          stroke="#EEEEEE" 
-          stroke-width="2"
-        />
-
-        <!-- Slogan: y=1495 (Vertically centered between 1420-1570, Italic) -->
-        <text 
-          x="680" 
-          y="1495" 
-          text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif" 
-          font-size="${sloganFontSize}" 
-          font-weight="400"
-          font-style="italic"
-          fill="#374151"
-        >${escapedSlogan}</text>
-
-        <!-- Second Separator Line: y=1570 (150px spacing for slogan area) -->
-        <path 
-          d="M 80 1570 L 1280 1570" 
-          stroke="#EEEEEE" 
-          stroke-width="2"
-        />
-
-        <!-- URL: y=1720 (Right-aligned, Below Logo) -->
-        <text 
-          x="1280" 
-          y="1720" 
-          text-anchor="end"
-          font-family="Inter, -apple-system, sans-serif" 
-          font-size="${urlFontSize}" 
-          font-weight="500" 
-          fill="#999999"
-        >PixPawAI.com</text>
-      </svg>
-    `
-
-    // 10. Load and prepare logo image (using high-res 256px logo)
+    // 11. Load and prepare logo image (using high-res 256px logo)
     const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-256.png')
     const logoBuffer = await readFile(logoPath)
     
@@ -204,7 +310,7 @@ export async function POST(request: NextRequest) {
     const logoX = 1280 - logoWidth // Right aligned to match URL and separator
     const logoY = 1600 // Positioned below second separator line (1570)
     
-    // 11. Composite the final share card (Single SVG Approach - Performance Optimized)
+    // 12. Composite the final share card
     
     // Create rounded rectangle background
     const roundedBg = Buffer.from(`
@@ -234,7 +340,7 @@ export async function POST(request: NextRequest) {
     const imageY = 80 // Top padding
     // Image bottom: imageY + imageSize = 80 + 1150 = 1230
     
-    // Single composite operation (Performance: 3 layers in one pass)
+    // Single composite operation with satori-generated footer
     const shareCardBuffer = await sharp(roundedBg)
       .composite([
         {
@@ -243,13 +349,13 @@ export async function POST(request: NextRequest) {
           left: imageX
         },
         {
-          input: Buffer.from(unifiedSVG), // All text and lines in one SVG
-          top: 0,
+          input: Buffer.from(footerSvg), // Satori-generated SVG with embedded fonts
+          top: 1230, // Position at image bottom
           left: 0
         },
         {
           input: resizedLogo,
-          top: logoY, // y=1830
+          top: logoY,
           left: logoX
         }
       ])

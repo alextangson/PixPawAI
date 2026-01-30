@@ -38,7 +38,7 @@ interface StyleShowcaseProps {
 export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) {
   // Fetch styles from database
   const { styles: databaseStyles, loading: stylesLoading } = useStyles()
-  
+
   // Convert database styles to showcase format
   const styles = databaseStyles.map((style, index) => ({
     name: style.label,
@@ -48,7 +48,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
     aspectRatio: 'standard',
     isComingSoon: false,
   }))
-  
+
   // Add "Coming Soon" placeholders if less than 8 styles
   const comingSoonPlaceholders = [
     {
@@ -76,7 +76,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
       isComingSoon: true,
     },
   ]
-  
+
   // Limit to exactly 8 styles for 2 rows x 4 columns layout
   const displayStyles = styles.slice(0, 8)
 
@@ -106,15 +106,13 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                   onOpenUpload(style.name)
                 }
               }}
-              className={`group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 w-full block ${
-                style.isComingSoon ? 'cursor-not-allowed' : 'cursor-pointer'
-              }`}
+              className={`group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 w-full block ${style.isComingSoon ? 'cursor-not-allowed' : 'cursor-pointer'
+                }`}
             >
               {/* Badge */}
               {style.badge && (
-                <div className={`absolute top-4 right-4 z-30 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg ${
-                  style.isComingSoon ? 'bg-gray-500' : 'bg-coral'
-                }`}>
+                <div className={`absolute top-4 right-4 z-30 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg ${style.isComingSoon ? 'bg-gray-500' : 'bg-coral'
+                  }`}>
                   <Sparkles className="w-3 h-3" />
                   {style.badge}
                 </div>
@@ -125,13 +123,12 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                 {style.image && style.image.trim() !== '' ? (
                   <Image
                     src={style.image}
-                    alt={style.name}
+                    alt={`AI generated 3D cartoon pet portrait - ${style.name} Style by PixPaw AI`}
                     fill
-                    className={`object-cover transition-transform duration-700 ${
-                      style.isComingSoon 
-                        ? 'filter grayscale opacity-60' 
+                    className={`object-cover transition-transform duration-700 ${style.isComingSoon
+                        ? 'filter grayscale opacity-60'
                         : 'group-hover:scale-110'
-                    }`}
+                      }`}
                     loading="lazy"
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     quality={85}
@@ -142,10 +139,9 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                   </div>
                 )}
                 {/* Gradient Overlay for Better Text Readability */}
-                <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent ${
-                  style.isComingSoon ? 'bg-black/40' : ''
-                }`} />
-                
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent ${style.isComingSoon ? 'bg-black/40' : ''
+                  }`} />
+
                 {/* Hover Overlay with CTA Button */}
                 {!style.isComingSoon && (
                   <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-20">
@@ -154,7 +150,7 @@ export function StyleShowcase({ dict, onOpenUpload, lang }: StyleShowcaseProps) 
                     </div>
                   </div>
                 )}
-                
+
                 {/* Coming Soon Overlay */}
                 {style.isComingSoon && (
                   <div className="absolute inset-0 flex items-center justify-center z-20">

@@ -117,7 +117,7 @@ export async function GET(request: Request) {
 
   if (code) {
     const cookieStore = await cookies()
-    
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -143,79 +143,55 @@ export async function GET(request: Request) {
         },
       }
     )
-    
+
     // Exchange the auth code for a user session
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (error) {
       console.error('❌ Error exchanging code for session:', error.message, error.status)
       return NextResponse.redirect(`${origin}/en?error=auth-failed&details=${encodeURIComponent(error.message)}`)
     }
-    
+
     if (data.session) {
       console.log('✅ Session created successfully for user:', data.user?.email)
-      
+
       // ============================================
       // REFERRAL SYSTEM: Check for referral code cookie
       // ============================================
       const referralCodeCookie = cookieStore.get('referral_code')
-      
+
       if (referralCodeCookie?.value) {
         console.log('🔗 Referral code detected in cookie:', referralCodeCookie.value)
-        
+
         // Process referral code asynchronously (don't block redirect)
         // The function will check if user already has a referral code associated
         processReferralCode(
           data.user.id,
           data.user.email || '',
           referralCodeCookie.value,
-          request.headers.get('x-forwarded-for') || 
-          request.headers.get('x-real-ip') || 
+          request.headers.get('x-forwarded-for') ||
+          request.headers.get('x-real-ip') ||
           'unknown'
         ).catch(err => {
           console.error('❌ Failed to process referral code:', err)
         })
       }
-      
+
       // Clear referral code cookie after processing
       if (referralCodeCookie) {
         cookieStore.delete('referral_code')
       }
-      
+
       console.log('✅ Session established, redirecting to:', next)
-      
+
       // Revalidate to update UI
       revalidatePath('/', 'layout')
-      
-      // Create redirect response
-      // Supabase cookies are already set in cookieStore via exchangeCodeForSession
-      // We need to explicitly copy them to the redirect response
-      const redirectUrl = `${origin}${next}`
-      const redirectResponse = NextResponse.redirect(redirectUrl)
-      
-      // Copy all cookies from cookieStore to redirect response
-      // This is necessary because NextResponse.redirect() creates a new response
-      // that doesn't automatically include cookies from cookieStore
-      const allCookies = cookieStore.getAll()
-      console.log('📦 Copying cookies to redirect response:', allCookies.map(c => c.name).join(', '))
-      
-      allCookies.forEach((cookie) => {
-        // Copy all cookies, but ensure proper settings for auth cookies
-        const isAuthCookie = cookie.name.includes('auth') || 
-                            cookie.name.startsWith('sb-') ||
-                            cookie.name.includes('supabase')
-        
-        redirectResponse.cookies.set(cookie.name, cookie.value, {
-          path: '/',
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: isAuthCookie,
-          maxAge: isAuthCookie ? 60 * 60 * 24 * 7 : undefined, // 7 days for auth cookies
-        })
-      })
-      
-      console.log('✅ Redirect response prepared with cookies')
-      return redirectResponse
+
+      // Redirect to success page to refresh client-side session
+      // This ensures the client properly recognizes the new session
+      const redirectUrl = `${origin}/auth/success?next=${encodeURIComponent(next)}`
+      console.log('✅ Redirecting to success page:', redirectUrl)
+      return NextResponse.redirect(redirectUrl)
     }
   }
 

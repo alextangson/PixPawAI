@@ -1,6 +1,9 @@
 import sharp from 'sharp'
+import satori from 'satori'
 import { createAdminClient } from '@/lib/supabase/server'
 import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 
 interface GenerateShareCardParams {
   generationId: string
@@ -17,9 +20,34 @@ interface ShareCardResult {
   error?: string
 }
 
+// Load fonts once at module level for performance
+let fontsLoaded = false
+let interRegular: ArrayBuffer
+let interBold: ArrayBuffer
+let playfairItalic: ArrayBuffer
+
+async function loadFonts() {
+  if (fontsLoaded) return
+  
+  const fontsDir = join(process.cwd(), 'public', 'fonts')
+  
+  const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
+    readFile(join(fontsDir, 'Inter-Regular.woff2')),
+    readFile(join(fontsDir, 'Inter-Bold.woff2')),
+    readFile(join(fontsDir, 'PlayfairDisplay-Italic.woff2')),
+  ])
+  
+  interRegular = regularBuffer.buffer.slice(regularBuffer.byteOffset, regularBuffer.byteOffset + regularBuffer.byteLength)
+  interBold = boldBuffer.buffer.slice(boldBuffer.byteOffset, boldBuffer.byteOffset + boldBuffer.byteLength)
+  playfairItalic = playfairBuffer.buffer.slice(playfairBuffer.byteOffset, playfairBuffer.byteOffset + playfairBuffer.byteLength)
+  
+  fontsLoaded = true
+}
+
 /**
  * Generate a premium Leica/Polaroid-style share card
  * Optimized for performance and gallery-quality aesthetics
+ * Uses satori for proper font rendering on serverless
  */
 export async function generateShareCard({
   generationId,
@@ -28,6 +56,9 @@ export async function generateShareCard({
   sloganIndex
 }: GenerateShareCardParams): Promise<ShareCardResult> {
   try {
+    // Load fonts first
+    await loadFonts()
+    
     console.log('🎨 Starting premium share card generation...')
     console.log('📸 Image URL:', imageUrl)
 
@@ -79,7 +110,7 @@ export async function generateShareCard({
       })
       .toBuffer()
 
-    // 6. CREATE PREMIUM TYPOGRAPHY SVG
+    // 6. CREATE PREMIUM TYPOGRAPHY with satori
     const currentDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -93,106 +124,157 @@ export async function generateShareCard({
     const dateFontSize = Math.round(canvasWidth * 0.012) // 1.2% of width
     const urlFontSize = Math.round(canvasWidth * 0.018) // 1.8% of width
     const sloganFontSize = Math.round(canvasWidth * 0.014) // 1.4% of width
-    const logoSize = Math.round(canvasWidth * 0.06) // 6% of width
 
-    // Premium Typography SVG with 3-section layout
-    const textSVG = `
-      <svg width="${canvasWidth}" height="${footerHeight}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <style type="text/css">
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600&amp;family=Playfair+Display:ital,wght@1,400;1,600&amp;display=swap');
-          </style>
-        </defs>
-        
-        <!-- LEFT SECTION: Title + Date -->
-        <g>
-          <text 
-            x="${horizontalPadding}" 
-            y="${footerHeight * 0.35}" 
-            font-family="Inter, Arial, sans-serif" 
-            font-size="${titleFontSize}" 
-            font-weight="600" 
-            fill="#222222"
-            letter-spacing="0.5"
-          >${cardTitle}</text>
-          <text 
-            x="${horizontalPadding}" 
-            y="${footerHeight * 0.50}" 
-            font-family="Inter, Arial, sans-serif" 
-            font-size="${dateFontSize}" 
-            font-weight="300" 
-            fill="#888888"
-          >${currentDate}</text>
-        </g>
-
-        <!-- CENTER SECTION: Separator + URL + Slogan -->
-        <g>
-          <!-- Vertical separator line -->
-          <line 
-            x1="${canvasWidth * 0.38}" 
-            y1="${footerHeight * 0.25}" 
-            x2="${canvasWidth * 0.38}" 
-            y2="${footerHeight * 0.55}" 
-            stroke="#DDDDDD" 
-            stroke-width="2"
-          />
-          
-          <!-- Website URL -->
-          <text 
-            x="${canvasWidth * 0.5}" 
-            y="${footerHeight * 0.35}" 
-            text-anchor="middle" 
-            font-family="Inter, Arial, sans-serif" 
-            font-size="${urlFontSize}" 
-            font-weight="600" 
-            fill="#FF8C42"
-            letter-spacing="1"
-          >PixPawAI.com</text>
-          
-          <!-- Slogan -->
-          <text 
-            x="${canvasWidth * 0.5}" 
-            y="${footerHeight * 0.50}" 
-            text-anchor="middle" 
-            font-family="Playfair Display, Georgia, serif" 
-            font-size="${sloganFontSize}" 
-            font-style="italic" 
-            fill="#888888"
-          >${selectedSlogan}</text>
-        </g>
-
-        <!-- RIGHT SECTION: Logo -->
-        <g>
-          <!-- Premium logo circle background -->
-          <circle 
-            cx="${canvasWidth - horizontalPadding - logoSize/2}" 
-            cy="${footerHeight * 0.40}" 
-            r="${logoSize * 0.5}" 
-            fill="#FF8C42" 
-            opacity="0.15"
-          />
-          <!-- Paw emoji as logo -->
-          <text 
-            x="${canvasWidth - horizontalPadding - logoSize/2}" 
-            y="${footerHeight * 0.40 + logoSize * 0.25}" 
-            text-anchor="middle" 
-            font-family="Arial, sans-serif" 
-            font-size="${logoSize}" 
-            fill="#FF8C42"
-          >🐾</text>
-        </g>
-
-        <!-- Subtle bottom border line -->
-        <line 
-          x1="${horizontalPadding}" 
-          y1="${footerHeight * 0.70}" 
-          x2="${canvasWidth - horizontalPadding}" 
-          y2="${footerHeight * 0.70}" 
-          stroke="#F0F0F0" 
-          stroke-width="1"
-        />
-      </svg>
-    `
+    // Generate footer SVG with satori (proper font embedding)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const footerSvg = await satori(
+      ({
+        type: 'div',
+        props: {
+          style: {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            backgroundColor: 'white',
+            padding: `0 ${horizontalPadding}px`,
+          },
+          children: [
+            // LEFT SECTION: Title + Date
+            {
+              type: 'div',
+              props: {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  width: '35%',
+                },
+                children: [
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: `${titleFontSize}px`,
+                        fontWeight: 600,
+                        fontFamily: 'Inter',
+                        color: '#222222',
+                        letterSpacing: '0.5px',
+                      },
+                      children: cardTitle,
+                    },
+                  },
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: `${dateFontSize}px`,
+                        fontWeight: 400,
+                        fontFamily: 'Inter',
+                        color: '#888888',
+                        marginTop: '8px',
+                      },
+                      children: currentDate,
+                    },
+                  },
+                ],
+              },
+            },
+            // CENTER SECTION: Separator + URL + Slogan
+            {
+              type: 'div',
+              props: {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: '40%',
+                  borderLeft: '2px solid #DDDDDD',
+                  paddingLeft: '20px',
+                },
+                children: [
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: `${urlFontSize}px`,
+                        fontWeight: 600,
+                        fontFamily: 'Inter',
+                        color: '#FF8C42',
+                        letterSpacing: '1px',
+                      },
+                      children: 'PixPawAI.com',
+                    },
+                  },
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        fontSize: `${sloganFontSize}px`,
+                        fontWeight: 400,
+                        fontStyle: 'italic',
+                        fontFamily: 'Playfair Display',
+                        color: '#888888',
+                        marginTop: '8px',
+                        textAlign: 'center',
+                      },
+                      children: selectedSlogan,
+                    },
+                  },
+                ],
+              },
+            },
+            // RIGHT SECTION: Logo area
+            {
+              type: 'div',
+              props: {
+                style: {
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  width: '25%',
+                },
+                children: {
+                  type: 'div',
+                  props: {
+                    style: {
+                      fontSize: `${Math.round(canvasWidth * 0.04)}px`,
+                      color: '#FF8C42',
+                    },
+                    children: '🐾',
+                  },
+                },
+              },
+            },
+          ],
+        },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any),
+      {
+        width: canvasWidth,
+        height: footerHeight,
+        fonts: [
+          {
+            name: 'Inter',
+            data: interRegular,
+            weight: 400,
+            style: 'normal',
+          },
+          {
+            name: 'Inter',
+            data: interBold,
+            weight: 600,
+            style: 'normal',
+          },
+          {
+            name: 'Playfair Display',
+            data: playfairItalic,
+            weight: 400,
+            style: 'italic',
+          },
+        ],
+      }
+    )
 
     // 7. COMPOSITE THE PREMIUM CARD
     const shareCardBuffer = await sharp({
@@ -210,7 +292,7 @@ export async function generateShareCard({
           left: horizontalPadding
         },
         {
-          input: Buffer.from(textSVG),
+          input: Buffer.from(footerSvg),
           top: scaledHeight + horizontalPadding,
           left: 0
         }

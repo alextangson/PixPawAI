@@ -109,6 +109,13 @@ export default async function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Preload LCP image for faster first contentful paint */}
+        <link
+          rel="preload"
+          as="image"
+          href="/hero/carousel/hero-carousel-birthday.webp"
+          type="image/webp"
+        />
       </head>
       <body
         className={`${inter.variable} ${playfair.variable} font-sans`}
