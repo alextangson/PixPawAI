@@ -164,7 +164,7 @@ export function ArtCardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-y-auto !block !z-[60]">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[95vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[90vh] !p-0 overflow-y-auto !block !z-[100]">
         {/* Hidden title for screen readers */}
         <DialogTitle className="sr-only">Customize Your Art Card</DialogTitle>
         

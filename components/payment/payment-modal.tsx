@@ -310,15 +310,17 @@ export function PaymentModal({
   );
 }
 
-// Add floating animation for confetti
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(180deg); }
+// Add floating animation for confetti (client-only to avoid SSR "document is not defined")
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+  `;
+  if (!document.head.querySelector('#paypal-confetti-style')) {
+    style.id = 'paypal-confetti-style';
+    document.head.appendChild(style);
   }
-`;
-if (typeof document !== 'undefined' && !document.head.querySelector('#paypal-confetti-style')) {
-  style.id = 'paypal-confetti-style';
-  document.head.appendChild(style);
 }
