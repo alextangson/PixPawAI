@@ -16,19 +16,35 @@ async function loadFonts() {
   if (fontsLoaded) return
   
   const fontsDir = join(process.cwd(), 'public', 'fonts')
+  console.log('[Font Loading] Fonts directory:', fontsDir)
+  console.log('[Font Loading] CWD:', process.cwd())
   
-  // Load fonts as Buffer (satori accepts Buffer directly, more reliable than ArrayBuffer conversion)
-  const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
-    readFile(join(fontsDir, 'Inter-Regular.ttf')),
-    readFile(join(fontsDir, 'Inter-Bold.ttf')),
-    readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
-  ])
-  
-  interRegular = regularBuffer
-  interBold = boldBuffer
-  playfairItalic = playfairBuffer
-  
-  fontsLoaded = true
+  try {
+    // Load fonts as Buffer (satori accepts Buffer directly, more reliable than ArrayBuffer conversion)
+    const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
+      readFile(join(fontsDir, 'Inter-Regular.ttf')),
+      readFile(join(fontsDir, 'Inter-Bold.ttf')),
+      readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
+    ])
+    
+    console.log('[Font Loading] Inter-Regular size:', regularBuffer.length, 'bytes')
+    console.log('[Font Loading] Inter-Bold size:', boldBuffer.length, 'bytes')
+    console.log('[Font Loading] Playfair size:', playfairBuffer.length, 'bytes')
+    
+    // Verify fonts are valid (check first few bytes for TTF signature)
+    const regularHeader = regularBuffer.slice(0, 4).toString('hex')
+    console.log('[Font Loading] Inter-Regular header:', regularHeader, '(should be 00010000 or 74727565)')
+    
+    interRegular = regularBuffer
+    interBold = boldBuffer
+    playfairItalic = playfairBuffer
+    
+    fontsLoaded = true
+    console.log('[Font Loading] ✅ All fonts loaded successfully')
+  } catch (error) {
+    console.error('[Font Loading] ❌ Error loading fonts:', error)
+    throw error
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -134,7 +150,10 @@ export async function POST(request: NextRequest) {
     // Footer height: from y=1230 (image bottom) to y=1780 (canvas bottom) = 550px
     const footerHeight = 550
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const footerSvg = await satori(
+    let footerSvg: string
+    try {
+      console.log('[Satori] Starting SVG generation...')
+      footerSvg = await satori(
       ({
         type: 'div',
         props: {
@@ -293,6 +312,12 @@ export async function POST(request: NextRequest) {
         ],
       }
     )
+      console.log('[Satori] ✅ SVG generated successfully, length:', footerSvg.length)
+    } catch (satoriError) {
+      console.error('[Satori] ❌ Error generating SVG:', satoriError)
+      console.error('[Satori] Error details:', JSON.stringify(satoriError, null, 2))
+      throw new Error(`Satori failed: ${satoriError instanceof Error ? satoriError.message : 'Unknown error'}`)
+    }
 
     // 11. Load and prepare logo image (using high-res 256px logo)
     const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-256.png')
