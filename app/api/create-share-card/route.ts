@@ -5,7 +5,32 @@ import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 
-// Helper function to create SVG text without satori (more reliable in serverless)
+// Load fonts once and convert to base64 for SVG embedding
+let fontsLoaded = false
+let interRegularBase64: string
+let interBoldBase64: string
+let playfairItalicBase64: string
+
+async function loadFontsAsBase64() {
+  if (fontsLoaded) return
+  
+  const fontsDir = join(process.cwd(), 'public', 'fonts')
+  
+  const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
+    readFile(join(fontsDir, 'Inter-Regular.ttf')),
+    readFile(join(fontsDir, 'Inter-Bold.ttf')),
+    readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
+  ])
+  
+  interRegularBase64 = regularBuffer.toString('base64')
+  interBoldBase64 = boldBuffer.toString('base64')
+  playfairItalicBase64 = playfairBuffer.toString('base64')
+  
+  fontsLoaded = true
+  console.log('[Font Loading] ✅ Fonts loaded as base64')
+}
+
+// Helper function to create SVG with embedded fonts (works in serverless)
 function createFooterSVG(
   title: string,
   date: string,
@@ -27,11 +52,25 @@ function createFooterSVG(
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Playfair+Display:ital@1&amp;display=swap');
-          .title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 44px; fill: #1F2937; }
-          .date { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 30px; fill: #666666; }
-          .slogan { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; font-size: 48px; fill: #374151; text-anchor: middle; }
-          .url { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 24px; fill: #999999; text-anchor: end; }
+          @font-face {
+            font-family: 'Inter';
+            font-weight: 400;
+            src: url(data:font/truetype;charset=utf-8;base64,${interRegularBase64}) format('truetype');
+          }
+          @font-face {
+            font-family: 'Inter';
+            font-weight: 700;
+            src: url(data:font/truetype;charset=utf-8;base64,${interBoldBase64}) format('truetype');
+          }
+          @font-face {
+            font-family: 'Playfair Display';
+            font-style: italic;
+            src: url(data:font/truetype;charset=utf-8;base64,${playfairItalicBase64}) format('truetype');
+          }
+          .title { font-family: 'Inter'; font-weight: 700; font-size: 44px; fill: #1F2937; }
+          .date { font-family: 'Inter'; font-weight: 400; font-size: 30px; fill: #666666; }
+          .slogan { font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-size: 48px; fill: #374151; text-anchor: middle; }
+          .url { font-family: 'Inter'; font-weight: 500; font-size: 24px; fill: #999999; text-anchor: end; }
         </style>
       </defs>
       
@@ -59,6 +98,8 @@ function createFooterSVG(
 
 export async function POST(request: NextRequest) {
   try {
+    // Load fonts as base64 for SVG embedding
+    await loadFontsAsBase64()
     
     const supabase = await createClient()
     
