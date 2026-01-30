@@ -8,24 +8,25 @@ import { join } from 'path'
 
 // Load fonts once at module level for performance
 let fontsLoaded = false
-let interRegular: ArrayBuffer
-let interBold: ArrayBuffer
-let playfairItalic: ArrayBuffer
+let interRegular: Buffer
+let interBold: Buffer
+let playfairItalic: Buffer
 
 async function loadFonts() {
   if (fontsLoaded) return
   
   const fontsDir = join(process.cwd(), 'public', 'fonts')
   
+  // Load fonts as Buffer (satori accepts Buffer directly, more reliable than ArrayBuffer conversion)
   const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
     readFile(join(fontsDir, 'Inter-Regular.ttf')),
     readFile(join(fontsDir, 'Inter-Bold.ttf')),
     readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
   ])
   
-  interRegular = regularBuffer.buffer.slice(regularBuffer.byteOffset, regularBuffer.byteOffset + regularBuffer.byteLength)
-  interBold = boldBuffer.buffer.slice(boldBuffer.byteOffset, boldBuffer.byteOffset + boldBuffer.byteLength)
-  playfairItalic = playfairBuffer.buffer.slice(playfairBuffer.byteOffset, playfairBuffer.byteOffset + playfairBuffer.byteLength)
+  interRegular = regularBuffer
+  interBold = boldBuffer
+  playfairItalic = playfairBuffer
   
   fontsLoaded = true
 }
