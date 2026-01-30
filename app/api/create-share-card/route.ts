@@ -4,102 +4,80 @@ import sharp from 'sharp'
 import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
+import { createCanvas, registerFont } from 'canvas'
 
-// Load fonts once and convert to base64 for SVG embedding
-let fontsLoaded = false
-let interRegularBase64: string
-let interBoldBase64: string
-let playfairItalicBase64: string
+// Register fonts once at module level
+let fontsRegistered = false
 
-async function loadFontsAsBase64() {
-  if (fontsLoaded) return
+function registerFonts() {
+  if (fontsRegistered) return
   
   const fontsDir = join(process.cwd(), 'public', 'fonts')
   
-  const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
-    readFile(join(fontsDir, 'Inter-Regular.ttf')),
-    readFile(join(fontsDir, 'Inter-Bold.ttf')),
-    readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
-  ])
-  
-  interRegularBase64 = regularBuffer.toString('base64')
-  interBoldBase64 = boldBuffer.toString('base64')
-  playfairItalicBase64 = playfairBuffer.toString('base64')
-  
-  fontsLoaded = true
-  console.log('[Font Loading] ✅ Fonts loaded as base64')
+  try {
+    registerFont(join(fontsDir, 'Inter-Regular.ttf'), { family: 'Inter', weight: '400' })
+    registerFont(join(fontsDir, 'Inter-Bold.ttf'), { family: 'Inter', weight: '700' })
+    registerFont(join(fontsDir, 'PlayfairDisplay-Italic.ttf'), { family: 'Playfair Display', style: 'italic' })
+    fontsRegistered = true
+    console.log('[Font Registration] ✅ Fonts registered with canvas')
+  } catch (error) {
+    console.error('[Font Registration] ❌ Error:', error)
+    throw error
+  }
 }
 
-// Helper function to create SVG with embedded fonts (works in serverless)
-function createFooterSVG(
+// Helper function to create footer image with canvas (reliable font rendering)
+async function createFooterImage(
   title: string,
   date: string,
   slogan: string,
   width: number,
   height: number
-): string {
-  // Escape XML special characters
-  const escapeXml = (str: string) => 
-    str.replace(/[<>&'"]/g, (c) => ({
-      '<': '&lt;',
-      '>': '&gt;',
-      '&': '&amp;',
-      "'": '&apos;',
-      '"': '&quot;'
-    }[c] || c))
-
-  return `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <style>
-          @font-face {
-            font-family: 'Inter';
-            font-weight: 400;
-            src: url(data:font/truetype;charset=utf-8;base64,${interRegularBase64}) format('truetype');
-          }
-          @font-face {
-            font-family: 'Inter';
-            font-weight: 700;
-            src: url(data:font/truetype;charset=utf-8;base64,${interBoldBase64}) format('truetype');
-          }
-          @font-face {
-            font-family: 'Playfair Display';
-            font-style: italic;
-            src: url(data:font/truetype;charset=utf-8;base64,${playfairItalicBase64}) format('truetype');
-          }
-          .title { font-family: 'Inter'; font-weight: 700; font-size: 44px; fill: #1F2937; }
-          .date { font-family: 'Inter'; font-weight: 400; font-size: 30px; fill: #666666; }
-          .slogan { font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-size: 48px; fill: #374151; text-anchor: middle; }
-          .url { font-family: 'Inter'; font-weight: 500; font-size: 24px; fill: #999999; text-anchor: end; }
-        </style>
-      </defs>
-      
-      <!-- White background -->
-      <rect width="${width}" height="${height}" fill="white"/>
-      
-      <!-- Title and Date (70px from top) -->
-      <text x="80" y="114" class="title">${escapeXml(title)}</text>
-      <text x="80" y="154" class="date">${escapeXml(date)}</text>
-      
-      <!-- First separator line -->
-      <rect x="80" y="204" width="${width - 160}" height="2" fill="#EEEEEE"/>
-      
-      <!-- Slogan (centered) -->
-      <text x="${width / 2}" y="310" class="slogan">${escapeXml(slogan)}</text>
-      
-      <!-- Second separator line -->
-      <rect x="80" y="360" width="${width - 160}" height="2" fill="#EEEEEE"/>
-      
-      <!-- URL (bottom right) -->
-      <text x="${width - 80}" y="${height - 30}" class="url">PixPawAI.com</text>
-    </svg>
-  `.trim()
+): Promise<Buffer> {
+  const canvas = createCanvas(width, height)
+  const ctx = canvas.getContext('2d')
+  
+  // White background
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fillRect(0, 0, width, height)
+  
+  // Title (bold, 44px)
+  ctx.fillStyle = '#1F2937'
+  ctx.font = 'bold 44px Inter'
+  ctx.fillText(title, 80, 114)
+  
+  // Date (regular, 30px)
+  ctx.fillStyle = '#666666'
+  ctx.font = '400 30px Inter'
+  ctx.fillText(date, 80, 154)
+  
+  // First separator line
+  ctx.fillStyle = '#EEEEEE'
+  ctx.fillRect(80, 204, width - 160, 2)
+  
+  // Slogan (italic, 48px, centered)
+  ctx.fillStyle = '#374151'
+  ctx.font = 'italic 48px "Playfair Display"'
+  ctx.textAlign = 'center'
+  ctx.fillText(slogan, width / 2, 310)
+  
+  // Second separator line
+  ctx.fillStyle = '#EEEEEE'
+  ctx.fillRect(80, 360, width - 160, 2)
+  
+  // URL (medium, 24px, right-aligned)
+  ctx.fillStyle = '#999999'
+  ctx.font = '500 24px Inter'
+  ctx.textAlign = 'end'
+  ctx.fillText('PixPawAI.com', width - 80, height - 30)
+  
+  return canvas.toBuffer('image/png')
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Load fonts as base64 for SVG embedding
-    await loadFontsAsBase64()
+    // Register fonts with canvas
+    registerFonts()
     
     const supabase = await createClient()
     
@@ -195,17 +173,17 @@ export async function POST(request: NextRequest) {
       day: 'numeric' 
     })
 
-    // 10. Generate footer SVG with pure SVG (no satori - more reliable in serverless)
+    // 10. Generate footer with canvas (reliable font rendering)
     const footerHeight = 550
-    console.log('[SVG] Generating footer with pure SVG...')
-    const footerSvg = createFooterSVG(
+    console.log('[Canvas] Generating footer with canvas...')
+    const footerBuffer = await createFooterImage(
       finalTitle,
       currentDate,
       selectedSlogan,
       canvasWidth,
       footerHeight
     )
-    console.log('[SVG] ✅ Footer SVG generated, length:', footerSvg.length)
+    console.log('[Canvas] ✅ Footer image generated')
 
     // 11. Load and prepare logo image (using high-res 256px logo)
     const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-256.png')
@@ -263,7 +241,7 @@ export async function POST(request: NextRequest) {
           left: imageX
         },
         {
-          input: Buffer.from(footerSvg), // Satori-generated SVG with embedded fonts
+          input: footerBuffer, // Canvas-generated footer with proper fonts
           top: 1230, // Position at image bottom
           left: 0
         },
