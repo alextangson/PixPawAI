@@ -1,56 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
-import satori from 'satori'
 import { PREMIUM_SLOGANS, getSloganByIndex } from '@/lib/constants/slogans'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 
-// Load fonts once at module level for performance
-let fontsLoaded = false
-let interRegular: Buffer
-let interBold: Buffer
-let playfairItalic: Buffer
+// Helper function to create SVG text without satori (more reliable in serverless)
+function createFooterSVG(
+  title: string,
+  date: string,
+  slogan: string,
+  width: number,
+  height: number
+): string {
+  // Escape XML special characters
+  const escapeXml = (str: string) => 
+    str.replace(/[<>&'"]/g, (c) => ({
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      "'": '&apos;',
+      '"': '&quot;'
+    }[c] || c))
 
-async function loadFonts() {
-  if (fontsLoaded) return
-  
-  const fontsDir = join(process.cwd(), 'public', 'fonts')
-  console.log('[Font Loading] Fonts directory:', fontsDir)
-  console.log('[Font Loading] CWD:', process.cwd())
-  
-  try {
-    // Load fonts as Buffer (satori accepts Buffer directly, more reliable than ArrayBuffer conversion)
-    const [regularBuffer, boldBuffer, playfairBuffer] = await Promise.all([
-      readFile(join(fontsDir, 'Inter-Regular.ttf')),
-      readFile(join(fontsDir, 'Inter-Bold.ttf')),
-      readFile(join(fontsDir, 'PlayfairDisplay-Italic.ttf')),
-    ])
-    
-    console.log('[Font Loading] Inter-Regular size:', regularBuffer.length, 'bytes')
-    console.log('[Font Loading] Inter-Bold size:', boldBuffer.length, 'bytes')
-    console.log('[Font Loading] Playfair size:', playfairBuffer.length, 'bytes')
-    
-    // Verify fonts are valid (check first few bytes for TTF signature)
-    const regularHeader = regularBuffer.slice(0, 4).toString('hex')
-    console.log('[Font Loading] Inter-Regular header:', regularHeader, '(should be 00010000 or 74727565)')
-    
-    interRegular = regularBuffer
-    interBold = boldBuffer
-    playfairItalic = playfairBuffer
-    
-    fontsLoaded = true
-    console.log('[Font Loading] ✅ All fonts loaded successfully')
-  } catch (error) {
-    console.error('[Font Loading] ❌ Error loading fonts:', error)
-    throw error
-  }
+  return `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Playfair+Display:ital@1&amp;display=swap');
+          .title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 44px; fill: #1F2937; }
+          .date { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 30px; fill: #666666; }
+          .slogan { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; font-size: 48px; fill: #374151; text-anchor: middle; }
+          .url { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 24px; fill: #999999; text-anchor: end; }
+        </style>
+      </defs>
+      
+      <!-- White background -->
+      <rect width="${width}" height="${height}" fill="white"/>
+      
+      <!-- Title and Date (70px from top) -->
+      <text x="80" y="114" class="title">${escapeXml(title)}</text>
+      <text x="80" y="154" class="date">${escapeXml(date)}</text>
+      
+      <!-- First separator line -->
+      <rect x="80" y="204" width="${width - 160}" height="2" fill="#EEEEEE"/>
+      
+      <!-- Slogan (centered) -->
+      <text x="${width / 2}" y="310" class="slogan">${escapeXml(slogan)}</text>
+      
+      <!-- Second separator line -->
+      <rect x="80" y="360" width="${width - 160}" height="2" fill="#EEEEEE"/>
+      
+      <!-- URL (bottom right) -->
+      <text x="${width - 80}" y="${height - 30}" class="url">PixPawAI.com</text>
+    </svg>
+  `.trim()
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Load fonts first
-    await loadFonts()
     
     const supabase = await createClient()
     
@@ -146,178 +154,17 @@ export async function POST(request: NextRequest) {
       day: 'numeric' 
     })
 
-    // 10. Use satori to generate footer SVG with embedded fonts
-    // Footer height: from y=1230 (image bottom) to y=1780 (canvas bottom) = 550px
+    // 10. Generate footer SVG with pure SVG (no satori - more reliable in serverless)
     const footerHeight = 550
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let footerSvg: string
-    try {
-      console.log('[Satori] Starting SVG generation...')
-      footerSvg = await satori(
-      ({
-        type: 'div',
-        props: {
-          style: {
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'white',
-            padding: '0 80px',
-          },
-          children: [
-            // Title and Date section (70px from top)
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  marginTop: '70px',
-                },
-                children: [
-                  {
-                    type: 'div',
-                    props: {
-                      style: {
-                        fontSize: '44px',
-                        fontWeight: 700,
-                        fontFamily: 'Inter',
-                        color: '#1F2937',
-                      },
-                      children: finalTitle,
-                    },
-                  },
-                  {
-                    type: 'div',
-                    props: {
-                      style: {
-                        fontSize: '30px',
-                        fontFamily: 'Inter',
-                        color: '#666666',
-                        marginTop: '10px',
-                      },
-                      children: currentDate,
-                    },
-                  },
-                ],
-              },
-            },
-            // First separator line
-            {
-              type: 'div',
-              props: {
-                style: {
-                  width: '100%',
-                  height: '2px',
-                  backgroundColor: '#EEEEEE',
-                  marginTop: '50px',
-                },
-              },
-            },
-            // Slogan section
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: '150px',
-                  width: '100%',
-                },
-                children: {
-                  type: 'div',
-                  props: {
-                    style: {
-                      fontSize: '48px',
-                      fontWeight: 400,
-                      fontStyle: 'italic',
-                      fontFamily: 'Playfair Display',
-                      color: '#374151',
-                      textAlign: 'center',
-                    },
-                    children: selectedSlogan,
-                  },
-                },
-              },
-            },
-            // Second separator line
-            {
-              type: 'div',
-              props: {
-                style: {
-                  width: '100%',
-                  height: '2px',
-                  backgroundColor: '#EEEEEE',
-                },
-              },
-            },
-            // Logo and URL section
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  marginTop: '30px',
-                  flex: 1,
-                },
-                children: [
-                  // URL
-                  {
-                    type: 'div',
-                    props: {
-                      style: {
-                        fontSize: '24px',
-                        fontWeight: 500,
-                        fontFamily: 'Inter',
-                        color: '#999999',
-                        marginTop: 'auto',
-                        marginBottom: '30px',
-                      },
-                      children: 'PixPawAI.com',
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any),
-      {
-        width: canvasWidth,
-        height: footerHeight,
-        fonts: [
-          {
-            name: 'Inter',
-            data: interRegular,
-            weight: 400,
-            style: 'normal',
-          },
-          {
-            name: 'Inter',
-            data: interBold,
-            weight: 700,
-            style: 'normal',
-          },
-          {
-            name: 'Playfair Display',
-            data: playfairItalic,
-            weight: 400,
-            style: 'italic',
-          },
-        ],
-      }
+    console.log('[SVG] Generating footer with pure SVG...')
+    const footerSvg = createFooterSVG(
+      finalTitle,
+      currentDate,
+      selectedSlogan,
+      canvasWidth,
+      footerHeight
     )
-      console.log('[Satori] ✅ SVG generated successfully, length:', footerSvg.length)
-    } catch (satoriError) {
-      console.error('[Satori] ❌ Error generating SVG:', satoriError)
-      console.error('[Satori] Error details:', JSON.stringify(satoriError, null, 2))
-      throw new Error(`Satori failed: ${satoriError instanceof Error ? satoriError.message : 'Unknown error'}`)
-    }
+    console.log('[SVG] ✅ Footer SVG generated, length:', footerSvg.length)
 
     // 11. Load and prepare logo image (using high-res 256px logo)
     const logoPath = join(process.cwd(), 'public', 'brand', 'png', 'logo-orange-256.png')

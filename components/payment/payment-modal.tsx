@@ -105,7 +105,7 @@ export function PaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 bg-white overflow-hidden !z-[100]">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 bg-white overflow-hidden !z-[9999]">
         <DialogTitle className="sr-only">
           Complete Purchase - {tierInfo.name}
         </DialogTitle>
@@ -113,7 +113,7 @@ export function PaymentModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-2 hover:bg-gray-100 transition-colors z-20"
+          className="absolute right-4 top-4 rounded-full p-2 hover:bg-gray-100 transition-colors z-[10000]"
           aria-label="Close"
         >
           <X className="w-5 h-5 text-gray-600" />

@@ -13,6 +13,8 @@ import { PricingCountdown, LimitedSlots } from '@/components/pricing-countdown';
 import { PaymentModal } from '@/components/payment/payment-modal';
 import { trackPricingPageView, trackPricingCTAClick } from '@/lib/pricing-analytics';
 import { ReferralLinkModal } from '@/components/referral-link-modal';
+import { AuthRequiredDialog } from '@/components/auth-required-dialog';
+import { createClient } from '@/lib/supabase/client';
 
 export default function PricingPage() {
   const params = useParams();
@@ -23,6 +25,7 @@ export default function PricingPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showAuthRequiredDialog, setShowAuthRequiredDialog] = useState(false);
   const [selectedTier, setSelectedTier] = useState<{tier: 'starter' | 'pro' | 'master', price: string, credits: number} | null>(null);
 
   useEffect(() => {
@@ -32,18 +35,41 @@ export default function PricingPage() {
     trackPricingPageView('optimized');
   }, [lang]);
 
-  const handleStartCreating = (tier: 'free' | 'starter' | 'pro' | 'master' = 'free', price?: string, credits?: number) => {
+  const handleStartCreating = async (tier: 'free' | 'starter' | 'pro' | 'master' = 'free', price?: string, credits?: number) => {
     trackPricingCTAClick(tier, 'card', 'optimized');
     
     if (tier === 'free') {
       // Free tier直接跳转到上传
       router.push(`/${lang}#upload`);
     } else {
-      // 付费套餐显示真实支付弹窗
+      // 付费套餐：先检查登录状态
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // 未登录：显示友好的登录提示对话框
+        // 保存用户选择的套餐，登录后可以继续
+        const tierCredits = credits || (tier === 'starter' ? 15 : tier === 'pro' ? 50 : 100);
+        setSelectedTier({ tier: tier as 'starter' | 'pro' | 'master', price: price || '', credits: tierCredits });
+        setShowAuthRequiredDialog(true);
+        return;
+      }
+      
+      // 已登录：显示支付弹窗
       const tierCredits = credits || (tier === 'starter' ? 15 : tier === 'pro' ? 50 : 100);
       setSelectedTier({ tier: tier as 'starter' | 'pro' | 'master', price: price || '', credits: tierCredits });
       setShowPaymentModal(true);
     }
+  };
+
+  const handleSignIn = () => {
+    setShowAuthRequiredDialog(false);
+    router.push(`/${lang}/auth/signin?redirect=${encodeURIComponent(`/${lang}/pricing`)}`);
+  };
+
+  const handleSignUp = () => {
+    setShowAuthRequiredDialog(false);
+    router.push(`/${lang}/auth/signup?redirect=${encodeURIComponent(`/${lang}/pricing`)}`);
   };
 
   const handleUpgrade = () => {
@@ -270,6 +296,14 @@ export default function PricingPage() {
       <ReferralLinkModal
         isOpen={showReferralModal}
         onClose={() => setShowReferralModal(false)}
+      />
+
+      {/* Auth Required Dialog */}
+      <AuthRequiredDialog
+        isOpen={showAuthRequiredDialog}
+        onClose={() => setShowAuthRequiredDialog(false)}
+        onSignIn={handleSignIn}
+        onSignUp={handleSignUp}
       />
     </main>
   );
