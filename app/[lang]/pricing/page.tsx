@@ -117,7 +117,7 @@ export default function PricingPage() {
           </div>
           
           {/* Mobile Sticky CTA Bar */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-coral shadow-2xl p-4 pb-safe z-50">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-coral shadow-2xl p-4 pb-safe z-40">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
                 <div className="text-xs text-gray-600 font-medium">Best Value</div>

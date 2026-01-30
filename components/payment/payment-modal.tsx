@@ -105,7 +105,7 @@ export function PaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 bg-white overflow-hidden">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 bg-white overflow-hidden !z-[100]">
         <DialogTitle className="sr-only">
           Complete Purchase - {tierInfo.name}
         </DialogTitle>
