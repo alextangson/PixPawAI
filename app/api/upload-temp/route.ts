@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer)
     
     // 上传到 Supabase Storage
-    const supabase = createAdminClient()
+    const adminClient = createAdminClient()
     
     // 清理文件名：移除特殊字符和中文
     const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_') // 替换非法字符为下划线
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     
     console.log('Upload details:', { originalName: file.name, cleanName: fileName, size: file.size, type: file.type })
     
-    const { data, error } = await supabase.storage
+    const { data, error } = await adminClient.storage
       .from('generated-results')  // 使用现有的 bucket
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 获取公开URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = adminClient.storage
       .from('generated-results')
       .getPublicUrl(data.path)
     
