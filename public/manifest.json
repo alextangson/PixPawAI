@@ -1,7 +1,7 @@
 {
   "name": "PixPaw AI",
   "short_name": "PixPaw",
-  "description": "Turn your pet into a Pixar star in 30 seconds",
+  "description": "Turn your pet photo into stunning art in 30 seconds",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFDF9",

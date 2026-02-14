@@ -102,8 +102,8 @@ export function ReferralLinkModal({ isOpen, onClose }: ReferralLinkModalProps) {
     if (typeof window !== 'undefined' && 'share' in navigator) {
       try {
         await navigator.share({
-          title: 'PixPaw AI - Turn Your Pet Into 3D Art!',
-          text: 'Try PixPaw AI and get 5 free credits! Transform your pet into amazing 3D Pixar-style portraits.',
+          title: 'PixPaw AI - Turn Your Pet Into Art!',
+          text: 'Try PixPaw AI and get 5 free credits! Transform your pet into amazing AI-generated portraits.',
           url: referralUrl,
         });
       } catch (err) {

@@ -42,7 +42,7 @@ function getStyleDisplayName(styleId: string): string {
     'Pixel-Mosaic': 'Pixel Perfect',
     'Retro-Pop-Art': 'Pop Art Icon',
     'Spring-Vibes': 'Spring Blossom',
-    '3D-Movie-Star': '3D Movie Star',
+    '3D-Movie-Star': 'Cinematic Style',
     'Psychedelic-60s': 'Psychedelic Art'
   }
   return styleNames[styleId] || styleId

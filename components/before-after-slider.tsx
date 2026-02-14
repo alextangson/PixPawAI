@@ -16,7 +16,7 @@ export function BeforeAfterSlider({
   beforeImage,
   afterImage,
   beforeAlt = 'Before transformation',
-  afterAlt = 'After 3D Pixar style transformation',
+  afterAlt = 'After stylized artistic look transformation',
   className,
 }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50)

@@ -12,7 +12,7 @@
 
 export const PREMIUM_SLOGANS = [
   "Every paw has a story to tell",
-  "Turning paws into movie stars",
+  "Turning paws into stunning portraits",
   "Captured with AI, Loved for Real",
   "Cinema-grade portraits for your best friend",
   "Where art meets unconditional love",
@@ -23,7 +23,7 @@ export const PREMIUM_SLOGANS = [
   "Paws that paint a thousand words",
   "Made with AI magic, sealed with love",
   "Your furry friend's cinematic debut",
-  "Pixar-quality memories, one click away",
+  "Artistic pet memories, one click away",
   "When technology meets tail wags",
   "Art that makes your heart skip a beat",
   "Transform moments into movie scenes",

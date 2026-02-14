@@ -35,7 +35,7 @@ export default async function TermsPage({
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Service Description</h2>
             <p className="leading-relaxed">
               PixPaw AI provides AI-powered pet portrait generation services. We transform your pet photos 
-              into artistic 3D Pixar-style artwork using advanced machine learning technology.
+              into artistic stylized artwork using advanced machine learning technology.
             </p>
           </section>
 

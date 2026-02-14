@@ -50,7 +50,7 @@ export function Analytics() {
 
 /**
  * Track custom events
- * Usage: trackEvent('generate_image', { style: 'Pixar 3D', pet_type: 'dog' })
+ * Usage: trackEvent('generate_image', { style: 'stylized portrait', pet_type: 'dog' })
  */
 export function trackEvent(
   eventName: string,

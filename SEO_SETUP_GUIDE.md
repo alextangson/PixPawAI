@@ -127,7 +127,7 @@ import { trackEvent, trackConversion } from '@/components/analytics';
 
 // Image generation
 trackEvent('generate_image', { 
-  style: 'Pixar 3D', 
+  style: 'stylized portrait', 
   pet_type: 'dog' 
 });
 
@@ -157,7 +157,7 @@ trackEvent('download', {
 - **PageSpeed Insights**: Core Web Vitals
 
 ### Monthly Reviews
-- **Keyword rankings**: Track "AI pet portraits", "Pixar pet art"
+- **Keyword rankings**: Track "AI pet portraits", "stylized pet art"
 - **Backlinks**: Monitor with Ahrefs or SEMrush
 - **Competitor analysis**: Compare with similar services
 

@@ -21,9 +21,9 @@ const pacifico = Pacifico({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com'),
-  title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
-  description: "Transform your furry friend into stunning 3D Disney-style artwork in just 30 seconds. AI-powered pet portraits with 4K downloads and custom merchandise.",
-  keywords: ["pet portraits", "AI art", "Pixar style", "Disney pets", "3D pet art", "custom pet merchandise"],
+  title: "PixPaw AI - Turn Your Pet Into a Stunning Portrait",
+  description: "Transform your furry friend into a custom AI-generated pet portrait in just 30 seconds. Stunning art with 4K downloads and custom merchandise.",
+  keywords: ["pet portraits", "AI art", "AI pet portraits", "pet photo to art", "custom pet art", "custom pet merchandise"],
   authors: [{ name: "PixPaw AI" }],
   manifest: '/manifest.json',
   alternates: {
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     apple: '/favicons/apple-touch-icon.png',
   },
   openGraph: {
-    title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
-    description: "Transform your furry friend into stunning 3D Disney-style artwork in just 30 seconds.",
+    title: "PixPaw AI - Turn Your Pet Into a Stunning Portrait",
+    description: "Transform your furry friend into a custom AI-generated pet portrait in just 30 seconds.",
     url: "https://pixpawai.com/en",
     siteName: "PixPaw AI",
     locale: "en_US",
@@ -50,14 +50,14 @@ export const metadata: Metadata = {
         url: '/brand/png/logo-orange-256.png',
         width: 256,
         height: 256,
-        alt: 'PixPaw AI - Turn Your Pet Into a Pixar Star',
+        alt: 'PixPaw AI - Turn Your Pet Into a Stunning Portrait',
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PixPaw AI - Turn Your Pet Into a Pixar Star",
-    description: "Transform your furry friend into stunning 3D Disney-style artwork in just 30 seconds.",
+    title: "PixPaw AI - Turn Your Pet Into a Stunning Portrait",
+    description: "Transform your furry friend into a custom AI-generated pet portrait in just 30 seconds.",
     images: ['/brand/png/logo-orange-256.png'],
   },
 }

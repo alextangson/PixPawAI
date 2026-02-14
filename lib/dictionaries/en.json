@@ -16,9 +16,9 @@
     "badge": "Powered by AI Magic",
     "title": {
       "part1": "Turn Your Pet Into a",
-      "part2": "3D Movie Star"
+      "part2": "Stunning Portrait"
     },
-    "subtitle": "The easiest AI pet portrait generator. Create funny, royal, or 3D cartoon art in seconds. No design skills needed.",
+    "subtitle": "The easiest AI pet portrait generator. Create funny, royal, or artistic portraits in seconds. No design skills needed.",
     "cta": {
       "primary": "Try Now",
       "secondary": "See Examples"
@@ -32,7 +32,7 @@
       "before": "Before",
       "after": "After",
       "beforeAlt": "Original pet photo",
-      "afterAlt": "3D Pixar style pet portrait"
+      "afterAlt": "AI-generated artistic pet portrait"
     }
   },
   "howItWorks": {
@@ -78,11 +78,11 @@
   },
   "styles": {
     "title": "Choose Your Perfect Style",
-    "subtitle": "From Pixar magic to royal elegance, we've got the style that matches your pet's personality.",
+    "subtitle": "From playful pop art to royal elegance, we've got the style that matches your pet's personality.",
     "categories": {
       "pixar": {
-        "name": "The 3D Movie Star",
-        "description": "Bring your pet to life with vibrant Pixar-style 3D art that's bursting with personality."
+        "name": "The Movie Star",
+        "description": "Bring your pet to life with vibrant, cinematic art that's bursting with personality."
       },
       "royal": {
         "name": "The Royal Highness",
@@ -113,7 +113,7 @@
       {
         "name": "Sarah M.",
         "pet": "Golden Retriever Mom",
-        "text": "I was blown away by how fast and amazing the results were! My golden retriever looks like he jumped straight out of a Disney movie. Worth every penny!",
+        "text": "I was blown away by how fast and amazing the results were! My golden retriever looks like he jumped straight out of an animated movie. Worth every penny!",
         "rating": 5
       },
       {
@@ -137,13 +137,13 @@
       {
         "name": "Lisa K.",
         "pet": "Poodle Mom",
-        "text": "Customer service was amazing and the turnaround was so fast. My poodle looks absolutely stunning in the 3D style. 10/10 would order again!",
+        "text": "Customer service was amazing and the turnaround was so fast. My poodle looks absolutely stunning in the artistic style. 10/10 would order again!",
         "rating": 5
       },
       {
         "name": "David P.",
         "pet": "Beagle Owner",
-        "text": "This made the perfect gift for my wife. She cried happy tears when she saw our beagle as a Pixar character. Thank you PixPaw AI!",
+        "text": "This made the perfect gift for my wife. She cried happy tears when she saw our beagle as an animated portrait. Thank you PixPaw AI!",
         "rating": 5
       }
     ]
@@ -173,7 +173,7 @@
       },
       {
         "question": "Can I choose specific art styles?",
-        "answer": "Absolutely! Choose from 8+ unique styles including 3D Movie Star, Merry Christmas, Royal Portrait, Retro Pop Art, and more. Each style is optimized to preserve your pet's unique features while applying artistic magic."
+        "answer": "Absolutely! Choose from 8+ unique styles including Cinematic Style, Merry Christmas, Royal Portrait, Retro Pop Art, and more. Each style is optimized to preserve your pet's unique features while applying artistic magic."
       },
       {
         "question": "What if I'm not satisfied with the result?",
@@ -215,7 +215,7 @@
     "discover": {
       "title": "Discover",
       "links": {
-        "pixarDogs": "Pixar Style Dogs",
+        "pixarDogs": "Cartoon Style Dogs",
         "royalCats": "Royal Cat Portraits",
         "searchGallery": "Search Gallery"
       }
@@ -268,7 +268,7 @@
     "topics": [
       {
         "title": "Which Style Suits Your Pet?",
-        "excerpt": "Does your dog look like a Pixar hero or a Renaissance King? Here's how to pick.",
+        "excerpt": "Does your dog look like a comic-book hero or a Renaissance King? Here's how to pick.",
         "icon": "palette"
       },
       {

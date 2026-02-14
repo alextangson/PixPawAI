@@ -1,10 +1,10 @@
 # PixPaw AI
 
-Transform your pet into a Pixar star in 30 seconds! ✨
+Transform your pet into a Artistic Masterpiece in 30 seconds! ✨
 
 ## Features
 
-- 🎨 AI-powered 3D Pixar-style transformations
+- 🎨 AI-powered stylized artistic pet portrait transformations
 - 📱 Mobile-first responsive design
 - 💳 Digital downloads ($2.99 for 4K)
 - 🛍️ Physical merchandise upsells (custom pillows)

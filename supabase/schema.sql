@@ -532,11 +532,11 @@ COMMENT ON VIEW public.user_stats IS 'Aggregated user statistics for admin dashb
 INSERT INTO public.gallery_images (image_url, prompt_template, style_category, species, tags, is_featured)
 VALUES
   (
-    'https://example.com/dog-pixar.jpg',
-    'A {species} in 3D Pixar animation style, colorful and playful',
-    '3D Movie',
+    'https://example.com/dog-stylized.jpg',
+    'A {species} in stylized portrait AI artistic style, colorful and playful',
+    'Artistic Portrait',
     'dog',
-    ARRAY['3D', 'Pixar', 'Animated'],
+    ARRAY['Artistic', 'stylized portrait', 'Animated'],
     true
   ),
   (

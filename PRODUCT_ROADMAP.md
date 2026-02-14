@@ -216,7 +216,7 @@ Vercel 上线后，移动端出现多个功能性 Bug，导致游客和新用户
 - "Creating your portrait..."（通用，无趣）
 
 **建议改为**:
-- "🎨 正在施展魔法，把 [宠物名] 变成 Pixar 明星..."
+- "🎨 正在施展魔法，把 [宠物名] 变成 stylized 明星..."
 - "✨ PixPaw 魔法进行中，请稍候..."
 - "🐾 正在为你的爱宠创作艺术杰作..."
 - "🎬 导演！准备好了！正在渲染你的宠物大片..."
@@ -863,13 +863,13 @@ ALTER TABLE public.generations
 **创建时间**: 2026-01-17
 
 **描述**:  
-在数字产品成功后，推出物理商品upsell。用户生成 Pixar 风格宠物照片后，可以购买定制的物理产品。
+在数字产品成功后，推出物理商品upsell。用户生成 stylized 风格宠物照片后，可以购买定制的物理产品。
 
 **产品线规划：**
 1. **定制枕头** - $49
    - 40cm x 40cm 抱枕
    - 高清数码印刷
-   - 用户生成的 Pixar 风格图片
+   - 用户生成的 stylized 风格图片
 
 2. **帆布画** - $79-$129
    - 30cm x 40cm / 50cm x 70cm
@@ -1102,17 +1102,17 @@ ALTER TABLE public.generations
 - ⏳ 图片 alt 文本优化（AI 自动生成）
 - ⏳ 页面标题和描述优化
 - ⏳ 内部链接优化
-- ⏳ 博客内容（"如何把狗变成 Pixar 角色"）
+- ⏳ 博客内容（"如何把狗变成 stylized 角色"）
 
 **3. 关键词策略**
 目标关键词：
-- "pet pixar style"（1,000 搜索/月）
-- "turn pet into cartoon"（2,400 搜索/月）
+- "pet stylized artistic look"（1,000 搜索/月）
+- "turn pet into artistic portrait"（2,400 搜索/月）
 - "ai pet portrait"（3,600 搜索/月）
 
 **4. 页面优化**
 - 首页：品牌词 + 核心功能
-- Gallery：长尾词（"golden retriever pixar style"）
+- Gallery：长尾词（"golden retriever stylized artistic look"）
 - 风格页面：风格特定词（"watercolor pet portrait"）
 
 **技术方案：**
@@ -1172,9 +1172,9 @@ SEO 需要 3-6 个月才能看到明显效果，需要耐心。
 
 **预填充文案模板：**
 ```
-"我把 [宠物名字] 变成了 Pixar 角色！🐶✨
+"我把 [宠物名字] 变成了 stylized 角色！🐶✨
 用 @PixPawAI 30 秒就能生成，太神奇了！
-#PixPawAI #PetPortrait #PixarStyle"
+#PixPawAI #PetPortrait #stylizedStyle"
 ```
 
 **为什么重要：**
@@ -1297,7 +1297,7 @@ Instagram API 需要审核，提前 2 周申请。
 
 **混合示例：**
 - 水彩 + 像素 = 像素化水彩
-- 复古海报 + 3D = 复古 3D
+- 复古海报 + 流行艺术 = 复古流行艺术
 - 日式 + 霓虹 = 赛博和风
 
 **功能设计：**
@@ -1647,7 +1647,7 @@ Sentry 有免费额度，足够初期使用。
 
 **完成日期：** 2026-01-15
 
-- ✅ **AI 图片生成系统** - 使用 OpenRouter + Flux-schnell 模型，30秒生成 Pixar 风格宠物照片
+- ✅ **AI 图片生成系统** - 使用 OpenRouter + Flux-schnell 模型，30秒生成 stylized 风格宠物照片
 - ✅ **用户认证系统** - Supabase Auth，支持邮箱登录和会话管理
 - ✅ **Credits 积分系统** - 每次生成消耗 1 积分，支持充值和奖励机制
 - ✅ **多宽高比支持** - 支持 3:4（竖版）、16:9（横版）、9:16（Story）、4:3（经典）、1:1（方形）五种比例

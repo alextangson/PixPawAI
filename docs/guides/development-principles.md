@@ -132,7 +132,7 @@ if (!uploadedFile) return  // ❌ 恢复后会失败
 // 保存字符串 URL
 const config = {
   uploadedImageUrl: 'https://...',  // ✅ 可序列化
-  selectedStyle: 'Pixar',
+  selectedStyle: 'stylized',
   timestamp: Date.now()
 }
 localStorage.setItem('config', JSON.stringify(config))

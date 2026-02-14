@@ -76,8 +76,8 @@ const { data: generation } = await supabase
     user_id: userId,
     status: 'processing',
     input_url: uploadedImageUrl,
-    prompt: 'A cute dog in 3D Pixar style',
-    style: '3D Movie',
+    prompt: 'A cute dog in stylized artistic look',
+    style: 'Artistic Portrait',
     replicate_id: replicateResponse.id
   })
   .select()
@@ -110,10 +110,10 @@ await supabase
 interface GalleryImage {
   id: string
   image_url: string
-  prompt_template: string // e.g., "A {species} in 3D style"
-  style_category: string  // e.g., "3D Movie", "Royal"
+  prompt_template: string // e.g., "A {species} in AI artistic style"
+  style_category: string  // e.g., "Artistic Portrait", "Royal"
   species: 'dog' | 'cat' | 'rabbit' | 'bird' | 'reptile' | 'small_pet' | 'farm' | 'other'
-  tags: string[]          // e.g., ['Pixar', '3D', 'Cute']
+  tags: string[]          // e.g., ['stylized', 'Artistic', 'Cute']
   author_id?: string      // User who created it (nullable)
   is_featured: boolean
   view_count: number
@@ -138,10 +138,10 @@ const { data: dogs } = await supabase
   .eq('species', 'dog')
 
 // Search by tags
-const { data: pixarImages } = await supabase
+const { data: stylizedImages } = await supabase
   .from('gallery_images')
   .select('*')
-  .contains('tags', ['Pixar'])
+  .contains('tags', ['stylized'])
 
 // Add to gallery (admin only, use service role)
 // This should be done server-side with service_role key
@@ -149,10 +149,10 @@ const { data: newImage } = await supabase
   .from('gallery_images')
   .insert({
     image_url: 'https://...',
-    prompt_template: 'A {species} in 3D Pixar style',
-    style_category: '3D Movie',
+    prompt_template: 'A {species} in stylized artistic look',
+    style_category: 'Artistic Portrait',
     species: 'dog',
-    tags: ['Pixar', '3D', 'Animated'],
+    tags: ['stylized', 'Artistic', 'Animated'],
     is_featured: true
   })
 ```

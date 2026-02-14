@@ -17,7 +17,7 @@ export function OrganizationSchema() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'PixPaw AI',
-    description: 'Transform your pet into stunning AI-generated art in Pixar style',
+    description: 'Transform your pet into stunning AI-generated art in artistic styles',
     url: 'https://pixpawai.com',
     logo: 'https://pixpawai.com/brand/png/logo-orange-256.png',
     sameAs: [
@@ -51,7 +51,7 @@ export function WebSiteSchema() {
     '@type': 'WebSite',
     name: 'PixPaw AI',
     url: 'https://pixpawai.com',
-    description: 'Turn your pet into a Pixar star in 30 seconds with AI-powered pet portraits',
+    description: 'Turn your pet into a stunning portrait in 30 seconds with AI-powered pet portraits',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -112,7 +112,7 @@ export function SoftwareApplicationSchema() {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'PixPaw AI - AI Pet Portrait Generator',
-    description: 'Transform your pet photos into stunning AI-generated 3D cartoon portraits in Disney style. Create magical pet art in 30 seconds.',
+    description: 'Transform your pet photos into stunning AI-generated portraits in a variety of artistic styles. Create magical pet art in 30 seconds.',
     url: 'https://pixpawai.com',
     applicationCategory: 'AI Generator',
     operatingSystem: 'Web',
@@ -132,7 +132,7 @@ export function SoftwareApplicationSchema() {
     screenshot: 'https://pixpawai.com/hero/carousel/hero-carousel-birthday.webp',
     featureList: [
       'AI-powered pet portrait generation',
-      '3D Disney-style artwork',
+      'Artistic style portraits',
       '4K high-resolution downloads',
       'Multiple art styles available',
       'Custom merchandise printing',
@@ -156,7 +156,7 @@ export function ProductSchema() {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: 'PixPaw AI - Pet Portrait Generation',
-    description: 'AI-powered pet portrait generation service with Pixar-style 3D rendering',
+    description: 'AI-powered pet portrait generation service with artistic rendering',
     brand: {
       '@type': 'Brand',
       name: 'PixPaw AI',
