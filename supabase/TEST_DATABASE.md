@@ -124,8 +124,8 @@ INSERT INTO public.generations (
   auth.uid(),
   'processing',
   'https://example.com/test-input.jpg',
-  'A cute dog in 3D Pixar style',
-  '3D Movie'
+  'A cute dog in stylized artistic look',
+  'Artistic Portrait'
 );
 ```
 
@@ -193,7 +193,7 @@ SELECT
   view_count
 FROM public.gallery_images
 WHERE species = 'dog'
-AND 'Pixar' = ANY(tags)
+AND 'stylized' = ANY(tags)
 ORDER BY created_at DESC
 LIMIT 20;
 ```

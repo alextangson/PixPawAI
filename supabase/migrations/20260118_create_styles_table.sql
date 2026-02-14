@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS styles (
   
   -- 风格特征
   tags TEXT[],  -- 标签（用于搜索和分类）
-  category TEXT,  -- 分类（如 'artistic', '3d', 'realistic'）
+  category TEXT,  -- 分类（如 'artistic', 'stylized', 'realistic'）
   
   -- 生成参数建议
   recommended_strength_min DECIMAL(3,2) DEFAULT 0.85,  -- 推荐的最小 strength
@@ -116,11 +116,11 @@ CREATE TRIGGER styles_updated_at_trigger
 -- 插入现有的风格数据（从 lib/styles.ts 迁移）
 INSERT INTO styles (id, name, emoji, prompt_suffix, category, description, sort_order, is_enabled) VALUES
   ('Watercolor-Dream', 'Watercolor Dream', '🎨', 'watercolor painting style, soft colors, dreamy atmosphere, artistic brushstrokes', 'artistic', 'Soft watercolor art with dreamy vibes', 1, true),
-  ('Disney-Magic', 'Disney Magic', '✨', '3D Disney Pixar style, vibrant colors, expressive eyes, cute and charming', '3d', 'Classic Disney/Pixar 3D animation style', 2, true),
+  ('Disney-Magic', 'Disney Magic', '✨', 'Disney-inspired AI artistic style, vibrant colors, expressive eyes, cute and charming', '3d', 'Classic Disney/stylized AI-generated artistic style', 2, true),
   ('Oil-Painting', 'Oil Painting', '🖼️', 'oil painting style, rich colors, textured brushwork, classical art', 'artistic', 'Traditional oil painting with rich textures', 3, true),
   ('Anime-Style', 'Anime Style', '🌸', 'anime art style, big expressive eyes, colorful hair, Japanese animation', 'artistic', 'Japanese anime/manga art style', 4, true),
   ('Cartoon-Pop', 'Cartoon Pop', '🎪', 'cartoon style, bold outlines, vibrant colors, playful and fun', 'artistic', 'Bold cartoon style with pop art elements', 5, true),
-  ('3D-Render', '3D Render', '🎬', '3D rendered, smooth surfaces, professional lighting, highly detailed', '3d', 'Photorealistic 3D rendering', 6, true),
+  ('3D-Render', '3D Render', '🎬', 'stylized portrait rendering, smooth surfaces, professional lighting, highly detailed', '3d', 'Highly detailed stylized portrait rendering', 6, true),
   ('Vintage-Photo', 'Vintage Photo', '📷', 'vintage photograph, sepia tone, nostalgic feel, film grain', 'photo', 'Classic vintage photography style', 7, true),
   ('Cyberpunk', 'Cyberpunk', '🌃', 'cyberpunk style, neon lights, futuristic, dark and moody', 'futuristic', 'Sci-fi cyberpunk aesthetic', 8, true),
   ('Fantasy-Art', 'Fantasy Art', '🧙', 'fantasy art style, magical atmosphere, detailed background, epic', 'artistic', 'Epic fantasy illustration', 9, true),

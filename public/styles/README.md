@@ -4,7 +4,7 @@
 
 展示每种 AI 风格的效果图：
 
-1. **3d-movie-star.jpg** - 金毛（带 "Most Popular" 标签）
+1. **stunning-portrait.jpg** - 金毛（带 "Most Popular" 标签）
 2. **royal-highness.jpg** - 法斗（带 "Premium" 标签）
 3. **watercolor-art.jpg** - 哈士奇
 4. **pop-art.jpg** - 边牧
@@ -22,7 +22,7 @@
 
 ## 尺寸建议
 
-- Portrait（竖版）：400x600px（3D Movie Star, Watercolor, Cyberpunk, Superhero）
+- Portrait（竖版）：400x600px（stunning portrait, Watercolor, Cyberpunk, Superhero）
 - Square（方形）：400x400px（Royal Highness, Pop Art, Vintage Sketch, Studio Anime）
 
 ## 注意事项

@@ -207,7 +207,7 @@ if (!uuidRegex.test(orderId)) {
    }): Promise<Metadata> {
      const { lang } = await params;
      return {
-       title: "PixPaw AI - Turn Your Pet into Pixar Art",
+       title: "PixPaw AI - Turn Any Pet Photo Into Stunning Art",
        description: "...",
        openGraph: { ... },
      };
@@ -215,7 +215,7 @@ if (!uuidRegex.test(orderId)) {
    ```
 
 3. **URL 结构**
-   - 使用语义化 slug：`/pet/123-golden-retriever-pixar-style`
+   - 使用语义化 slug：`/pet/123-golden-retriever-stylized-art`
    - 避免查询参数作为主要导航：`/pet?id=123` ❌
 
 ### 安全规范
@@ -249,7 +249,7 @@ if (!uuidRegex.test(orderId)) {
    ```tsx
    <Image
      src={url}
-     alt="3D Pixar style golden retriever portrait"  // ✅ 描述性 alt
+     alt="Stylized artistic golden retriever portrait"  // ✅ 描述性 alt
      width={800}
      height={800}
      priority={isAboveFold}

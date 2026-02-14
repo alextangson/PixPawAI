@@ -47,14 +47,14 @@ export const STYLE_CONFIGS: Record<
   cartoon: {
     model: 'black-forest-labs/flux-schnell',
     promptTemplate:
-      'A playful cartoon illustration of {pet}, bold colors, fun and whimsical, Disney Pixar style, professional quality',
+      'A playful cartoon illustration of {pet}, bold colors, fun and whimsical, Disney stylized artistic look, professional quality',
     negativePrompt: 'realistic, photograph, anime, low quality',
   },
-  // 3D 渲染
+  // 艺术肖像风格
   '3d-render': {
     model: 'black-forest-labs/flux-schnell',
     promptTemplate:
-      'A stunning 3D render of {pet}, smooth textures, professional lighting, Pixar style character, ultra high quality',
+      'A stunning artistic portrait of {pet}, smooth textures, professional lighting, stylized portrait character, ultra high quality',
     negativePrompt: 'flat, 2d, photograph, low quality',
   },
   // 超现实主义
@@ -145,7 +145,7 @@ export function getStyleDisplayName(styleKey: string): string {
     'oil-painting': 'Oil Painting',
     anime: 'Anime',
     cartoon: 'Cartoon',
-    '3d-render': '3D Render',
+    '3d-render': 'Artistic Portrait',
     surreal: 'Surreal',
     'pop-art': 'Pop Art',
     sketch: 'Sketch',

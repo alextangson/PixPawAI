@@ -43,9 +43,9 @@ Goal: To implement a high-conversion gallery combining "Inspiration Browsing (Pi
 | **Field Name**    | **Type** | **Purpose**                             | **Frontend Component**                                                |
 | `id`              | UUID     | Unique Identifier                       | Used for Deep Linking URLs (`/gallery/[id]`)                          |
 | `image_url`       | String   | Storage URL                             | Masonry Card / Modal Hero Image                                       |
-| `alt_text`        | String   | **SEO Critical** (e.g., "3D Pixar Dog") | Image `alt` attribute for Google Indexing                             |
+| `alt_text`        | String   | **SEO Critical** (e.g., "stylized dog portrait") | Image `alt` attribute for Google Indexing                             |
 | `prompt_template` | Text     | The raw prompt used to gen this image   | **Core of "Remix"**. AI fills this template when user clicks "Create" |
-| `style_category`  | String   | Style Category (e.g., `3D`, `Oil`)      | Top Filter Chips                                                      |
+| `style_category`  | String   | Style Category (e.g., `Pop Art`, `Oil`) | Top Filter Chips                                                      |
 | `tags`            | Array    | Tags (e.g., `['dog', 'corgi', 'cute']`) | Search Bar                                                            |
 | `is_public`       | Boolean  | Public Visibility                       | Distinguishes private user generations from public gallery            |
 | `author_id`       | UUID     | Author ID                               | (Optional) To display "Created by User123"                            |
@@ -61,7 +61,7 @@ Goal: To implement a high-conversion gallery combining "Inspiration Browsing (Pi
 
 - **Frontend Action:** User clicks "Remix this Style" in the modal.
 - **Data Transfer:** Router pushes to the upload page with parameters.
-  - `router.push('/upload?source_id=123&style=pixar-3d')`
+  - `router.push('/upload?source_id=123&style=stylized-portrait')`
 - **Logic Response:**
   - The Upload Page reads the `source_id` from the URL.
   - It fetches the `prompt_template` associated with that ID.
@@ -81,4 +81,3 @@ Goal: To implement a high-conversion gallery combining "Inspiration Browsing (Pi
 - **Logic Response:**
   - Use CSS `mask-image` or `mix-blend-mode` to overlay the `image_url` (the dog) onto the `merch_mockup.png` (the white pillow) dynamically.
   - **Note:** No need to generate a new physical image file on the backend yet (saves GPU costs).
-

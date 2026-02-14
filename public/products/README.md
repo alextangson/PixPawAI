@@ -31,7 +31,7 @@
    - Phone Case → Tech → Phone Cases → iPhone
    - Framed Wall Art → Posters & Prints → Framed Poster
    - Ceramic Mug → Drinkware → Mugs → 11oz Mug
-3. 上传 `/public/styles/3d-movie-star.jpg` 作为设计图
+3. 上传 `/public/styles/stunning-portrait.jpg` 作为设计图
 4. 调整位置和大小
 5. 下载 mockup 图片
 
@@ -76,6 +76,6 @@
 
 ## 设计建议
 
-- 使用同一张 AI 生成的宠物图片（如金毛 3D Movie Star）作为所有商品的设计图，保持视觉统一
+- 使用同一张 AI 生成的宠物图片（如金毛 宠物艺术照）作为所有商品的设计图，保持视觉统一
 - 选择白色或浅色背景的 mockup，与网站风格一致
 - 确保宠物图片在商品上清晰可见
