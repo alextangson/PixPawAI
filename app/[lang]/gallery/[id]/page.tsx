@@ -185,7 +185,7 @@ export default async function GalleryImagePage({ params }: GalleryImagePageProps
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-coral rounded-xl p-6 shadow-sm">
               <p className="text-gray-700 leading-relaxed">
                 <strong className="text-coral">✨ Style Features:</strong> This artistic style combines soft lighting,
-                vibrant colors, and Pixar-like 3D rendering to transform your pet into a
+                vibrant colors, and artistic rendering to transform your pet into a
                 stunning character. Perfect for creating memorable keepsakes.
               </p>
             </div>

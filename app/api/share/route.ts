@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       const qc = generation.quality_check
       const petType = qc?.petType || 'pet'
       const breed = qc?.breed && qc.breed !== 'unknown' ? qc.breed : ''
-      const style = generation.style || '3D Pixar style'
+      const style = generation.style || 'artistic style'
       
       altText = `AI generated ${petType} portrait${breed ? ' - ' + breed : ''}, ${style}, high resolution`
     }

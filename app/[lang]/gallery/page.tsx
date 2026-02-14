@@ -24,10 +24,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: Loc
   const { lang } = await params;
   return {
     title: 'Pet Portrait Gallery | PixPaw AI',
-    description: 'Discover stunning AI-generated pet portraits in Pixar style. Browse our community gallery of transformed pets and find inspiration for your own creation.',
+    description: 'Discover stunning AI-generated pet portraits in artistic styles. Browse our community gallery of transformed pets and find inspiration for your own creation.',
     openGraph: {
       title: 'Pet Portrait Gallery | PixPaw AI',
-      description: 'Discover stunning AI-generated pet portraits in Pixar style',
+      description: 'Discover stunning AI-generated pet portraits in artistic styles',
       type: 'website',
     },
     alternates: {

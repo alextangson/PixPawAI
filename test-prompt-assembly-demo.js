@@ -203,7 +203,7 @@ if (userInput) {
 }
 
 // 假设风格提示词
-const stylePrompt = 'in Pixar 3D animation style, studio lighting, professional render'
+const stylePrompt = 'in stylized AI-generated artistic style, studio lighting, professional render'
 if (stylePrompt) {
   promptParts.push(stylePrompt)
   console.log(`🎨 添加风格提示词: "${stylePrompt}"\n`)

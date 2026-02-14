@@ -160,7 +160,7 @@ Another example (dog):
 /**
  * 模拟提示词组装（简化版）
  */
-function buildPromptPreview(qwenResult, userPrompt = '', styleName = 'Pixar Style') {
+function buildPromptPreview(qwenResult, userPrompt = '', styleName = 'stylized artistic look') {
   console.log('🎨 提示词组装预览')
   console.log('═'.repeat(80))
   
@@ -259,7 +259,7 @@ async function main() {
     console.log()
     
     // 3. 显示提示词组装
-    buildPromptPreview(qwenResult, 'sitting elegantly', 'Pixar 3D Animation Style')
+    buildPromptPreview(qwenResult, 'sitting elegantly', 'stylized AI-generated artistic style')
     
     console.log('\n✨ 测试完成！')
     
