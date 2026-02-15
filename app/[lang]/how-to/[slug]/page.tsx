@@ -34,6 +34,9 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     title: article.metaTitle,
     description: article.metaDescription,
     keywords: article.seoKeywords,
+    alternates: {
+      canonical: `https://pixpawai.com/en/how-to/${slug}`,
+    },
     openGraph: {
       type: 'article',
       title: article.metaTitle,

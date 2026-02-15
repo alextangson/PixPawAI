@@ -51,12 +51,12 @@ export async function generateMetadata({
       // 5. Add to .env.local: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=YOUR_CODE
     },
     alternates: {
-      canonical: `/${lang}`,
+      canonical: `https://pixpawai.com/${lang}`,
       languages: {
-        'en': '/en',
-        'x-default': '/en',
+        'en': 'https://pixpawai.com/en',
+        'x-default': 'https://pixpawai.com/en',
         // Add more languages when available:
-        // 'zh': '/zh',
+        // 'zh': 'https://pixpawai.com/zh',
       },
     },
     icons: {

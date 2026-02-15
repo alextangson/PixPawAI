@@ -12,6 +12,15 @@ import {
 
 const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 
+/**
+ * Blocklist of slugs that should not be served (wrong articles, deleted content, etc.)
+ * These articles will return 404 even if they exist in WordPress
+ */
+const BLOCKED_SLUGS = [
+  'how-to-master-furniture-quality-control-service-china-complete-guide',
+  'furniture-quality-control-service-china',
+];
+
 if (!WORDPRESS_API_URL) {
   console.warn('[WordPress] API URL not configured. Set WORDPRESS_API_URL or NEXT_PUBLIC_WORDPRESS_API_URL in .env.local');
 } else {
@@ -467,6 +476,12 @@ export async function getBlogArticles(
  * Get single blog article by slug
  */
 export async function getBlogArticle(slug: string): Promise<BlogArticle | null> {
+  // Check if slug is in blocklist - return null to trigger 404
+  if (BLOCKED_SLUGS.includes(slug)) {
+    console.warn(`[WordPress] Blocked slug requested: "${slug}" - returning 404`);
+    return null;
+  }
+
   if (!WORDPRESS_API_URL) {
     console.warn('[WordPress] Returning null - API URL not configured');
     return null;
@@ -783,7 +798,13 @@ export async function getAllArticleSlugs(): Promise<string[]> {
     }
 
     const posts: Array<{ slug: string }> = await res.json();
-    return posts.map(post => post.slug);
+    
+    // Filter out blocked slugs
+    const filteredSlugs = posts
+      .map(post => post.slug)
+      .filter(slug => !BLOCKED_SLUGS.includes(slug));
+    
+    return filteredSlugs;
   } catch (error) {
     console.error('[WordPress] Error fetching article slugs:', error);
     return [];
