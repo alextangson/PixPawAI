@@ -1,5 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Blog route rewrites - support both /blog and /how-to URLs
+  async rewrites() {
+    return [
+      // Blog list page
+      {
+        source: '/:lang/blog',
+        destination: '/:lang/how-to',
+      },
+      // Individual blog article pages
+      {
+        source: '/:lang/blog/:slug',
+        destination: '/:lang/how-to/:slug',
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       // Supabase Storage - 主要图片源
