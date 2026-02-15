@@ -1,6 +1,7 @@
 import { type Locale } from '@/lib/i18n-config';
 import { createClient } from '@/lib/supabase/server';
 import { GalleryGridClient } from '@/components/gallery/gallery-grid-client';
+import { GallerySchema } from '@/components/gallery/gallery-schema';
 import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 
@@ -55,5 +56,13 @@ export default async function GalleryPage({ params }: { params: Promise<{ lang: 
     logger.error('Gallery', error);
   }
 
-  return <GalleryGridClient initialImages={(images as GalleryImage[]) || []} lang={lang} />;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
+  const galleryUrl = `${siteUrl}/${lang}/gallery`;
+
+  return (
+    <>
+      <GallerySchema images={(images as GalleryImage[]) || []} url={galleryUrl} />
+      <GalleryGridClient initialImages={(images as GalleryImage[]) || []} lang={lang} />
+    </>
+  );
 }

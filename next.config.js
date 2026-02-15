@@ -15,6 +15,22 @@ const nextConfig = {
       },
     ]
   },
+  // Redirects for SEO - www to non-www canonical unification
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.pixpawai.com',
+          },
+        ],
+        destination: 'https://pixpawai.com/:path*',
+        permanent: true, // 301 redirect
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       // Supabase Storage - 主要图片源
