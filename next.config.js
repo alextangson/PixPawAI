@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  trailingSlash: true,
   // Blog route rewrites - support both /blog and /how-to URLs
   async rewrites() {
     return [
@@ -27,7 +28,7 @@ const nextConfig = {
           },
         ],
         destination: 'https://pixpawai.com/:path*',
-        permanent: true, // 301 redirect
+        statusCode: 308, // permanent redirect
       },
     ]
   },
