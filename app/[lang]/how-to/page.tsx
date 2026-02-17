@@ -236,14 +236,14 @@ export default async function HowToGuidePage({
                   Ready to Create Magic?
                 </h2>
                 <p className="text-lg text-gray-300 mb-6">
-                  See your pet in stunning 3D animation in just 30 seconds
+                  Transform your pet photo into stunning AI art in just 30 seconds
                 </p>
                 <Link href={`/${lang}`}>
                   <Button
                     size="lg"
                     className="bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
                   >
-                    See Your Pet in 3D Animation Now
+                    Create Your Pet Portrait Now
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
