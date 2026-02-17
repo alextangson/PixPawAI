@@ -100,6 +100,11 @@ function cleanText(text: string): string {
   let cleaned = text.replace(/<[^>]*>/g, '');
   // Decode HTML entities
   cleaned = decodeHtmlEntities(cleaned);
+  // Strip "Meta Description:" lines that leak from WordPress SEO plugins
+  cleaned = cleaned
+    .split('\n')
+    .filter(line => !line.trim().startsWith('Meta Description:'))
+    .join(' ');
   // Clean up whitespace
   cleaned = cleaned
     .replace(/\s+/g, ' ')
