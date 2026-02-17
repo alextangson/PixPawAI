@@ -128,13 +128,6 @@ export function SoftwareApplicationSchema() {
       priceCurrency: 'USD',
       description: 'Free to try with premium options available',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '10000',
-      bestRating: '5',
-      worstRating: '1',
-    },
     screenshot: 'https://pixpawai.com/hero/carousel/hero-carousel-birthday.webp',
     featureList: [
       'AI-powered pet portrait generation',
@@ -193,13 +186,6 @@ export function ProductSchema() {
           priceCurrency: 'USD',
         },
       ],
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '10000',
-      bestRating: '5',
-      worstRating: '1',
     },
   };
 

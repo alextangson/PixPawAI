@@ -76,8 +76,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
                     🐾
                   </div>
                 </div>
-                <span className="hidden sm:inline">{dict.hero.socialProof}</span>
-                <span className="sm:hidden">10,000+ pets</span>
+                <span>{dict.hero.socialProof}</span>
               </div>
 
               {/* Main Headline (H1) - Responsive Typography */}
