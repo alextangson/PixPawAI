@@ -17,11 +17,16 @@ export function OrganizationSchema() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'PixPaw AI',
-    description: 'Transform your pet into stunning AI-generated art in artistic styles',
+    description: 'Transform your pet photos into stunning AI-generated art in artistic styles',
     url: 'https://pixpawai.com',
-    logo: 'https://pixpawai.com/brand/png/logo-orange-256.png',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://pixpawai.com/brand/png/logo-orange-256.png',
+      width: 256,
+      height: 256,
+    },
     sameAs: [
-      // Add social media profiles when available
+      // Social media profiles to be added when available
       // 'https://twitter.com/pixpawai',
       // 'https://facebook.com/pixpawai',
       // 'https://instagram.com/pixpawai',
@@ -29,6 +34,7 @@ export function OrganizationSchema() {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'Customer Service',
+      email: 'support@pixpawai.com',
       availableLanguage: ['English'],
     },
   };
@@ -122,13 +128,6 @@ export function SoftwareApplicationSchema() {
       priceCurrency: 'USD',
       description: 'Free to try with premium options available',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '10000',
-      bestRating: '5',
-      worstRating: '1',
-    },
     screenshot: 'https://pixpawai.com/hero/carousel/hero-carousel-birthday.webp',
     featureList: [
       'AI-powered pet portrait generation',
@@ -155,7 +154,7 @@ export function ProductSchema() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: 'PixPaw AI - Pet Portrait Generation',
+    name: 'PixPaw AI',
     description: 'AI-powered pet portrait generation service with artistic rendering',
     brand: {
       '@type': 'Brand',
@@ -164,20 +163,14 @@ export function ProductSchema() {
     offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'USD',
-      lowPrice: '0',
-      highPrice: '39.99',
+      lowPrice: '4.99',
+      highPrice: '49.99',
       offerCount: '4',
       offers: [
         {
           '@type': 'Offer',
-          name: 'Free Trial',
-          price: '0',
-          priceCurrency: 'USD',
-        },
-        {
-          '@type': 'Offer',
-          name: 'Starter Bundle',
-          price: '9.99',
+          name: 'Starter Pack',
+          price: '4.99',
           priceCurrency: 'USD',
         },
         {
@@ -188,18 +181,11 @@ export function ProductSchema() {
         },
         {
           '@type': 'Offer',
-          name: 'Master Bundle',
-          price: '39.99',
+          name: 'Master Plan',
+          price: '49.99',
           priceCurrency: 'USD',
         },
       ],
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '10000',
-      bestRating: '5',
-      worstRating: '1',
     },
   };
 

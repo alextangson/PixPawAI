@@ -15,15 +15,15 @@
   "hero": {
     "badge": "Powered by AI Magic",
     "title": {
-      "part1": "Turn Your Pet Into a",
-      "part2": "Stunning Portrait"
+      "part1": "Turn Your Pet Photo Into",
+      "part2": "Stunning AI Art"
     },
     "subtitle": "The easiest AI pet portrait generator. Create funny, royal, or artistic portraits in seconds. No design skills needed.",
     "cta": {
       "primary": "Try Now",
       "secondary": "See Examples"
     },
-    "socialProof": "10,000+ happy pet parents",
+    "socialProof": "AI-powered pet portraits",
     "badges": {
       "aiPowered": "AI Powered",
       "readyIn": "Ready in 30 seconds"
@@ -108,45 +108,9 @@
     }
   },
   "testimonials": {
-    "title": "Pawsitive Vibes from 10,000+ Parents",
-    "reviews": [
-      {
-        "name": "Sarah M.",
-        "pet": "Golden Retriever Mom",
-        "text": "I was blown away by how fast and amazing the results were! My golden retriever looks like he jumped straight out of an animated movie. Worth every penny!",
-        "rating": 5
-      },
-      {
-        "name": "James L.",
-        "pet": "Cat Dad",
-        "text": "The AI captured my cat's grumpy personality perfectly. I ordered the pillow and it's now my favorite thing in the house. Highly recommend!",
-        "rating": 5
-      },
-      {
-        "name": "Emily R.",
-        "pet": "Corgi Owner",
-        "text": "Such a fun experience! I tried multiple styles and they all turned out gorgeous. The watercolor one is my favorite. Gift-giving made easy!",
-        "rating": 5
-      },
-      {
-        "name": "Michael T.",
-        "pet": "Husky Dad",
-        "text": "I was skeptical at first, but the quality is incredible. The royal portrait of my husky is hanging in my living room now. Everyone asks where I got it!",
-        "rating": 5
-      },
-      {
-        "name": "Lisa K.",
-        "pet": "Poodle Mom",
-        "text": "Customer service was amazing and the turnaround was so fast. My poodle looks absolutely stunning in the artistic style. 10/10 would order again!",
-        "rating": 5
-      },
-      {
-        "name": "David P.",
-        "pet": "Beagle Owner",
-        "text": "This made the perfect gift for my wife. She cried happy tears when she saw our beagle as an animated portrait. Thank you PixPaw AI!",
-        "rating": 5
-      }
-    ]
+    "title": "Try It Free",
+    "subtitle": "Create your first AI pet portrait at no cost",
+    "cta": "Start Creating Now"
   },
   "faq": {
     "title": "Frequently Asked Questions",
@@ -203,7 +167,7 @@
   },
   "finalCta": {
     "title": "Ready to Turn Your Pet into a Star?",
-    "subtitle": "Join 10,000+ happy pet parents. Try it risk-free today.",
+    "subtitle": "Create beautiful AI pet portraits. Try it risk-free today.",
     "cta": "Create My Portrait Now"
   },
   "footer": {
@@ -306,7 +270,7 @@
         "limitations": [
           "No image selection",
           "Average 5+ retries needed",
-          "45% satisfaction rate"
+          "Single image generation"
         ],
         "button": "Try for Free"
       },
@@ -341,7 +305,7 @@
           "Social Media Commercial License",
           "10% Off Physical Products"
         ],
-        "highlight": "85% satisfaction rate vs Free 45%",
+        "highlight": "Multi-image selection for best results",
         "comparison": "Only 40% of Master price, all core features",
         "button": "Upgrade to Pro"
       },
@@ -392,18 +356,18 @@
       }
     },
     "socialProof": {
-      "upgradeCount": "8,234+ users upgraded to Pro",
-      "satisfaction": "Pro user satisfaction rate",
-      "proChoice": "Choose Pro Bundle",
+      "upgradeCount": "Trusted by pet lovers worldwide",
+      "satisfaction": "Multi-image selection",
+      "proChoice": "Most popular choice",
       "testimonialTitle": "What Our Users Say"
     },
     "upgradeModal": {
-      "headlineA": "😕 Not satisfied? That's normal for free users!",
-      "headlineB": "⚠️ Free users need 5+ retries to be satisfied",
-      "headlineC": "⭐ 85% of active users upgraded to Pro",
+      "headlineA": "Want better results?",
+      "headlineB": "Get more choices",
+      "headlineC": "Upgrade to Pro",
       "subheadlineA": "Pro users generate 3 images and pick the best one",
-      "subheadlineB": "Upgrade to Pro, only 1-2 tries needed",
-      "subheadlineC": "Join 8,234+ satisfied users with Pro benefits"
+      "subheadlineB": "Upgrade to Pro for multi-image selection",
+      "subheadlineC": "Generate 3 images and pick your favorite"
     },
     "referral": {
       "headline": "Want more credits for free?",
@@ -427,7 +391,7 @@
         },
         {
           "question": "What if I'm not happy with the result?",
-          "answer": "We offer free regenerations if the AI glitches. Pro and Master users can use multi-image selection to pick the best result, reducing dissatisfaction by 85%."
+          "answer": "We offer free regenerations if the AI glitches. Pro and Master users can use multi-image selection to pick the best result."
         },
         {
           "question": "When will Partial Redraw and Style Mixing be available?",

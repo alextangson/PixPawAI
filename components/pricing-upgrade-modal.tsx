@@ -44,26 +44,26 @@ export function UpgradeModal({
   const getHeadline = () => {
     switch (variant) {
       case 'A':
-        return upgradeModalDict.headlineA || '😕 觉得不够像？这很正常！';
+        return upgradeModalDict.headlineA || 'Want better results?';
       case 'B':
-        return upgradeModalDict.headlineB || '⚠️ 免费用户需要重试5+次才满意';
+        return upgradeModalDict.headlineB || 'Get more choices';
       case 'C':
-        return upgradeModalDict.headlineC || '⭐ 85%的用户已升级Pro';
+        return upgradeModalDict.headlineC || 'Upgrade to Pro';
       default:
-        return upgradeModalDict.headlineA || '😕 觉得不够像？这很正常！';
+        return upgradeModalDict.headlineA || 'Want better results?';
     }
   };
 
   const getSubheadline = () => {
     switch (variant) {
       case 'A':
-        return upgradeModalDict.subheadlineA || 'Pro用户可以一次生成3张，选最满意的';
+        return upgradeModalDict.subheadlineA || 'Pro users generate 3 images and pick the best one';
       case 'B':
-        return upgradeModalDict.subheadlineB || '升级Pro，平均只需1-2次生成就完美';
+        return upgradeModalDict.subheadlineB || 'Upgrade to Pro for multi-image selection';
       case 'C':
-        return upgradeModalDict.subheadlineC || '加入8,234+满意用户，体验Pro特权';
+        return upgradeModalDict.subheadlineC || 'Generate 3 images and pick your favorite';
       default:
-        return upgradeModalDict.subheadlineA || 'Pro用户可以一次生成3张，选最满意的';
+        return upgradeModalDict.subheadlineA || 'Pro users generate 3 images and pick the best one';
     }
   };
 
@@ -93,17 +93,17 @@ export function UpgradeModal({
             </p>
           </div>
 
-          {/* Satisfaction Stats */}
+          {/* Feature Comparison */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 sm:mb-8">
-            <div className="bg-red-50 rounded-xl p-6 border-2 border-red-200 text-center">
-              <div className="text-sm text-gray-600 mb-2">免费用户满意度</div>
-              <div className="text-4xl font-bold text-red-600 mb-1">45%</div>
-              <div className="text-xs text-gray-500">平均需要重试 5+ 次</div>
+            <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200 text-center">
+              <div className="text-sm text-gray-600 mb-2">Free Plan</div>
+              <div className="text-4xl font-bold text-gray-600 mb-1">1</div>
+              <div className="text-xs text-gray-500">Image per generation</div>
             </div>
             <div className="bg-green-50 rounded-xl p-6 border-2 border-green-200 text-center">
-              <div className="text-sm text-gray-600 mb-2">Pro用户满意度</div>
-              <div className="text-4xl font-bold text-green-600 mb-1">85%</div>
-              <div className="text-xs text-gray-500">平均只需 1-2 次生成</div>
+              <div className="text-sm text-gray-600 mb-2">Pro Plan</div>
+              <div className="text-4xl font-bold text-green-600 mb-1">3</div>
+              <div className="text-xs text-gray-500">Images to choose from</div>
             </div>
           </div>
 
@@ -173,20 +173,20 @@ export function UpgradeModal({
                 <TrendingUp className="w-5 h-5 text-coral flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="font-semibold text-gray-900">50张生成额度</div>
-                  <div className="text-sm text-gray-600">够用2-4周，满意度提升85%</div>
+                  <div className="text-sm text-gray-600">Perfect for 2-4 weeks of use</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Social Proof */}
+          {/* Trust Signal */}
           <div className="bg-blue-50 rounded-xl p-4 mb-6 text-center border border-blue-200">
             <div className="flex items-center justify-center gap-2 text-sm text-blue-800">
               <Zap className="w-4 h-4" />
-              <span className="font-semibold">已有 8,234 位用户升级到 Pro</span>
+              <span className="font-semibold">Multi-image selection for better results</span>
             </div>
             <div className="text-xs text-blue-600 mt-1">
-              98% 用户表示会推荐给朋友
+              Pick your favorite from 3 options
             </div>
           </div>
 

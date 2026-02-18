@@ -149,7 +149,7 @@ export default function Home() {
       <MerchShowcase dict={dict} />
       
       {/* Wall of Love (Testimonials) */}
-      <WallOfLove dict={dict} />
+      <WallOfLove dict={dict} lang={lang} />
       
       {/* FAQ Section */}
       <FAQSection dict={dict} />

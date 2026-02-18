@@ -77,13 +77,6 @@ export default async function PricingLayout({ children, params }: PricingLayoutP
                 },
               ],
             },
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '4.9',
-              reviewCount: '10000',
-              bestRating: '5',
-              worstRating: '1',
-            },
           }),
         }}
       />
