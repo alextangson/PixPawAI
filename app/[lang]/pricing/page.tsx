@@ -7,9 +7,8 @@ import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
 import { useParams, useRouter } from 'next/navigation';
 import { PricingComparisonTable } from '@/components/pricing-comparison-table';
-import { StatsBadges, TestimonialCarousel } from '@/components/pricing-social-proof';
+import { StatsBadges } from '@/components/pricing-social-proof';
 import { UpgradeModal } from '@/components/pricing-upgrade-modal';
-import { PricingCountdown, LimitedSlots } from '@/components/pricing-countdown';
 import { PaymentModal } from '@/components/payment/payment-modal';
 import { trackPricingPageView, trackPricingCTAClick } from '@/lib/pricing-analytics';
 import { ReferralLinkModal } from '@/components/referral-link-modal';
@@ -165,17 +164,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 bg-cream">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">
-            {dict.pricing.socialProof?.testimonialTitle || 'What Our Users Say'}
-          </h2>
-          <TestimonialCarousel dict={dict} />
-        </div>
-      </section>
-
-      {/* Referral/Growth Hacking Section */}
+      {/* Referral Section */}
       <section className="py-16 bg-gradient-to-r from-orange-100 via-orange-50 to-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-8 md:p-12 border-2 border-orange-200">
@@ -250,7 +239,7 @@ export default function PricingPage() {
             Ready to transform your pet?
           </h2>
           <p className="text-xl text-gray-300 mb-8">
-            Join 10,000+ happy pet parents today
+            Create beautiful AI pet portraits today
           </p>
           <Button
             size="lg"
@@ -568,8 +557,7 @@ function MasterCard({ dict, onCTA }: { dict: any; onCTA: () => void }) {
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
           <Clock className="w-3.5 h-3.5 text-amber-600" />
-          <span className="font-medium">Limited offer: </span>
-          <PricingCountdown className="font-semibold text-amber-700" targetHour={24} />
+          <span className="font-medium">Limited time offer</span>
         </div>
       </div>
       

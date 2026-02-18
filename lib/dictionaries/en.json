@@ -167,7 +167,7 @@
   },
   "finalCta": {
     "title": "Ready to Turn Your Pet into a Star?",
-    "subtitle": "Join 10,000+ happy pet parents. Try it risk-free today.",
+    "subtitle": "Create beautiful AI pet portraits. Try it risk-free today.",
     "cta": "Create My Portrait Now"
   },
   "footer": {
@@ -270,7 +270,7 @@
         "limitations": [
           "No image selection",
           "Average 5+ retries needed",
-          "45% satisfaction rate"
+          "Single image generation"
         ],
         "button": "Try for Free"
       },
@@ -305,7 +305,7 @@
           "Social Media Commercial License",
           "10% Off Physical Products"
         ],
-        "highlight": "85% satisfaction rate vs Free 45%",
+        "highlight": "Multi-image selection for best results",
         "comparison": "Only 40% of Master price, all core features",
         "button": "Upgrade to Pro"
       },
@@ -356,18 +356,18 @@
       }
     },
     "socialProof": {
-      "upgradeCount": "8,234+ users upgraded to Pro",
-      "satisfaction": "Pro user satisfaction rate",
-      "proChoice": "Choose Pro Bundle",
+      "upgradeCount": "Trusted by pet lovers worldwide",
+      "satisfaction": "Multi-image selection",
+      "proChoice": "Most popular choice",
       "testimonialTitle": "What Our Users Say"
     },
     "upgradeModal": {
-      "headlineA": "😕 Not satisfied? That's normal for free users!",
-      "headlineB": "⚠️ Free users need 5+ retries to be satisfied",
-      "headlineC": "⭐ 85% of active users upgraded to Pro",
+      "headlineA": "Want better results?",
+      "headlineB": "Get more choices",
+      "headlineC": "Upgrade to Pro",
       "subheadlineA": "Pro users generate 3 images and pick the best one",
-      "subheadlineB": "Upgrade to Pro, only 1-2 tries needed",
-      "subheadlineC": "Join 8,234+ satisfied users with Pro benefits"
+      "subheadlineB": "Upgrade to Pro for multi-image selection",
+      "subheadlineC": "Generate 3 images and pick your favorite"
     },
     "referral": {
       "headline": "Want more credits for free?",
@@ -391,7 +391,7 @@
         },
         {
           "question": "What if I'm not happy with the result?",
-          "answer": "We offer free regenerations if the AI glitches. Pro and Master users can use multi-image selection to pick the best result, reducing dissatisfaction by 85%."
+          "answer": "We offer free regenerations if the AI glitches. Pro and Master users can use multi-image selection to pick the best result."
         },
         {
           "question": "When will Partial Redraw and Style Mixing be available?",
