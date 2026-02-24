@@ -769,6 +769,7 @@ export async function getCategories(): Promise<WordPressCategory[]> {
 
 /**
  * Get all article slugs for static generation
+ * Fetches posts from both pixpaw_category and WordPress default 'Blog' category (id 58)
  */
 export async function getAllArticleSlugs(): Promise<string[]> {
   if (!WORDPRESS_API_URL) {
@@ -781,15 +782,44 @@ export async function getAllArticleSlugs(): Promise<string[]> {
     const pixpawCategoryIds = allCategories.map(cat => cat.id);
     const hasCategories = pixpawCategoryIds.length > 0;
     
-    // Build query - only add category filter if we have categories
-    let queryParams = 'per_page=100&status=publish&_fields=slug';
+    const slugs = new Set<string>();
+    
+    // Fetch 1: Posts with pixpaw_category
     if (hasCategories) {
-      queryParams += `&pixpaw_category=${pixpawCategoryIds.join(',')}`;
-    }
-    const apiUrl = buildWordPressApiUrl('posts', queryParams);
+      const pixpawQueryParams = `per_page=100&status=publish&_fields=slug&pixpaw_category=${pixpawCategoryIds.join(',')}`;
+      const pixpawApiUrl = buildWordPressApiUrl('posts', pixpawQueryParams);
+      
+      console.log('[WordPress] Fetching slugs from pixpaw_category:', pixpawApiUrl);
 
-    const res = await fetch(
-      apiUrl,
+      const pixpawRes = await fetch(
+        pixpawApiUrl,
+        {
+          next: { revalidate: 3600 },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (pixpawRes.ok) {
+        const pixpawPosts: Array<{ slug: string }> = await pixpawRes.json();
+        pixpawPosts.forEach(post => slugs.add(post.slug));
+        console.log(`[WordPress] Found ${pixpawPosts.length} posts with pixpaw_category`);
+      } else {
+        console.error('[WordPress] Error fetching pixpaw_category posts:', pixpawRes.status);
+      }
+    }
+    
+    // Fetch 2: Posts with WordPress default 'Blog' category (id 58)
+    // This ensures posts that don't have pixpaw_category but are in the Blog category are included
+    const blogCategoryId = 58;
+    const blogQueryParams = `per_page=100&status=publish&_fields=slug&categories=${blogCategoryId}`;
+    const blogApiUrl = buildWordPressApiUrl('posts', blogQueryParams);
+    
+    console.log('[WordPress] Fetching slugs from Blog category:', blogApiUrl);
+
+    const blogRes = await fetch(
+      blogApiUrl,
       {
         next: { revalidate: 3600 },
         headers: {
@@ -798,16 +828,18 @@ export async function getAllArticleSlugs(): Promise<string[]> {
       }
     );
 
-    if (!res.ok) {
-      throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
+    if (blogRes.ok) {
+      const blogPosts: Array<{ slug: string }> = await blogRes.json();
+      blogPosts.forEach(post => slugs.add(post.slug));
+      console.log(`[WordPress] Found ${blogPosts.length} posts with Blog category`);
+    } else {
+      console.error('[WordPress] Error fetching Blog category posts:', blogRes.status);
     }
-
-    const posts: Array<{ slug: string }> = await res.json();
     
-    // Filter out blocked slugs
-    const filteredSlugs = posts
-      .map(post => post.slug)
-      .filter(slug => !BLOCKED_SLUGS.includes(slug));
+    // Convert Set to Array and filter out blocked slugs
+    const filteredSlugs = Array.from(slugs).filter(slug => !BLOCKED_SLUGS.includes(slug));
+    
+    console.log(`[WordPress] Total unique slugs for sitemap: ${filteredSlugs.length}`);
     
     return filteredSlugs;
   } catch (error) {
