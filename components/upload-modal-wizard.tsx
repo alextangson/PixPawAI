@@ -17,6 +17,7 @@ import NextImage from 'next/image'
 import { ResultModal } from '@/components/result-modal'
 import { LoginButton } from '@/components/auth/login-button'
 import { GuestLoginModal } from '@/components/guest-login-modal'
+import { GuestSignupPrompt } from '@/components/guest-signup-prompt'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -60,6 +61,19 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
   const [showGuestLoginModal, setShowGuestLoginModal] = useState(false)
+
+  // Guest user state
+  const [isGuestGeneration, setIsGuestGeneration] = useState(false)
+  const [guestRemainingCredits, setGuestRemainingCredits] = useState<number | null>(null)
+
+  // Guest user signup prompt state
+  const [showGuestSignupPrompt, setShowGuestSignupPrompt] = useState(false)
+  const [guestSignupInfo, setGuestSignupInfo] = useState<{
+    message: string
+    remaining: number
+    total: number
+    resetAt?: Date
+  } | null>(null)
   const [progress, setProgress] = useState<number>(0)
   const [messageIndex, setMessageIndex] = useState<number>(0)
   const [strength, setStrength] = useState<number>(0.92) // Image preservation strength (0.1-1.0) - Very high to preserve exact animal features
@@ -669,36 +683,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setUser(currentUser)
     }
 
-    // Show login modal if not logged in
-    if (!currentUser) {
-      // Save current configuration to localStorage before login
-      const configState = {
-        uploadedImageUrl, // Supabase URL (still valid after login)
-        previewUrl, // Local preview (for UI)
-        selectedStyle,
-        aspectRatio,
-        strength,
-        userPrompt,
-        petName,
-        timestamp: Date.now()
-      }
-      
-      console.log('[UploadModalWizard] 💾 Saving config before login:', {
-        hasImageUrl: !!uploadedImageUrl,
-        imageUrlPreview: uploadedImageUrl?.substring(0, 50) + '...',
-        style: selectedStyle,
-        petName: petName,
-        aspectRatio,
-        strength
-      })
-      
-      localStorage.setItem('pixpaw_pending_generation', JSON.stringify(configState))
-      
-      // Show beautiful login modal
-      setShowGuestLoginModal(true)
-      return
-    }
-    
+    // Allow guest users to continue without login
+    // Login modal will only be shown if they exceed their free limit
+    const isGuest = !currentUser
+
     // Default prompt if user leaves it empty
     const finalUserPrompt = userPrompt.trim() || 'my pet'
 
@@ -708,15 +696,19 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
     try {
       // 1. Upload image to Supabase Storage (or use existing upload)
       let imageUrl = uploadedImageUrl
-      
+
       if (!imageUrl && uploadedFile) {
         console.log('📤 Uploading file...')
-      const uploadResult = await uploadUserImage(uploadedFile, currentUser.id)
+
+        // For guest users, generate a temporary guest ID
+        const uploadUserId = currentUser?.id || `guest_${Date.now()}_${Math.random().toString(36).substring(7)}`
+
+        const uploadResult = await uploadUserImage(uploadedFile, uploadUserId)
 
       if ('error' in uploadResult) {
         throw new Error(uploadResult.error)
         }
-        
+
         imageUrl = uploadResult.url
       } else if (imageUrl) {
         console.log('✅ Using pre-uploaded image')
@@ -784,8 +776,22 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
 
       if (!response.ok) {
         if (response.status === 402) {
-          setErrorType('credits')
-          throw new Error('Insufficient credits')
+          // Check if this is a guest user requiring auth
+          if (result.requiresAuth) {
+            // Show sign up prompt for guest users who exceeded free limit
+            setShowGuestSignupPrompt(true)
+            setGuestSignupInfo({
+              message: result.message,
+              remaining: result.remaining,
+              total: result.total,
+              resetAt: result.resetAt
+            })
+            throw new Error('Free limit exceeded')
+          } else {
+            // Logged in user with insufficient credits
+            setErrorType('credits')
+            throw new Error('Insufficient credits')
+          }
         }
         if (result.error?.includes('storage') || result.error?.includes('upload')) {
           setErrorType('storage')
@@ -813,6 +819,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setGeneratedImageUrl(result.outputUrl)
       setRemainingCredits(result.remainingCredits)
       setGenerationId(result.generationId || '')
+
+      // Track if this was a guest generation for display purposes
+      if (result.isGuest) {
+        setIsGuestGeneration(true)
+        setGuestRemainingCredits(result.guestRemaining ?? null)
+        console.log('✅ Guest generation completed successfully')
+      } else {
+        setIsGuestGeneration(false)
+        setGuestRemainingCredits(null)
+      }
       
       // Fetch is_refunded status from database
       if (result.generationId) {
@@ -1711,6 +1727,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
               remainingCredits={remainingCredits}
               isRewarded={false}
               isRefunded={isRefunded}
+              isGuest={isGuestGeneration}
+              guestRemaining={guestRemainingCredits ?? undefined}
               petName={petName}
               onShareSuccess={() => {
                 // Refresh credits or update UI if needed
@@ -1721,6 +1739,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 setStep('upload')
                 setGeneratedImageUrl('')
                 setGenerationId('')
+                setIsGuestGeneration(false)
+                setGuestRemainingCredits(null)
               }}
               generationMetadata={{
                 hasHeterochromia: qualityCheckResult?.hasHeterochromia,
@@ -1780,6 +1800,18 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       <GuestLoginModal
         isOpen={showGuestLoginModal}
         onClose={() => setShowGuestLoginModal(false)}
+      />
+
+      {/* Guest Signup Prompt (for users who exceeded free limit) */}
+      <GuestSignupPrompt
+        isOpen={showGuestSignupPrompt}
+        onClose={() => {
+          setShowGuestSignupPrompt(false)
+          setStep('configure')
+        }}
+        message={guestSignupInfo?.message}
+        remaining={guestSignupInfo?.remaining}
+        total={guestSignupInfo?.total}
       />
     </div>
   )

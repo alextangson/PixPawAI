@@ -56,6 +56,8 @@ interface ResultModalProps {
   remainingCredits: number | null
   isRewarded?: boolean
   isRefunded?: boolean // Whether user has already been refunded for this generation
+  isGuest?: boolean // Whether this was a guest generation
+  guestRemaining?: number // Remaining guest credits (for anonymous users)
   onShareSuccess?: () => void
   onReupload?: (targetStep?: 'upload' | 'configure') => void // Callback to reopen upload step
   petName?: string
@@ -78,6 +80,8 @@ export function ResultModal({
   remainingCredits,
   isRewarded = false,
   isRefunded: initialIsRefunded = false,
+  isGuest = false,
+  guestRemaining,
   onShareSuccess,
   onReupload,
   petName,
@@ -602,10 +606,22 @@ export function ResultModal({
                 )}
 
                 {/* Credits Display */}
-                {remainingCredits !== null && (
+                {remainingCredits !== null && !isGuest && (
                   <p className="text-center text-sm text-gray-500">
                     {remainingCredits} credits remaining
                   </p>
+                )}
+
+                {/* Guest Remaining Free Generations */}
+                {isGuest && guestRemaining !== undefined && (
+                  <div className="bg-gradient-to-r from-orange-50 to-coral/10 rounded-lg p-3 text-center border border-coral/20">
+                    <p className="text-sm font-semibold text-gray-800 mb-1">
+                      🎉 You have <span className="text-coral">{guestRemaining}</span> free generation{guestRemaining !== 1 ? 's' : ''} left today!
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Sign up to get unlimited credits and keep creating
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

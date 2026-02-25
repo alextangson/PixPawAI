@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompt } from '@/lib/prompt-system'
 import { startFilteredFeaturesCollection, logFilteredFeature, getFilteredFeatures } from '@/lib/prompt-system/conflict-cleaner'
 import { checkRateLimitSmart } from '@/lib/rate-limit'
+import { checkGuestFreeTier, incrementGuestUsage } from '@/lib/guest-credits'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -507,16 +508,15 @@ async function generateWithReplicate(
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Verify user authentication (先验证，以便使用用户 ID 进行速率限制)
+    // 1. Check authentication (optional now)
     const supabase = await createClient()
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Get client IP for guest credit tracking
+    const clientIp = getClientIp(request)
 
     // 🛡️ Rate Limiting: 智能速率限制（登录用户 5次/分钟，匿名 3次/分钟）
     const rateLimit = await checkRateLimitSmart(request, 'generate', user?.id)
@@ -581,9 +581,56 @@ export async function POST(request: NextRequest) {
     // 2.5. MODERATION: Check user violations and filter prompt
     const { checkUserViolations, logViolation } = await import('@/lib/moderation/violation-tracker')
     const { filterPrompt } = await import('@/lib/moderation/keyword-filter')
-    
-    // Check if user is banned or in cooldown
-    const violationStatus = await checkUserViolations(user.id)
+
+    // For logged in users, check if user is banned or in cooldown
+    if (user) {
+      const violationStatus = await checkUserViolations(user.id)
+
+      if (!violationStatus.allowed) {
+        if (violationStatus.banned) {
+          return NextResponse.json(
+            {
+              error: 'Account suspended',
+              message: violationStatus.message || 'Your account has been suspended for violating our content policy.'
+            },
+            { status: 403 }
+          )
+        }
+
+        if (violationStatus.cooldown) {
+          return NextResponse.json(
+            {
+              error: 'Account in cooldown',
+              message: violationStatus.message,
+              cooldownSeconds: violationStatus.cooldown
+            },
+            { status: 429 } // Too Many Requests
+          )
+        }
+      }
+    }
+
+    // For anonymous users, check guest credits
+    if (!user) {
+      const guestStatus = await checkGuestFreeTier(clientIp)
+
+      if (!guestStatus.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Free limit exceeded',
+            message: 'You have used your 2 free generations today. Sign up to continue creating amazing pet portraits!',
+            requiresAuth: true,
+            remaining: guestStatus.remaining,
+            total: guestStatus.total,
+            resetAt: guestStatus.resetAt
+          },
+          { status: 402 } // Payment Required
+        )
+      }
+    }
+
+    // Check user violations (for logged in users only)
+    const violationStatus = user ? await checkUserViolations(user.id) : null
     
     if (!violationStatus.allowed) {
       if (violationStatus.banned) {
@@ -1104,35 +1151,48 @@ export async function POST(request: NextRequest) {
     }
 
     // NORMAL MODE: Check credits and create records
-    // 5. Check user credits
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('id', user.id)
-      .single()
 
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'Failed to fetch user profile' },
-        { status: 500 }
-      )
-    }
+    // For logged in users: Check user credits
+    let profile = null
+    let profileError = null
 
-    if (profile.credits < 1) {
-      return NextResponse.json(
-        { error: 'Insufficient credits', credits: 0 },
-        { status: 402 }
-      )
+    if (user) {
+      const profileResult = await supabase
+        .from('profiles')
+        .select('credits')
+        .eq('id', user.id)
+        .single()
+
+      profile = profileResult.data
+      profileError = profileResult.error
+
+      if (profileError || !profile) {
+        return NextResponse.json(
+          { error: 'Failed to fetch user profile' },
+          { status: 500 }
+        )
+      }
+
+      if (profile.credits < 1) {
+        return NextResponse.json(
+          { error: 'Insufficient credits', credits: 0 },
+          { status: 402 }
+        )
+      }
     }
 
     // 6. Create generation record (status: processing)
     // Generate Art Card title
     const artCardTitle = generateArtCardTitle(petName, styleConfig.label || style)
-    
+
+    // For guest users, we'll use a temporary user ID (client IP) for the generation record
+    // This allows tracking but won't persist permanently
+    const userIdForRecord = user?.id || `guest_${clientIp}`
+
     const { data: generation, error: genError } = await supabase
       .from('generations')
       .insert({
-        user_id: user.id,
+        user_id: userIdForRecord,
         status: 'processing',
         prompt: finalPrompt,
         style: style || 'test-style',  // Use temp ID for create mode
@@ -1152,6 +1212,8 @@ export async function POST(request: NextRequest) {
           model: 'black-forest-labs/flux-dev',
           aspectRatio,
           analysisDataSource: dataSource, // 🆕 Track which data source was used
+          isGuest: !user, // Mark as guest generation
+          guestIp: user ? null : clientIp, // Store IP for guest analytics
         },
       })
       .select()
@@ -1165,20 +1227,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 7. Decrement 1 credit (atomic operation)
-    const { data: remainingCredits, error: creditError } = await supabase.rpc(
-      'decrement_credits',
-      { user_uuid: user.id }
-    )
+    // 7. Decrement 1 credit (for logged in users only)
+    let remainingCredits = null
+    let creditError = null
 
-    if (creditError) {
-      console.error('Failed to decrement credits:', creditError)
-      // Delete generation record
-      await supabase.from('generations').delete().eq('id', generation.id)
-      return NextResponse.json(
-        { error: 'Failed to process credits' },
-        { status: 500 }
+    if (user) {
+      const creditResult = await supabase.rpc(
+        'decrement_credits',
+        { user_uuid: user.id }
       )
+
+      remainingCredits = creditResult.data
+      creditError = creditResult.error
+
+      if (creditError) {
+        console.error('Failed to decrement credits:', creditError)
+        // Delete generation record
+        await supabase.from('generations').delete().eq('id', generation.id)
+        return NextResponse.json(
+          { error: 'Failed to process credits' },
+          { status: 500 }
+        )
+      }
+    } else {
+      // For guest users, increment usage after generation completes
+      // We'll do this after successful generation
     }
 
     try {
@@ -1189,10 +1262,10 @@ export async function POST(request: NextRequest) {
       const finalGoFast = goFast !== undefined ? goFast : defaultGoFast
       const finalOutputQuality = outputQuality !== undefined ? outputQuality : defaultOutputQuality
       const finalMegapixels = megapixels || "1"
-      
+
       const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
-        finalPrompt, 
-        user.id, 
+        finalPrompt,
+        userIdForRecord, // Use temp ID for guests
         generation.id,
         processedImageUrl,  // Pre-processed image (already correct dimensions)
         finalStrength,  // Use frontend or database strength
@@ -1333,16 +1406,27 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 10. Return success result
+      // 10. Increment guest usage if this was a guest generation
+      let guestRemaining = null
+      if (!user) {
+        await incrementGuestUsage(clientIp)
+        // Fetch remaining guest credits after increment
+        const guestStatus = await checkGuestFreeTier(clientIp)
+        guestRemaining = guestStatus.remaining
+      }
+
+      // 11. Return success result
       return NextResponse.json({
         success: true,
         generationId: generation.id,
         outputUrl: publicImageUrl,
         remainingCredits,
         message: 'Generation completed successfully!',
+        isGuest: !user, // Indicate if this was a guest generation
+        guestRemaining, // Remaining guest credits for display
       })
     } catch (error: any) {
-      // Generation failed, update status and refund credits
+      // Generation failed, update status and refund credits (if logged in user)
       console.error('Generation failed:', error)
 
       // Update record to failed status
@@ -1354,18 +1438,22 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', generation.id)
 
-      // Refund credit (use increment to ensure correctness)
-      const { data: refundedCredits } = await supabase.rpc('increment_credits', {
-        user_uuid: user.id,
-        amount: 1
-      })
+      // Refund credit only for logged in users (guests don't use credits)
+      let refundedCredits = null
+      if (user) {
+        const refundResult = await supabase.rpc('increment_credits', {
+          user_uuid: user.id,
+          amount: 1
+        })
+        refundedCredits = refundResult.data
+      }
 
       return NextResponse.json(
         {
           error: 'Generation failed',
           message: error.message,
           generationId: generation.id,
-          remainingCredits: refundedCredits || remainingCredits + 1,
+          remainingCredits: user ? (refundedCredits || remainingCredits + 1) : null,
         },
         { status: 500 }
       )
