@@ -1,0 +1,71 @@
+name: Codex Auto-Audit
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '.github/**'
+
+jobs:
+  codex-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Configure Codex
+        run: |
+          mkdir -p ~/.codex
+          cat > ~/.codex/config.toml << 'EOF'
+          model_provider = "fox"
+          model = "gpt-5.3-codex"
+          model_reasoning_effort = "medium"
+          disable_response_storage = true
+
+          [model_providers.fox]
+          name = "fox"
+          base_url = "https://code.newcli.com/codex/v1"
+          wire_api = "responses"
+          requires_openai_auth = true
+          EOF
+
+          echo '{"OPENAI_API_KEY":"${{ secrets.CODEX_API_KEY }}"}' > ~/.codex/auth.json
+
+      - name: Run Codex Review
+        run: |
+          codex review --base HEAD~5 \
+            --title "Auto-audit on push to main" \
+            > review-output.txt 2>&1 || true
+          cat review-output.txt
+
+      - name: Comment on Commit
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## 🔍 Codex Auto-Audit\n\n';
+            try {
+              const output = fs.readFileSync('review-output.txt', 'utf8');
+              body += output.length > 0 
+                ? '```\n' + output.slice(0, 60000) + '\n```'
+                : 'No issues found.';
+            } catch {
+              body += 'Review output not available.';
+            }
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: body
+            });
