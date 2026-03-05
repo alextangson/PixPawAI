@@ -11,6 +11,7 @@ import { BlogRelatedArticles } from '@/components/blog/blog-related-articles';
 import { BlogArticleSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
+import ReactMarkdown from 'react-markdown';
 
 interface ArticlePageProps {
   params: Promise<{
@@ -216,7 +217,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
               <div className="lg:col-span-9">
                 <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16">
                   {/* Article Content */}
-                  <div
+                  <ReactMarkdown
                     className="prose prose-lg md:prose-xl max-w-none 
                       prose-headings:font-bold prose-headings:text-gray-900
                       prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:mt-8 prose-h1:mb-6 prose-h1:font-extrabold prose-h1:text-gray-900
@@ -232,8 +233,9 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                       prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-coral prose-code:text-sm prose-code:font-mono
                       prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
                       prose-blockquote:border-l-4 prose-blockquote:border-coral prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-8"
-                    dangerouslySetInnerHTML={{ __html: article.content }}
-                  />
+                  >
+                    {article.content}
+                  </ReactMarkdown>
 
                   {/* Keywords/Tags */}
                   {article.seoKeywords.length > 0 && (
