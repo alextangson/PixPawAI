@@ -3,6 +3,31 @@ import { createClient } from '@/lib/supabase/server'
 import { ArrowLeft, ShoppingCart, Heart, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import type { Metadata } from 'next'
+import { SEO_SITE_URL } from '@/lib/seo/metadata'
+
+export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string; id: string }>;
+}): Promise<Metadata> {
+  const { lang, id } = await params
+
+  return {
+    title: 'Custom Pet Product Preview | PixPaw AI',
+    description: 'Preview your custom pet portrait merchandise before ordering.',
+    alternates: {
+      canonical: `${SEO_SITE_URL}/${lang}/shop/${id}`,
+    },
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+    },
+  }
+}
 
 export default async function ShopPage({ params }: { params: Promise<{ lang: string; id: string }> }) {
   const { lang, id } = await params

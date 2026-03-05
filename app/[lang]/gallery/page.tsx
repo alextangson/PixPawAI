@@ -1,9 +1,12 @@
 import { type Locale } from '@/lib/i18n-config';
 import { createClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
 import { GalleryGridClient } from '@/components/gallery/gallery-grid-client';
 import { GallerySchema } from '@/components/gallery/gallery-schema';
 import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
+import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 
 interface GalleryImage {
   id: string;
@@ -23,16 +26,32 @@ interface GalleryImage {
 // SEO Metadata
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale }> }): Promise<Metadata> {
   const { lang } = await params;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/gallery`;
   return {
-    title: 'Pet Portrait Gallery | PixPaw AI',
-    description: 'Discover stunning AI-generated pet portraits in artistic styles. Browse our community gallery of transformed pets and find inspiration for your own creation.',
+    title: 'AI Pet Art Gallery - Explore Styles | PixPaw AI',
+    description: 'Explore real AI pet portraits from the PixPaw community. Discover style inspiration for dogs, cats, and more.',
     openGraph: {
-      title: 'Pet Portrait Gallery | PixPaw AI',
-      description: 'Discover stunning AI-generated pet portraits in artistic styles',
+      title: 'AI Pet Art Gallery - Explore Styles | PixPaw AI',
+      description: 'Browse real AI pet portraits and discover your favorite style.',
+      url: pageUrl,
       type: 'website',
+      images: [
+        {
+          url: DEFAULT_OG_IMAGE_URL,
+          width: 1200,
+          height: 630,
+          alt: 'PixPaw AI gallery',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'AI Pet Art Gallery - Explore Styles | PixPaw AI',
+      description: 'Browse real AI pet portraits and discover your favorite style.',
+      images: [DEFAULT_TWITTER_IMAGE_URL],
     },
     alternates: {
-      canonical: `https://pixpawai.com/${lang}/gallery`,
+      canonical: pageUrl,
     },
   };
 }
