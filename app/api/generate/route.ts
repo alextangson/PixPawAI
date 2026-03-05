@@ -16,7 +16,7 @@ import { FEATURE_FLAGS } from '@/lib/feature-flags'
 import { logger } from '@/lib/logger'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompt } from '@/lib/prompt-system'
 import { startFilteredFeaturesCollection, logFilteredFeature, getFilteredFeatures } from '@/lib/prompt-system/conflict-cleaner'
-import { checkRateLimitSmart } from '@/lib/rate-limit'
+import { checkRateLimitSmart, getClientIp } from '@/lib/rate-limit'
 import { checkGuestFreeTier, incrementGuestUsage } from '@/lib/guest-credits'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
@@ -517,6 +517,7 @@ export async function POST(request: NextRequest) {
 
     // Get client IP for guest credit tracking
     const clientIp = getClientIp(request)
+    const userIdForRecord = user?.id || `guest_${clientIp}`
 
     // 🛡️ Rate Limiting: 智能速率限制（登录用户 5次/分钟，匿名 3次/分钟）
     const rateLimit = await checkRateLimitSmart(request, 'generate', user?.id)
@@ -632,7 +633,7 @@ export async function POST(request: NextRequest) {
     // Check user violations (for logged in users only)
     const violationStatus = user ? await checkUserViolations(user.id) : null
     
-    if (!violationStatus.allowed) {
+    if (violationStatus && !violationStatus.allowed) {
       if (violationStatus.banned) {
         return NextResponse.json(
           { 
@@ -661,7 +662,7 @@ export async function POST(request: NextRequest) {
     if (filterResult.blocked) {
       // Log violation
       await logViolation({
-        userId: user.id,
+        userId: userIdForRecord,
         violationType: 'sensitive_prompt',
         prompt: userPrompt,
         metadata: {
@@ -684,8 +685,8 @@ export async function POST(request: NextRequest) {
     const sanitizedUserPrompt = filterResult.cleaned
     
     // Show warning if user has previous violations
-    if (violationStatus.warning) {
-      console.warn(`⚠️ User ${user.id.substring(0, 8)}... has ${violationStatus.violationCount} violation(s)`)
+    if (violationStatus?.warning) {
+      console.warn(`⚠️ User ${userIdForRecord.substring(0, 8)}... has ${violationStatus.violationCount} violation(s)`)
     }
 
     // STEP A: Determine target dimensions based on aspect ratio
@@ -801,7 +802,7 @@ export async function POST(request: NextRequest) {
       
       // 📊 Log degradation event for monitoring
       logger.warn('AnalysisDegradation', 
-        `detailed_analysis_missing - userId: ${user.id.substring(0, 8)}, petType: ${quickAnalysis.petType}, quality: ${quickAnalysis.quality}`
+        `detailed_analysis_missing - userId: ${userIdForRecord.substring(0, 8)}, petType: ${quickAnalysis.petType}, quality: ${quickAnalysis.quality}`
       )
       
       console.warn('⚠️ Quick Analysis Data:', {
@@ -822,7 +823,7 @@ export async function POST(request: NextRequest) {
         // 🚨 Log critical issue - this should not happen in normal flow
         logger.error('BackendAnalysisFallback', {
           reason: 'all_frontend_analysis_missing',
-          userId: user.id.substring(0, 8),
+          userId: userIdForRecord.substring(0, 8),
           note: 'This indicates a frontend issue that needs investigation'
         })
         
@@ -852,7 +853,7 @@ export async function POST(request: NextRequest) {
           imageUrl,
           targetWidth,
           targetHeight,
-          user.id,
+          userIdForRecord,
           crypto.randomUUID()  // Generate temp ID for preprocessing
         )
         console.log('✅ Image pre-processed successfully')
@@ -1102,7 +1103,7 @@ export async function POST(request: NextRequest) {
         const finalMegapixels = megapixels || "1"
         
         console.log('🧪 TEST MODE - Calling generateWithReplicate:', {
-          userId: user.id,
+          userId: userIdForRecord,
           strength: finalStrength,
           guidance: finalGuidance,
           goFast: finalGoFast,
@@ -1113,7 +1114,7 @@ export async function POST(request: NextRequest) {
         
         const { publicUrl } = await generateWithReplicate(
           finalPrompt,
-          user.id,
+          userIdForRecord,
           'test-' + crypto.randomUUID(),
           processedImageUrl,
           finalStrength,
@@ -1185,9 +1186,8 @@ export async function POST(request: NextRequest) {
     // Generate Art Card title
     const artCardTitle = generateArtCardTitle(petName, styleConfig.label || style)
 
-    // For guest users, we'll use a temporary user ID (client IP) for the generation record
+    // For guest users, we use a temporary user ID (client IP) for the generation record
     // This allows tracking but won't persist permanently
-    const userIdForRecord = user?.id || `guest_${clientIp}`
 
     const { data: generation, error: genError } = await supabase
       .from('generations')
@@ -1369,7 +1369,7 @@ export async function POST(request: NextRequest) {
             
             // Batch insert filtered features
             const logsToInsert = filteredFeatures.map(filtered => ({
-              user_id: user.id,
+              user_id: user?.id || null,
               generation_id: generation.id,
               feature_type: filtered.feature.type,
               feature_value: filtered.feature.value,
