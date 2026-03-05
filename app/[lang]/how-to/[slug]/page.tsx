@@ -217,8 +217,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
               <div className="lg:col-span-9">
                 <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16">
                   {/* Article Content */}
-                  <ReactMarkdown
-                    className="prose prose-lg md:prose-xl max-w-none 
+                  <div className="prose prose-lg md:prose-xl max-w-none 
                       prose-headings:font-bold prose-headings:text-gray-900
                       prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:mt-8 prose-h1:mb-6 prose-h1:font-extrabold prose-h1:text-gray-900
                       prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:pb-3 prose-h2:border-b prose-h2:border-gray-200 prose-h2:font-bold
@@ -232,10 +231,11 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                       prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8
                       prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-coral prose-code:text-sm prose-code:font-mono
                       prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
-                      prose-blockquote:border-l-4 prose-blockquote:border-coral prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-8"
-                  >
-                    {article.content}
-                  </ReactMarkdown>
+                      prose-blockquote:border-l-4 prose-blockquote:border-coral prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-8">
+                    <ReactMarkdown>
+                      {article.content}
+                    </ReactMarkdown>
+                  </div>
 
                   {/* Keywords/Tags */}
                   {article.seoKeywords.length > 0 && (
