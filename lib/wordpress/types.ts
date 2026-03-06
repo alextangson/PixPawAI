@@ -139,4 +139,5 @@ export interface GetBlogArticlesOptions {
   page?: number;
   featured?: boolean;
   search?: string;
+  hub?: 'how-to' | 'blog';
 }

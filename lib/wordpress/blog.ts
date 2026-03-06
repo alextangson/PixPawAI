@@ -9,6 +9,11 @@ import {
   BlogArticle,
   GetBlogArticlesOptions
 } from './types';
+import {
+  articleBelongsToHub,
+  filterArticlesByHub,
+  type ContentHub,
+} from '@/lib/content-hubs';
 
 const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 
@@ -274,6 +279,7 @@ export async function getBlogArticles(
     perPage = 10,
     page = 1,
     search,
+    hub,
   } = options;
 
   // Get all PixPaw categories to filter posts
@@ -427,7 +433,9 @@ export async function getBlogArticles(
 
     console.log(`[WordPress] Filtered ${filteredPosts.length} posts from ${posts.length} total`);
 
-    return filteredPosts.map(transformWordPressPost);
+    const articles = filteredPosts.map(transformWordPressPost);
+
+    return hub ? filterArticlesByHub(articles, hub) : articles;
   } catch (error) {
     // Enhanced error logging
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -452,6 +460,13 @@ export async function getBlogArticles(
  * Get single blog article by slug
  */
 export async function getBlogArticle(slug: string): Promise<BlogArticle | null> {
+  return getBlogArticleForHub(slug);
+}
+
+export async function getBlogArticleForHub(
+  slug: string,
+  hub?: ContentHub
+): Promise<BlogArticle | null> {
   // Check if slug is in blocklist - return null to trigger 404
   if (BLOCKED_SLUGS.includes(slug)) {
     console.warn(`[WordPress] Blocked slug requested: "${slug}" - returning 404`);
@@ -528,7 +543,17 @@ export async function getBlogArticle(slug: string): Promise<BlogArticle | null> 
       // Do NOT fall back to default WordPress categories to avoid FMIC content pollution
       if (hasPixPawCategory) {
         console.log(`[WordPress] Post "${slug}" has pixpaw_category - allowing`);
-        return transformWordPressPost(post);
+        const article = transformWordPressPost(post);
+
+        if (hub && !articleBelongsToHub(article, hub)) {
+          console.warn(`[WordPress] Post "${slug}" belongs to a different hub.`, {
+            requestedHub: hub,
+            categorySlug: article.category.slug,
+          });
+          return null;
+        }
+
+        return article;
       }
 
       console.warn(`[WordPress] Post "${slug}" does not belong to PixPaw taxonomy. Returning null.`);
@@ -549,13 +574,19 @@ export async function getBlogArticle(slug: string): Promise<BlogArticle | null> 
  * Get featured article (marked with ACF field)
  */
 export async function getFeaturedArticle(): Promise<BlogArticle | null> {
+  return getFeaturedArticleByHub();
+}
+
+export async function getFeaturedArticleByHub(
+  hub?: ContentHub
+): Promise<BlogArticle | null> {
   if (!WORDPRESS_API_URL) {
     return null;
   }
 
   try {
     // Get all articles and filter by featured flag
-    const articles = await getBlogArticles({ perPage: 100 });
+    const articles = await getBlogArticles({ perPage: 100, hub });
     const featured = articles.find(article => article.isFeatured);
 
     return featured || articles[0] || null;
@@ -571,7 +602,8 @@ export async function getFeaturedArticle(): Promise<BlogArticle | null> {
 export async function getRelatedArticles(
   categoryId: number,
   excludeId: number,
-  limit: number = 3
+  limit: number = 3,
+  hub?: ContentHub
 ): Promise<BlogArticle[]> {
   if (!WORDPRESS_API_URL) {
     return [];
@@ -622,7 +654,9 @@ export async function getRelatedArticles(
       );
     });
 
-    return filteredPosts.map(transformWordPressPost);
+    const articles = filteredPosts.map(transformWordPressPost);
+
+    return hub ? filterArticlesByHub(articles, hub) : articles;
   } catch (error) {
     console.error('[WordPress] Error fetching related articles:', error);
     return [];
@@ -731,56 +765,18 @@ export async function getCategories(): Promise<WordPressCategory[]> {
  * Fetches posts ONLY from pixpaw_category taxonomy (PixPawAI-specific)
  * Excludes FMIC (furnituremadeinchina.com) articles
  */
-export async function getAllArticleSlugs(): Promise<string[]> {
-  if (!WORDPRESS_API_URL) {
-    return [];
-  }
-
+export async function getAllArticleSlugs(options?: {
+  hub?: ContentHub;
+}): Promise<string[]> {
   try {
-    // Get PixPaw categories first to filter posts
-    const allCategories = await getCategories();
-    const pixpawCategoryIds = allCategories
-      .filter(cat => cat.taxonomy === 'pixpaw_category')
-      .map(cat => cat.id);
-    const hasCategories = pixpawCategoryIds.length > 0;
+    const articles = await getBlogArticles({
+      perPage: 100,
+      hub: options?.hub,
+    });
 
-    const slugs = new Set<string>();
-
-    // Only fetch posts with pixpaw_category - this ensures we only get PixPawAI content
-    // Do NOT fetch from WordPress default categories to avoid FMIC content pollution
-    if (hasCategories) {
-      const pixpawQueryParams = `per_page=100&status=publish&_fields=slug&pixpaw_category=${pixpawCategoryIds.join(',')}`;
-      const pixpawApiUrl = buildWordPressApiUrl('posts', pixpawQueryParams);
-
-      console.log('[WordPress] Fetching slugs from pixpaw_category:', pixpawApiUrl);
-
-      const pixpawRes = await fetch(
-        pixpawApiUrl,
-        {
-          next: { revalidate: 3600 },
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (pixpawRes.ok) {
-        const pixpawPosts: Array<{ slug: string }> = await pixpawRes.json();
-        pixpawPosts.forEach(post => slugs.add(post.slug));
-        console.log(`[WordPress] Found ${pixpawPosts.length} posts with pixpaw_category`);
-      } else {
-        console.error('[WordPress] Error fetching pixpaw_category posts:', pixpawRes.status);
-      }
-    } else {
-      console.warn('[WordPress] No pixpaw_category taxonomy found. Sitemap may be empty.');
-    }
-
-    // Convert Set to Array and filter out blocked slugs
-    const filteredSlugs = Array.from(slugs).filter(slug => !BLOCKED_SLUGS.includes(slug));
-
-    console.log(`[WordPress] Total unique slugs for sitemap: ${filteredSlugs.length}`);
-
-    return filteredSlugs;
+    return articles
+      .map((article) => article.slug)
+      .filter((slug) => !BLOCKED_SLUGS.includes(slug));
   } catch (error) {
     console.error('[WordPress] Error fetching article slugs:', error);
     return [];

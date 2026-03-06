@@ -5,6 +5,7 @@
       "shop": "Shop",
       "gallery": "Gallery",
       "howToGuide": "How-to Guide",
+      "blog": "Blog",
       "pricing": "Pricing"
     },
     "cta": "Create Now",
@@ -181,7 +182,8 @@
       "links": {
         "pixarDogs": "Cartoon Style Dogs",
         "royalCats": "Royal Cat Portraits",
-        "searchGallery": "Search Gallery"
+        "searchGallery": "Search Gallery",
+        "petMemorial": "Pet Memorial"
       }
     },
     "support": {

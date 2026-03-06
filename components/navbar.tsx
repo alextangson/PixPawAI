@@ -18,6 +18,7 @@ interface NavbarProps {
         shop: string;
         gallery: string;
         howToGuide: string;
+        blog: string;
         pricing: string;
       };
       cta: string;
@@ -39,6 +40,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
   const menuLinks = [
     { href: `/${lang}/gallery`, label: dict.nav.links.gallery },
     { href: `/${lang}/how-to`, label: dict.nav.links.howToGuide },
+    { href: `/${lang}/blog`, label: dict.nav.links.blog },
     { href: `/${lang}/pricing`, label: dict.nav.links.pricing },
   ];
 

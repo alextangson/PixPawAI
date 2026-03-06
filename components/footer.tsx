@@ -17,6 +17,7 @@ interface FooterProps {
           pixarDogs: string;
           royalCats: string;
           searchGallery: string;
+          petMemorial: string;
         };
       };
       support: {
@@ -97,6 +98,11 @@ export function Footer({ dict, lang }: FooterProps) {
               <li>
                 <Link href={`/${lang}/gallery`} className="hover:text-coral transition-colors">
                   {dict.footer.discover.links.searchGallery}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/pet-memorial`} className="hover:text-coral transition-colors">
+                  {dict.footer.discover.links.petMemorial}
                 </Link>
               </li>
             </ul>
