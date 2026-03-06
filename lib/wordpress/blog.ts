@@ -725,12 +725,6 @@ export async function getCategories(): Promise<WordPressCategory[]> {
     return [];
   }
 }
-    return categories;
-  } catch (error) {
-    console.error('[WordPress] Error fetching categories:', error);
-    return [];
-  }
-}
 
 /**
  * Get all article slugs for static generation
