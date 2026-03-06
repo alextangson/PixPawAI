@@ -32,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
-      url: `${SITE_URL}/en/how-to`,
+      url: `${SITE_URL}/en/blog`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
@@ -65,6 +65,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getAllArticleSlugs({ hub: 'blog' }),
     ]);
 
+<<<<<<< HEAD
+    blogPages = articleSlugs.map((slug) => ({
+      url: `${SITE_URL}/en/blog/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+=======
     articlePages = [
       ...howToSlugs.map((slug) => ({
         url: `${SITE_URL}/en/how-to/${slug}/`,
@@ -79,6 +87,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       })),
     ];
+>>>>>>> origin/main
   } catch (error) {
     console.error('[Sitemap] Error fetching blog articles:', error);
   }

@@ -698,6 +698,7 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
 
 /**
  * Get all categories (from pixpaw_category taxonomy)
+ * Fetches both "blog" and "how-to" category slugs for backward compatibility
  */
 export async function getCategories(): Promise<WordPressCategory[]> {
   if (!WORDPRESS_API_URL) {
@@ -706,7 +707,8 @@ export async function getCategories(): Promise<WordPressCategory[]> {
 
   try {
     // Use custom taxonomy 'pixpaw_category' instead of default 'categories'
-    const apiUrl = buildWordPressApiUrl('pixpaw_category', 'per_page=100&orderby=name&order=asc');
+    // Include both 'blog' and 'how-to' slugs in the query
+    const apiUrl = buildWordPressApiUrl('pixpaw_category', 'per_page=100&orderby=name&order=asc&slug=blog,how-to');
     console.log('[WordPress] Fetching categories from:', apiUrl);
 
     const res = await fetch(
@@ -729,7 +731,7 @@ export async function getCategories(): Promise<WordPressCategory[]> {
       if (res.status === 404) {
         console.warn('[WordPress] pixpaw_category taxonomy not found. Trying alternative endpoints...');
         // Try default categories endpoint as fallback
-        const fallbackUrl = buildWordPressApiUrl('categories', 'per_page=100&orderby=name&order=asc');
+        const fallbackUrl = buildWordPressApiUrl('categories', 'per_page=100&orderby=name&order=asc&slug=blog,how-to');
         const fallbackRes = await fetch(
           fallbackUrl,
           {
