@@ -33,7 +33,7 @@ export async function generateMetadata({
       type: 'website',
     },
     alternates: {
-      canonical: `https://pixpawai.com/${lang}/how-to`,
+      canonical: `https://pixpawai.com/${lang}/blog`,
     },
   };
 }
@@ -68,7 +68,7 @@ export default async function HowToGuidePage({
   // Breadcrumb items
   const breadcrumbItems = [
     { label: 'Home', href: `/${lang}` },
-    { label: 'How-to Guides' },
+    { label: 'Blog' },
   ];
 
   return (
@@ -105,7 +105,7 @@ export default async function HowToGuidePage({
 
             {/* Search Box */}
             <form
-              action={`/${lang}/how-to`}
+              action={`/${lang}/blog`}
               method="GET"
               className="max-w-xl mx-auto"
             >
@@ -136,7 +136,7 @@ export default async function HowToGuidePage({
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
-                href={`/${lang}/how-to`}
+                href={`/${lang}/blog`}
                 className={`px-5 py-2.5 rounded-full font-semibold transition-all duration-200 ${!category
                   ? 'bg-gradient-to-r from-coral to-orange-600 text-white shadow-lg shadow-coral/30 scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
@@ -152,7 +152,7 @@ export default async function HowToGuidePage({
                 return (
                   <Link
                     key={cat.slug}
-                    href={`/${lang}/how-to?category=${cat.slug}`}
+                    href={`/${lang}/blog?category=${cat.slug}`}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold transition-all duration-200 ${isActive
                       ? 'bg-gradient-to-r from-coral to-orange-600 text-white shadow-lg shadow-coral/30 scale-105'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
@@ -210,7 +210,7 @@ export default async function HowToGuidePage({
                     : 'We are working on creating helpful content for you. Check back soon!'}
                 </p>
                 {category && (
-                  <Link href={`/${lang}/how-to`}>
+                  <Link href={`/${lang}/blog`}>
                     <Button variant="outline" className="border-2 border-coral text-coral hover:bg-coral hover:text-white">
                       View All Articles
                     </Button>

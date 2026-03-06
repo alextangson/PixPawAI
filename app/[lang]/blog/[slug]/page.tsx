@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     description: article.metaDescription,
     keywords: article.seoKeywords,
     alternates: {
-      canonical: `https://pixpawai.com/en/how-to/${slug}`,
+      canonical: `https://pixpawai.com/en/blog/${slug}`,
     },
     openGraph: {
       type: 'article',
@@ -104,13 +104,13 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
   // Build breadcrumb items
   const breadcrumbItems = [
     { label: 'Home', href: `/${lang}` },
-    { label: 'How-to Guide', href: `/${lang}/how-to` },
+    { label: 'Blog', href: `/${lang}/blog` },
     { label: article.title },
   ];
 
   // Build full URL for social share
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
-  const articleUrl = `${siteUrl}/${lang}/how-to/${article.slug}`;
+  const articleUrl = `${siteUrl}/${lang}/blog/${article.slug}`;
 
   return (
     <>
@@ -128,7 +128,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
         <div className="lg:hidden sticky top-16 z-10 bg-cream/95 backdrop-blur-sm border-b border-gray-200">
           <div className="container mx-auto px-4 py-3">
             <Link
-              href={`/${lang}/how-to`}
+              href={`/${lang}/blog`}
               className="inline-flex items-center gap-2 text-coral font-semibold hover:gap-3 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -147,7 +147,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
               {/* Category Badge */}
               <div className="mb-4">
                 <Link
-                  href={`/${lang}/how-to?category=${article.category.slug}`}
+                  href={`/${lang}/blog?category=${article.category.slug}`}
                   className="inline-block bg-gradient-to-r from-coral to-orange-600 text-white text-sm font-bold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all"
                 >
                   {article.category.name}
@@ -317,7 +317,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
               <p className="text-xl text-gray-600 mb-8">
                 Continue learning with our other helpful tutorials
               </p>
-              <Link href={`/${lang}/how-to`}>
+              <Link href={`/${lang}/blog`}>
                 <Button
                   variant="outline"
                   size="lg"

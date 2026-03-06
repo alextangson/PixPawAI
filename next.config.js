@@ -1,24 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   trailingSlash: true,
-  // Blog route rewrites - support both /blog and /how-to URLs
-  async rewrites() {
-    return [
-      // Blog list page
-      {
-        source: '/:lang/blog',
-        destination: '/:lang/how-to',
-      },
-      // Individual blog article pages
-      {
-        source: '/:lang/blog/:slug',
-        destination: '/:lang/how-to/:slug',
-      },
-    ]
-  },
-  // Redirects for SEO - www to non-www canonical unification
+  // Redirects for SEO
   async redirects() {
     return [
+      // www to non-www canonical unification
       {
         source: '/:path*',
         has: [
@@ -29,6 +15,12 @@ const nextConfig = {
         ],
         destination: 'https://pixpawai.com/:path*',
         statusCode: 308, // permanent redirect
+      },
+      // 301 redirect: /how-to/* → /blog/* (route unification)
+      {
+        source: '/:lang/how-to/:slug*',
+        destination: '/:lang/blog/:slug*',
+        statusCode: 301, // permanent redirect
       },
     ]
   },
