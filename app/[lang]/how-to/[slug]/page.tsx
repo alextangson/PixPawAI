@@ -82,6 +82,7 @@ export async function generateStaticParams() {
 
 // Revalidate every hour
 export const revalidate = 3600;
+export const dynamicParams = true;
 
 export default async function BlogArticlePage({ params }: ArticlePageProps) {
   const { lang, slug } = await params;
