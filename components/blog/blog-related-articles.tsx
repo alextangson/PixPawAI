@@ -6,9 +6,14 @@ import { BlogArticle } from '@/lib/wordpress/types';
 interface BlogRelatedArticlesProps {
   articles: BlogArticle[];
   lang?: string;
+  basePath?: 'how-to' | 'blog';
 }
 
-export function BlogRelatedArticles({ articles, lang = 'en' }: BlogRelatedArticlesProps) {
+export function BlogRelatedArticles({
+  articles,
+  lang = 'en',
+  basePath = 'how-to',
+}: BlogRelatedArticlesProps) {
   if (articles.length === 0) {
     return null;
   }
@@ -24,7 +29,7 @@ export function BlogRelatedArticles({ articles, lang = 'en' }: BlogRelatedArticl
           {articles.map((article) => (
             <Link
               key={article.id}
-              href={`/${lang}/how-to/${article.slug}`}
+              href={`/${lang}/${basePath}/${article.slug}`}
               className="group bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-coral hover:shadow-lg transition-all duration-300"
             >
               {/* Cover Image */}

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { BookOpen, Heart, ArrowRight, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type Locale } from '@/lib/i18n-config';
-import { getBlogArticles, getFeaturedArticle } from '@/lib/wordpress/blog';
+import { getBlogArticles, getFeaturedArticleByHub } from '@/lib/wordpress/blog';
 import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import type { Metadata } from 'next';
 
@@ -49,8 +49,8 @@ export default async function BlogPage({
   const { lang } = await params;
 
   const [featuredArticle, allArticles] = await Promise.all([
-    getFeaturedArticle(),
-    getBlogArticles({ perPage: 12 }),
+    getFeaturedArticleByHub('blog'),
+    getBlogArticles({ perPage: 12, hub: 'blog' }),
   ]);
 
   const articles = featuredArticle
@@ -91,6 +91,40 @@ export default async function BlogPage({
               Thoughtful reads about pet love, loss, and the art of
               remembrance
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-10 bg-white border-y border-stone-100">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="rounded-3xl bg-gradient-to-r from-stone-900 to-stone-800 text-white p-8 md:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 text-amber-300 mb-3">
+                  <Heart className="w-4 h-4" />
+                  <span className="text-sm font-semibold uppercase tracking-wide">
+                    Pet Memorial
+                  </span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                  A quiet place for pet loss and remembrance
+                </h2>
+                <p className="text-stone-300 leading-relaxed">
+                  If you are looking for memorial portrait ideas, gift guidance,
+                  or a gentle place to start, our Pet Memorial page was built
+                  for that moment.
+                </p>
+              </div>
+
+              <div>
+                <Link href={`/${lang}/pet-memorial`}>
+                  <Button className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-6">
+                    Visit Pet Memorial
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>

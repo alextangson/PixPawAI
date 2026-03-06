@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowLeft, Heart } from 'lucide-react';
 import { type Locale } from '@/lib/i18n-config';
-import { getBlogArticle, getRelatedArticles, getAllArticleSlugs } from '@/lib/wordpress/blog';
+import { getBlogArticleForHub, getRelatedArticles, getAllArticleSlugs } from '@/lib/wordpress/blog';
 import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents';
 import { BlogSocialShare } from '@/components/blog/blog-social-share';
@@ -22,7 +22,7 @@ interface ArticlePageProps {
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug, lang } = await params;
-  const article = await getBlogArticle(slug);
+  const article = await getBlogArticleForHub(slug, 'blog');
 
   if (!article) {
     return { title: 'Article Not Found' };
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 }
 
 export async function generateStaticParams() {
-  const slugs = await getAllArticleSlugs();
+  const slugs = await getAllArticleSlugs({ hub: 'blog' });
   const params: Array<{ lang: string; slug: string }> = [];
   const languages = ['en'];
 
@@ -74,13 +74,13 @@ export const revalidate = 3600;
 
 export default async function BlogArticlePage({ params }: ArticlePageProps) {
   const { lang, slug } = await params;
-  const article = await getBlogArticle(slug);
+  const article = await getBlogArticleForHub(slug, 'blog');
 
   if (!article) {
     notFound();
   }
 
-  const relatedArticles = await getRelatedArticles(article.category.id, article.id);
+  const relatedArticles = await getRelatedArticles(article.category.id, article.id, 3, 'blog');
 
   const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -282,7 +282,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
         {relatedArticles.length > 0 && (
           <div className="py-16 bg-white">
             <div className="container mx-auto px-4">
-              <BlogRelatedArticles articles={relatedArticles} lang={lang} />
+              <BlogRelatedArticles articles={relatedArticles} lang={lang} basePath="blog" />
             </div>
           </div>
         )}

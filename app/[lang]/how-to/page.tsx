@@ -3,8 +3,9 @@ import { Camera, Palette, Printer, Wrench, Mail, BookOpen, Sparkles, ArrowRight,
 import { Button } from '@/components/ui/button';
 import { type Locale } from '@/lib/i18n-config';
 import { getDictionary } from '@/lib/dictionary';
-import { getBlogArticles, getFeaturedArticle } from '@/lib/wordpress/blog';
+import { getBlogArticles, getFeaturedArticleByHub } from '@/lib/wordpress/blog';
 import { BLOG_CATEGORIES } from '@/lib/constants/blog-categories';
+import { isHowToCategorySlug } from '@/lib/content-hubs';
 import { BlogArticleCard } from '@/components/blog/blog-article-card';
 import { HowToSchema } from '@/components/how-to/how-to-schema';
 import { Breadcrumb } from '@/components/how-to/breadcrumb';
@@ -53,11 +54,12 @@ export default async function HowToGuidePage({
   const { lang } = await params;
   const { category, q } = await searchParams;
   const dict = await getDictionary(lang);
+  const howToCategories = BLOG_CATEGORIES.filter((cat) => isHowToCategorySlug(cat.slug));
 
   // Fetch articles from WordPress
   const [featuredArticle, allArticles] = await Promise.all([
-    getFeaturedArticle(),
-    getBlogArticles({ category, perPage: 12 }),
+    getFeaturedArticleByHub('how-to'),
+    getBlogArticles({ category, perPage: 12, hub: 'how-to' }),
   ]);
 
   // Filter out featured article from the list
@@ -145,7 +147,7 @@ export default async function HowToGuidePage({
                 All Articles
               </Link>
 
-              {BLOG_CATEGORIES.map((cat) => {
+              {howToCategories.map((cat) => {
                 const IconComponent = ICON_MAP[cat.icon as keyof typeof ICON_MAP];
                 const isActive = category === cat.slug;
 
@@ -177,7 +179,7 @@ export default async function HowToGuidePage({
                 <Sparkles className="w-5 h-5 text-coral" />
                 <span className="text-sm font-bold text-coral uppercase tracking-wide">Featured Guide</span>
               </div>
-              <BlogArticleCard article={featuredArticle} featured lang={lang} />
+              <BlogArticleCard article={featuredArticle} featured lang={lang} basePath="how-to" />
             </div>
           </div>
         </section>
@@ -194,7 +196,7 @@ export default async function HowToGuidePage({
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {articles.map((article) => (
-                    <BlogArticleCard key={article.id} article={article} lang={lang} />
+                    <BlogArticleCard key={article.id} article={article} lang={lang} basePath="how-to" />
                   ))}
                 </div>
               </>

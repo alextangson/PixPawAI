@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowLeft, Sparkles } from 'lucide-react';
 import { type Locale } from '@/lib/i18n-config';
-import { getBlogArticle, getRelatedArticles, getAllArticleSlugs } from '@/lib/wordpress/blog';
+import { getBlogArticleForHub, getRelatedArticles, getAllArticleSlugs } from '@/lib/wordpress/blog';
 import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents';
 import { BlogSocialShare } from '@/components/blog/blog-social-share';
@@ -23,7 +23,7 @@ interface ArticlePageProps {
 // Generate metadata for SEO
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getBlogArticle(slug);
+  const article = await getBlogArticleForHub(slug, 'how-to');
 
   if (!article) {
     return {
@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
 // Generate static params for all articles (ISR)
 export async function generateStaticParams() {
-  const slugs = await getAllArticleSlugs();
+  const slugs = await getAllArticleSlugs({ hub: 'how-to' });
 
   // Generate for all supported languages
   const params: Array<{ lang: string; slug: string }> = [];
@@ -85,14 +85,14 @@ export const revalidate = 3600;
 
 export default async function BlogArticlePage({ params }: ArticlePageProps) {
   const { lang, slug } = await params;
-  const article = await getBlogArticle(slug);
+  const article = await getBlogArticleForHub(slug, 'how-to');
 
   if (!article) {
     notFound();
   }
 
   // Fetch related articles
-  const relatedArticles = await getRelatedArticles(article.category.id, article.id);
+  const relatedArticles = await getRelatedArticles(article.category.id, article.id, 3, 'how-to');
 
   // Format date
   const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-US', {
@@ -302,7 +302,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
         {relatedArticles.length > 0 && (
           <div className="py-16 bg-white">
             <div className="container mx-auto px-4">
-              <BlogRelatedArticles articles={relatedArticles} lang={lang} />
+              <BlogRelatedArticles articles={relatedArticles} lang={lang} basePath="how-to" />
             </div>
           </div>
         )}

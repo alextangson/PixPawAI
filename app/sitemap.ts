@@ -38,6 +38,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${SITE_URL}/en/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/en/pet-memorial`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/en/shop`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -46,16 +58,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // Fetch blog article slugs from WordPress
-  let blogPages: MetadataRoute.Sitemap = [];
+  let articlePages: MetadataRoute.Sitemap = [];
   try {
-    const articleSlugs = await getAllArticleSlugs();
+    const [howToSlugs, blogSlugs] = await Promise.all([
+      getAllArticleSlugs({ hub: 'how-to' }),
+      getAllArticleSlugs({ hub: 'blog' }),
+    ]);
 
-    blogPages = articleSlugs.map((slug) => ({
-      url: `${SITE_URL}/en/how-to/${slug}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }));
+    articlePages = [
+      ...howToSlugs.map((slug) => ({
+        url: `${SITE_URL}/en/how-to/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })),
+      ...blogSlugs.map((slug) => ({
+        url: `${SITE_URL}/en/blog/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })),
+    ];
   } catch (error) {
     console.error('[Sitemap] Error fetching blog articles:', error);
   }
@@ -86,7 +109,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('[Sitemap] Error fetching gallery images:', error);
   }
 
-  return [...staticPages, ...blogPages, ...galleryPages];
+  return [...staticPages, ...articlePages, ...galleryPages];
 }
 
 // Revalidate sitemap every hour

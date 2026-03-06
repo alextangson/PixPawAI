@@ -8,9 +8,15 @@ interface BlogArticleCardProps {
   article: BlogArticle;
   featured?: boolean;
   lang?: string;
+  basePath?: 'how-to' | 'blog';
 }
 
-export function BlogArticleCard({ article, featured = false, lang = 'en' }: BlogArticleCardProps) {
+export function BlogArticleCard({
+  article,
+  featured = false,
+  lang = 'en',
+  basePath = 'how-to',
+}: BlogArticleCardProps) {
   const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -19,7 +25,7 @@ export function BlogArticleCard({ article, featured = false, lang = 'en' }: Blog
 
   return (
     <Link
-      href={`/${lang}/how-to/${article.slug}`}
+      href={`/${lang}/${basePath}/${article.slug}`}
       className={cn(
         'group block bg-white rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-coral hover:shadow-xl transition-all duration-300',
         featured && 'md:col-span-2 lg:col-span-3'
