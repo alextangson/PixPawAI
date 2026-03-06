@@ -54,18 +54,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch blog article slugs from WordPress
   let articlePages: MetadataRoute.Sitemap = [];
   try {
-    const [howToSlugs, blogSlugs] = await Promise.all([
-      getAllArticleSlugs({ hub: 'how-to' }),
-      getAllArticleSlugs({ hub: 'blog' }),
-    ]);
+    const blogSlugs = await getAllArticleSlugs({ hub: 'blog' });
 
     articlePages = [
-      ...howToSlugs.map((slug) => ({
-        url: `${SITE_URL}/en/how-to/${slug}/`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      })),
       ...blogSlugs.map((slug) => ({
         url: `${SITE_URL}/en/blog/${slug}/`,
         lastModified: new Date(),
