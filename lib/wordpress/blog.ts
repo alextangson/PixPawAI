@@ -132,35 +132,17 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     height: featuredMedia.media_details?.height || 630,
   } : null;
 
-  // Extract category - prioritize pixpaw_category over default WordPress category
+  // Extract category from default WordPress category taxonomy
   // post._embedded['wp:term'] is a 2D array: [taxonomy1_terms[], taxonomy2_terms[], ...]
-  // Each taxonomy array contains terms for that taxonomy
   let categoryData = null;
 
   if (post._embedded?.['wp:term']) {
-    // First, try to find pixpaw_category taxonomy
     for (const taxonomyTerms of post._embedded['wp:term']) {
       if (taxonomyTerms && taxonomyTerms.length > 0) {
         const firstTerm = taxonomyTerms[0];
-        if (firstTerm.taxonomy === 'pixpaw_category') {
+        if (firstTerm.taxonomy === 'category') {
           categoryData = firstTerm;
           break;
-        }
-      }
-    }
-
-    // If no pixpaw_category found, use the first available category
-    if (!categoryData) {
-      for (const taxonomyTerms of post._embedded['wp:term']) {
-        if (taxonomyTerms && taxonomyTerms.length > 0) {
-          const firstTerm = taxonomyTerms[0];
-          // Prefer 'category' over other taxonomies like 'post_tag'
-          if (firstTerm.taxonomy === 'category' || !categoryData) {
-            categoryData = firstTerm;
-            if (firstTerm.taxonomy === 'category') {
-              break; // Found default category, use it
-            }
-          }
         }
       }
     }
@@ -664,7 +646,7 @@ export async function getRelatedArticles(
 }
 
 /**
- * Get WordPress category by slug (from pixpaw_category taxonomy)
+ * Get WordPress category by slug (from default category taxonomy)
  */
 export async function getCategoryBySlug(slug: string): Promise<WordPressCategory | null> {
   if (!WORDPRESS_API_URL) {
@@ -672,8 +654,7 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
   }
 
   try {
-    // Use custom taxonomy 'pixpaw_category' instead of default 'categories'
-    const apiUrl = buildWordPressApiUrl('pixpaw_category', `slug=${slug}`);
+    const apiUrl = buildWordPressApiUrl('categories', `slug=${slug}`);
     const res = await fetch(
       apiUrl,
       {
@@ -697,7 +678,7 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
 }
 
 /**
- * Get all categories (from pixpaw_category taxonomy)
+ * Get all categories (from default category taxonomy)
  * Fetches "blog" category slug only
  */
 export async function getCategories(): Promise<WordPressCategory[]> {
@@ -706,9 +687,7 @@ export async function getCategories(): Promise<WordPressCategory[]> {
   }
 
   try {
-    // Use custom taxonomy 'pixpaw_category' instead of default 'categories'
-    // Include both 'blog' and 'how-to' slugs in the query
-    const apiUrl = buildWordPressApiUrl('pixpaw_category', 'per_page=100&orderby=name&order=asc&slug=blog');
+    const apiUrl = buildWordPressApiUrl('categories', 'per_page=100&orderby=name&order=asc&slug=blog');
     console.log('[WordPress] Fetching categories from:', apiUrl);
 
     const res = await fetch(
@@ -722,32 +701,8 @@ export async function getCategories(): Promise<WordPressCategory[]> {
     );
 
     if (!res.ok) {
-      // Log the error for debugging
       const errorText = await res.text();
       console.error(`[WordPress] Failed to fetch categories: ${res.status} ${res.statusText}`, errorText);
-
-      // If 404, the taxonomy might not be registered in REST API
-      // Try alternative endpoints
-      if (res.status === 404) {
-        console.warn('[WordPress] pixpaw_category taxonomy not found. Trying alternative endpoints...');
-        // Try default categories endpoint as fallback
-        const fallbackUrl = buildWordPressApiUrl('categories', 'per_page=100&orderby=name&order=asc&slug=blog');
-        const fallbackRes = await fetch(
-          fallbackUrl,
-          {
-            next: { revalidate: 86400 },
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (fallbackRes.ok) {
-          console.log('[WordPress] Using default categories endpoint as fallback');
-          return await fallbackRes.json();
-        }
-      }
-
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
