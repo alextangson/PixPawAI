@@ -8,6 +8,7 @@ const HOW_TO_CATEGORY_SLUGS = new Set([
 ]);
 
 const BLOG_CATEGORY_SLUGS = new Set([
+  'blog',
   'pet-care',
   'gift-guide',
   'memorial-guide',
