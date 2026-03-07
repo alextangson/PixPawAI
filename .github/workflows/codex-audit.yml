@@ -7,6 +7,9 @@ on:
       - '*.md'
       - '.github/**'
 
+permissions:
+  contents: write
+
 jobs:
   codex-review:
     runs-on: ubuntu-latest
