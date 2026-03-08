@@ -34,7 +34,7 @@ function createArticle(overrides: Partial<BlogArticle> = {}): BlogArticle {
   };
 }
 
-test('listHubArticles returns local markdown articles when WordPress has none', async () => {
+test('listHubArticles does not fall back to local markdown when WordPress has no blog articles', async () => {
   const localArticle = createArticle({
     id: 2,
     slug: 'pet-memorial-portrait',
@@ -54,11 +54,10 @@ test('listHubArticles returns local markdown articles when WordPress has none', 
     }
   );
 
-  assert.equal(articles.length, 1);
-  assert.equal(articles[0]?.slug, 'pet-memorial-portrait');
+  assert.equal(articles.length, 0);
 });
 
-test('listHubArticles deduplicates duplicate slugs and keeps the WordPress version first', async () => {
+test('listHubArticles ignores local markdown duplicates and extras when WordPress articles exist', async () => {
   const sharedSlug = 'pet-loss-gift-ideas';
   const wordPressArticle = createArticle({
     id: 10,
@@ -89,11 +88,11 @@ test('listHubArticles deduplicates duplicate slugs and keeps the WordPress versi
 
   assert.deepEqual(
     articles.map((article) => article.title),
-    ['Newest Local Article', 'WordPress Version']
+    ['WordPress Version']
   );
 });
 
-test('findHubArticleBySlug falls back to local markdown when WordPress lookup fails', async () => {
+test('findHubArticleBySlug returns null when WordPress lookup fails instead of using local markdown', async () => {
   const localArticle = createArticle({
     id: 20,
     slug: 'styled-pet-portraits',
@@ -116,6 +115,5 @@ test('findHubArticleBySlug falls back to local markdown when WordPress lookup fa
     }
   );
 
-  assert.equal(article?.slug, 'styled-pet-portraits');
-  assert.equal(article?.title, 'Styled Pet Portraits');
+  assert.equal(article, null);
 });
