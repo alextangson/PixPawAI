@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getAllArticleSlugs } from '@/lib/wordpress/blog';
 import { createAdminClient } from '@/lib/supabase/server';
+import { listHubArticleSlugs } from '@/lib/content/blog-feed';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
 
@@ -54,7 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch blog article slugs from WordPress
   let articlePages: MetadataRoute.Sitemap = [];
   try {
-    const blogSlugs = await getAllArticleSlugs({ hub: 'blog' });
+    const blogSlugs = await listHubArticleSlugs('blog');
 
     articlePages = [
       ...blogSlugs.map((slug) => ({

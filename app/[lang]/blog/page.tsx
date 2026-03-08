@@ -3,7 +3,10 @@ import Image from 'next/image';
 import { BookOpen, Sparkles, ArrowRight, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type Locale } from '@/lib/i18n-config';
-import { getBlogArticles, getFeaturedArticleByHub } from '@/lib/wordpress/blog';
+import {
+  listHubArticles,
+  pickFeaturedHubArticle,
+} from '@/lib/content/blog-feed';
 import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import type { Metadata } from 'next';
 
@@ -49,8 +52,8 @@ export default async function BlogPage({
   const { lang } = await params;
 
   const [featuredArticle, allArticles] = await Promise.all([
-    getFeaturedArticleByHub('blog'),
-    getBlogArticles({ perPage: 12, hub: 'blog' }),
+    pickFeaturedHubArticle('blog'),
+    listHubArticles({ perPage: 12, hub: 'blog' }),
   ]);
 
   const articles = featuredArticle

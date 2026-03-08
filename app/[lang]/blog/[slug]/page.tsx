@@ -3,7 +3,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowLeft, Sparkles } from 'lucide-react';
 import { type Locale } from '@/lib/i18n-config';
-import { getBlogArticleForHub, getRelatedArticles, getAllArticleSlugs } from '@/lib/wordpress/blog';
+import {
+  findHubArticleBySlug,
+  listHubArticleSlugs,
+  listRelatedHubArticles,
+} from '@/lib/content/blog-feed';
 import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents';
 import { BlogSocialShare } from '@/components/blog/blog-social-share';
@@ -22,7 +26,7 @@ interface ArticlePageProps {
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug, lang } = await params;
-  const article = await getBlogArticleForHub(slug, 'blog');
+  const article = await findHubArticleBySlug(slug, 'blog');
 
   if (!article) {
     return { title: 'Article Not Found' };
@@ -58,7 +62,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 }
 
 export async function generateStaticParams() {
-  const slugs = await getAllArticleSlugs({ hub: 'blog' });
+  const slugs = await listHubArticleSlugs('blog');
   const params: Array<{ lang: string; slug: string }> = [];
   const languages = ['en'];
 
@@ -75,13 +79,13 @@ export const dynamicParams = true;
 
 export default async function BlogArticlePage({ params }: ArticlePageProps) {
   const { lang, slug } = await params;
-  const article = await getBlogArticleForHub(slug, 'blog');
+  const article = await findHubArticleBySlug(slug, 'blog');
 
   if (!article) {
     notFound();
   }
 
-  const relatedArticles = await getRelatedArticles(article.category.id, article.id, 3, 'blog');
+  const relatedArticles = await listRelatedHubArticles(article, 'blog', 3);
 
   const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
