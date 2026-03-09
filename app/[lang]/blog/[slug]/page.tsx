@@ -13,9 +13,9 @@ import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents';
 import { BlogSocialShare } from '@/components/blog/blog-social-share';
 import { BlogRelatedArticles } from '@/components/blog/blog-related-articles';
 import { BlogArticleSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
+import { BlogArticleBody } from '@/components/blog/article-body';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
-import ReactMarkdown from 'react-markdown';
 
 interface ArticlePageProps {
   params: Promise<{
@@ -217,9 +217,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                       prose-code:bg-stone-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-amber-800 prose-code:text-sm prose-code:font-mono
                       prose-pre:bg-stone-900 prose-pre:text-stone-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
                       prose-blockquote:border-l-4 prose-blockquote:border-amber-600 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-stone-600 prose-blockquote:my-8">
-                    <ReactMarkdown>
-                      {article.content}
-                    </ReactMarkdown>
+                    <BlogArticleBody content={article.content} />
                   </div>
 
                   {/* Tags */}
