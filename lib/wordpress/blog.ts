@@ -132,7 +132,7 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     height: featuredMedia.media_details?.height || 630,
   } : null;
 
-  // Extract category from default WordPress category taxonomy
+  // Extract category - prioritize pixpaw_category over default WordPress category.
   // post._embedded['wp:term'] is a 2D array: [taxonomy1_terms[], taxonomy2_terms[], ...]
   let categoryData = null;
 
@@ -140,9 +140,23 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     for (const taxonomyTerms of post._embedded['wp:term']) {
       if (taxonomyTerms && taxonomyTerms.length > 0) {
         const firstTerm = taxonomyTerms[0];
-        if (firstTerm.taxonomy === 'category') {
+        if (firstTerm.taxonomy === 'pixpaw_category') {
           categoryData = firstTerm;
           break;
+        }
+      }
+    }
+
+    if (!categoryData) {
+      for (const taxonomyTerms of post._embedded['wp:term']) {
+        if (taxonomyTerms && taxonomyTerms.length > 0) {
+          const firstTerm = taxonomyTerms[0];
+          if (firstTerm.taxonomy === 'category' || !categoryData) {
+            categoryData = firstTerm;
+            if (firstTerm.taxonomy === 'category') {
+              break;
+            }
+          }
         }
       }
     }
@@ -290,25 +304,20 @@ export async function getBlogArticles(
 
   // Add category filter if provided (using custom taxonomy)
   if (category && hasCategories) {
-    // Only allow filtering by valid PixPaw categories
     if (category === 'uncategorized') {
-      // For uncategorized, fetch all posts and filter client-side
-      // Don't add category filter here
+      // For uncategorized, fetch all posts and filter client-side.
     } else {
       const categoryData = await getCategoryBySlug(category);
       if (categoryData && pixpawCategorySlugs.includes(categoryData.slug)) {
         params.append('pixpaw_category', String(categoryData.id));
       } else {
         console.warn(`[WordPress] Invalid category "${category}". Will fetch all posts.`);
-        // Don't return empty, let it fetch all and filter client-side
       }
     }
   } else if (hasCategories && !category) {
-    // If no specific category but we have categories, filter by ANY PixPaw category
-    // This ensures we only show PixPaw-related content
+    // If no specific category but we have categories, filter by ANY PixPaw category.
     params.append('pixpaw_category', pixpawCategoryIds.join(','));
   }
-  // If no categories found, don't add filter - fetch all posts and filter client-side
 
   // Add search filter if provided
   if (search) {
@@ -363,17 +372,13 @@ export async function getBlogArticles(
     // Additional client-side filtering to ensure only PixPaw-related posts are shown
     // This is a safety measure in case WordPress API returns unexpected results
     const filteredPosts = posts.filter(post => {
-      // If we have categories, check if post belongs to PixPaw taxonomy
       if (hasCategories) {
         const postCategories = post._embedded?.['wp:term']?.flat() || [];
-        
-        // STRICT: Only show posts with pixpaw_category taxonomy
-        // This prevents FMIC (furniture) content from appearing on PixPawAI
+
         const hasPixPawCategory = postCategories.some(
           (term: any) => term.taxonomy === 'pixpaw_category' && pixpawCategoryIds.includes(term.id)
         );
-        
-        // Log detailed taxonomy information for debugging
+
         const taxonomyDetails = postCategories.map((t: any) => ({
           taxonomy: t.taxonomy,
           id: t.id,
@@ -392,22 +397,17 @@ export async function getBlogArticles(
           return shouldShow;
         }
         
-        // STRICT: Only show posts with pixpaw_category
-        // Do NOT fall back to default WordPress categories to avoid FMIC content pollution
         if (hasPixPawCategory) {
           console.log(`[WordPress] Post ${post.id} (${post.slug}) - has pixpaw_category:`, taxonomyDetails);
           return true;
         }
-        
-        // Post does not have pixpaw_category - filter it out
+
         console.log(`[WordPress] Post ${post.id} (${post.slug}) - filtered out (no pixpaw_category):`, {
           taxonomyDetails,
           hasPixPawCategory,
         });
         return false;
       } else {
-        // If no pixpaw_category taxonomy found, return empty
-        // This prevents showing unfiltered content that might include FMIC articles
         console.warn('[WordPress] No pixpaw_category taxonomy found. Returning empty results to avoid content pollution.');
         return false;
       }
@@ -501,9 +501,7 @@ export async function getBlogArticleForHub(
     if (hasCategories) {
       const post = posts[0];
       const postCategories = post._embedded?.['wp:term']?.flat() || [];
-      
-      // STRICT: Only allow posts with pixpaw_category taxonomy
-      // This prevents FMIC (furniture) content from appearing on PixPawAI
+
       const hasPixPawCategory = postCategories.some(
         (term: any) => term.taxonomy === 'pixpaw_category' && pixpawCategoryIds.includes(term.id)
       );
@@ -521,8 +519,6 @@ export async function getBlogArticleForHub(
         hasPixPawCategory,
       });
 
-      // STRICT: Only allow posts with pixpaw_category
-      // Do NOT fall back to default WordPress categories to avoid FMIC content pollution
       if (hasPixPawCategory) {
         console.log(`[WordPress] Post "${slug}" has pixpaw_category - allowing`);
         const article = transformWordPressPost(post);
@@ -542,8 +538,6 @@ export async function getBlogArticleForHub(
       return null;
     }
 
-    // If no pixpaw_category taxonomy found, return null
-    // This prevents showing unfiltered content that might include FMIC articles
     console.warn(`[WordPress] No pixpaw_category taxonomy found for post "${slug}". Returning null to avoid content pollution.`);
     return null;
   } catch (error) {
@@ -646,7 +640,7 @@ export async function getRelatedArticles(
 }
 
 /**
- * Get WordPress category by slug (from default category taxonomy)
+ * Get WordPress category by slug (from pixpaw_category taxonomy)
  */
 export async function getCategoryBySlug(slug: string): Promise<WordPressCategory | null> {
   if (!WORDPRESS_API_URL) {
@@ -654,7 +648,7 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
   }
 
   try {
-    const apiUrl = buildWordPressApiUrl('categories', `slug=${slug}`);
+    const apiUrl = buildWordPressApiUrl('pixpaw_category', `slug=${slug}`);
     const res = await fetch(
       apiUrl,
       {
@@ -678,8 +672,7 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
 }
 
 /**
- * Get all categories (from default category taxonomy)
- * Fetches "blog" category slug only
+ * Get all categories (from pixpaw_category taxonomy)
  */
 export async function getCategories(): Promise<WordPressCategory[]> {
   if (!WORDPRESS_API_URL) {
@@ -687,7 +680,7 @@ export async function getCategories(): Promise<WordPressCategory[]> {
   }
 
   try {
-    const apiUrl = buildWordPressApiUrl('categories', 'per_page=100&orderby=name&order=asc&slug=blog');
+    const apiUrl = buildWordPressApiUrl('pixpaw_category', 'per_page=100&orderby=name&order=asc');
     console.log('[WordPress] Fetching categories from:', apiUrl);
 
     const res = await fetch(
@@ -703,6 +696,26 @@ export async function getCategories(): Promise<WordPressCategory[]> {
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`[WordPress] Failed to fetch categories: ${res.status} ${res.statusText}`, errorText);
+
+      if (res.status === 404) {
+        console.warn('[WordPress] pixpaw_category taxonomy not found. Trying alternative endpoints...');
+        const fallbackUrl = buildWordPressApiUrl('categories', 'per_page=100&orderby=name&order=asc');
+        const fallbackRes = await fetch(
+          fallbackUrl,
+          {
+            next: { revalidate: 86400 },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (fallbackRes.ok) {
+          console.log('[WordPress] Using default categories endpoint as fallback');
+          return await fallbackRes.json();
+        }
+      }
+
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
