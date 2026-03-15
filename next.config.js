@@ -14,7 +14,13 @@ const nextConfig = {
           },
         ],
         destination: 'https://pixpawai.com/:path*',
-        statusCode: 308, // permanent redirect
+        statusCode: 301, // permanent redirect
+      },
+      // 301 redirect: root → /en/ (SEO canonical entry point)
+      {
+        source: '/',
+        destination: '/en/',
+        statusCode: 301,
       },
       // 301 redirect: /how-to/* → /blog/* (route unification)
       {

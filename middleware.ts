@@ -110,7 +110,7 @@ export async function middleware(request: NextRequest) {
 
   // Handle trailing slash for /en → /en/
   if (pathname === '/en') {
-    return NextResponse.redirect(new URL('/en/', request.url), { status: 308 })
+    return NextResponse.redirect(new URL('/en/', request.url), { status: 301 })
   }
 
   // Redirect if there is no locale
@@ -124,7 +124,7 @@ export async function middleware(request: NextRequest) {
         `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`,
         request.url
       ),
-      { status: 308 }
+      { status: 301 }
     )
   }
   
