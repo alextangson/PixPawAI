@@ -9,7 +9,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/terms`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/terms/`;
 
   return {
     title: 'Terms of Service - PixPaw AI',

@@ -26,7 +26,7 @@ interface GalleryImage {
 // SEO Metadata
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale }> }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/gallery`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/gallery/`;
   return {
     title: 'AI Pet Art Gallery - Explore Styles | PixPaw AI',
     description: 'Explore real AI pet portraits from the PixPaw community. Discover style inspiration for dogs, cats, and more.',

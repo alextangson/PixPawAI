@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: StylePageProps): Promise<Meta
 
   const title = `${selectedStyle.label} AI Pet Portrait Style | PixPaw AI`;
   const description = `Explore the ${selectedStyle.label} style for AI pet portraits. See what it looks like and create your own in seconds.`;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/styles/${style}`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/styles/${style}/`;
 
   return {
     title,

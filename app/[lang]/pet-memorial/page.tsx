@@ -50,7 +50,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SITE_URL}/${lang}/pet-memorial`;
+  const pageUrl = `${SITE_URL}/${lang}/pet-memorial/`;
 
   return {
     title: 'Pet Memorial Portrait — Turn a Photo Into Art | PixPaw AI',

@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/shop`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/shop/`;
 
   return {
     title: 'Custom Pet Portrait Gifts & Prints | PixPaw AI Shop',

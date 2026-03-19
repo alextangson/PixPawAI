@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/alternatives`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/alternatives/`;
 
   return {
     title: 'PixPaw AI Alternatives: Compare Pet Portrait Options',
@@ -45,7 +45,7 @@ export async function generateMetadata({
 }
 
 export default function AlternativesPage() {
-  const pageUrl = `${SEO_SITE_URL}/en/alternatives`;
+  const pageUrl = `${SEO_SITE_URL}/en/alternatives/`;
 
   return (
     <main className="min-h-screen bg-cream py-16">

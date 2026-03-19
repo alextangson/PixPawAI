@@ -44,7 +44,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/glossary`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/glossary/`;
 
   return {
     title: 'AI Pet Art Glossary | PixPaw AI',
@@ -85,7 +85,7 @@ export default async function GlossaryPage({
 }) {
   const { lang } = await params;
 
-  const pageUrl = `${SEO_SITE_URL}/${lang}/glossary`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/glossary/`;
 
   return (
     <main className="min-h-screen bg-cream py-16">

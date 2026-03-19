@@ -69,10 +69,10 @@ export default function NotFound() {
               Pricing Plans
             </Link>
             <Link
-              href={`/${lang}/how-to`}
+              href={`/${lang}/blog/`}
               className="text-coral hover:text-orange-600 font-medium hover:underline transition-colors"
             >
-              How-to Guide
+              Blog
             </Link>
             <Link
               href={`/${lang}/dashboard`}

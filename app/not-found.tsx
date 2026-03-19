@@ -64,10 +64,10 @@ export default function NotFound() {
               Pricing Plans
             </Link>
             <Link
-              href="/en/how-to"
+              href="/en/blog/"
               className="text-coral hover:text-orange-600 font-medium hover:underline transition-colors"
             >
-              How-to Guide
+              Blog
             </Link>
             <Link
               href="/en/dashboard"

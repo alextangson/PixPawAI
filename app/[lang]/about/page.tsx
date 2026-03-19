@@ -11,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/about`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/about/`;
 
   return {
     title: 'About PixPaw AI: Mission, Quality, and Care',
@@ -51,7 +51,7 @@ export default async function AboutPage({
   params: Promise<{ lang: Locale }>;
 }) {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/about`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/about/`;
 
   return (
     <main className="min-h-screen bg-cream py-16">

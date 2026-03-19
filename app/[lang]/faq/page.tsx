@@ -12,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/faq`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/faq/`;
 
   return {
     title: 'FAQ: AI Pet Portrait Help & Answers | PixPaw AI',

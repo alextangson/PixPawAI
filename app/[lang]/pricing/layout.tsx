@@ -17,7 +17,7 @@ export async function generateMetadata({
     description: 'Choose the perfect plan for your pet portrait needs. Starter $4.99 (15 credits), Pro $19.99 (50 credits), Master $39.99 (200 credits). Transform your pet photos into stunning AI art.',
     keywords: ['pet portrait pricing', 'AI pet art pricing', 'pet portrait generator cost', 'PixPaw AI pricing', 'AI pet portrait credits'],
     alternates: {
-      canonical: `https://pixpawai.com/${lang}/pricing`,
+      canonical: `https://pixpawai.com/${lang}/pricing/`,
     },
     openGraph: {
       title: 'Pricing | PixPaw AI - AI Pet Portrait Generator',

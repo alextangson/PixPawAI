@@ -19,7 +19,7 @@ export async function generateMetadata({
     title: 'Custom Pet Product Preview | PixPaw AI',
     description: 'Preview your custom pet portrait merchandise before ordering.',
     alternates: {
-      canonical: `${SEO_SITE_URL}/${lang}/shop/${id}`,
+      canonical: `${SEO_SITE_URL}/${lang}/shop/${id}/`,
     },
     robots: {
       index: false,

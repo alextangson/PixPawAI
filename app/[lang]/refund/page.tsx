@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/refund`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/refund/`;
 
   return {
     title: 'Refund Policy - PixPaw AI',

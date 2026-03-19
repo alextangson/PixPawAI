@@ -19,7 +19,7 @@ interface GalleryImagePageProps {
 // SEO Metadata for individual gallery images
 export async function generateMetadata({ params }: GalleryImagePageProps): Promise<Metadata> {
   const { id, lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/gallery/${id}`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/gallery/${id}/`;
   
   const supabase = await createClient();
   const { data: image } = await supabase

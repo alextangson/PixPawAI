@@ -9,7 +9,7 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/privacy`;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/privacy/`;
 
   return {
     title: 'Privacy Policy - PixPaw AI',

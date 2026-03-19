@@ -28,7 +28,7 @@ export async function generateMetadata({
       type: 'website',
     },
     alternates: {
-      canonical: `https://pixpawai.com/${lang}/blog`,
+      canonical: `https://pixpawai.com/${lang}/blog/`,
     },
   };
 }

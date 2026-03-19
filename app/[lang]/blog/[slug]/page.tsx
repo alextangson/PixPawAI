@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     return { title: 'Article Not Found' };
   }
 
-  const articleUrl = `https://pixpawai.com/${lang}/blog/${slug}`;
+  const articleUrl = `https://pixpawai.com/${lang}/blog/${slug}/`;
 
   return {
     title: article.metaTitle,

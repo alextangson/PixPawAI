@@ -19,25 +19,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPages: MetadataRoute.Sitemap = ([
-    { url: `${SITE_URL}/en`, changeFrequency: 'daily' as const, priority: 1 },
-    { url: `${SITE_URL}/en/gallery`, changeFrequency: 'daily' as const, priority: 0.9 },
-    { url: `${SITE_URL}/en/blog`, changeFrequency: 'daily' as const, priority: 0.8 },
-    { url: `${SITE_URL}/en/pricing`, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${SITE_URL}/en/pet-memorial`, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${SITE_URL}/en/shop`, changeFrequency: 'weekly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/about`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/faq`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/glossary`, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${SITE_URL}/en/alternatives`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/use-cases`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/contact`, changeFrequency: 'yearly' as const, priority: 0.4 },
-    { url: `${SITE_URL}/en/privacy`, changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${SITE_URL}/en/terms`, changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${SITE_URL}/en/refund`, changeFrequency: 'yearly' as const, priority: 0.3 },
+    { url: `${SITE_URL}/en/`, changeFrequency: 'daily' as const, priority: 1 },
+    { url: `${SITE_URL}/en/gallery/`, changeFrequency: 'daily' as const, priority: 0.9 },
+    { url: `${SITE_URL}/en/blog/`, changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${SITE_URL}/en/pricing/`, changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${SITE_URL}/en/shop/`, changeFrequency: 'weekly' as const, priority: 0.7 },
+    { url: `${SITE_URL}/en/about/`, changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${SITE_URL}/en/faq/`, changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${SITE_URL}/en/glossary/`, changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${SITE_URL}/en/alternatives/`, changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${SITE_URL}/en/use-cases/`, changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${SITE_URL}/en/contact/`, changeFrequency: 'yearly' as const, priority: 0.4 },
+    { url: `${SITE_URL}/en/privacy/`, changeFrequency: 'yearly' as const, priority: 0.3 },
+    { url: `${SITE_URL}/en/terms/`, changeFrequency: 'yearly' as const, priority: 0.3 },
+    { url: `${SITE_URL}/en/refund/`, changeFrequency: 'yearly' as const, priority: 0.3 },
   ]).map((page) => ({ ...page, lastModified: now }));
 
   const stylePages: MetadataRoute.Sitemap = STYLES.map((style) => ({
-    url: `${SITE_URL}/en/styles/${toSlug(style.id)}`,
+    url: `${SITE_URL}/en/styles/${toSlug(style.id)}/`,
     lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.6,
@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (images) {
       galleryPages = images.map((image) => ({
-        url: `${SITE_URL}/en/gallery/${image.id}`,
+        url: `${SITE_URL}/en/gallery/${image.id}/`,
         lastModified: new Date(image.created_at),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
