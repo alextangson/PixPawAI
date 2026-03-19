@@ -19,7 +19,7 @@ export async function submitToIndexNow(urls: string[]): Promise<{ success: boole
       body: JSON.stringify({
         host,
         key: INDEXNOW_KEY,
-        keyLocation: `${SITE_URL}/api/indexnow/verify?key=${INDEXNOW_KEY}`,
+        keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
         urlList: urls.slice(0, 10000),
       }),
     });
