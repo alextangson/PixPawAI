@@ -1,11 +1,35 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { getDictionary } from '@/lib/dictionary';
-import { Locale } from '@/lib/i18n-config';
+import type { Locale } from '@/lib/i18n-config';
+import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  title: 'Terms of Service - PixPaw AI',
-  description: 'Read the terms and conditions for using PixPaw AI services.',
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: Locale }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/terms`;
+
+  return {
+    title: 'Terms of Service - PixPaw AI',
+    description: 'Read the terms and conditions for using PixPaw AI pet portrait generation services.',
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: 'Terms of Service - PixPaw AI',
+      description: 'Terms and conditions for using PixPaw AI services.',
+      url: pageUrl,
+      type: 'website',
+      images: [{ url: DEFAULT_OG_IMAGE_URL, width: 1200, height: 630, alt: 'PixPaw AI Terms of Service' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Terms of Service - PixPaw AI',
+      description: 'Terms and conditions for using PixPaw AI services.',
+      images: [DEFAULT_TWITTER_IMAGE_URL],
+    },
+  };
+}
 
 export default async function TermsPage({
   params,

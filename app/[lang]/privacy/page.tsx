@@ -1,11 +1,35 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { getDictionary } from '@/lib/dictionary';
-import { Locale } from '@/lib/i18n-config';
+import type { Locale } from '@/lib/i18n-config';
+import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy - PixPaw AI',
-  description: 'Learn how PixPaw AI protects your privacy and handles your data.',
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: Locale }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/privacy`;
+
+  return {
+    title: 'Privacy Policy - PixPaw AI',
+    description: 'Learn how PixPaw AI protects your privacy and handles your personal data, uploaded images, and payment information.',
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: 'Privacy Policy - PixPaw AI',
+      description: 'How PixPaw AI collects, uses, and protects your personal data.',
+      url: pageUrl,
+      type: 'website',
+      images: [{ url: DEFAULT_OG_IMAGE_URL, width: 1200, height: 630, alt: 'PixPaw AI Privacy Policy' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Privacy Policy - PixPaw AI',
+      description: 'How PixPaw AI collects, uses, and protects your personal data.',
+      images: [DEFAULT_TWITTER_IMAGE_URL],
+    },
+  };
+}
 
 export default async function PrivacyPage({
   params,

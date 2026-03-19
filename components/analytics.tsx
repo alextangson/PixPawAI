@@ -42,6 +42,33 @@ export function Analytics() {
             page_path: window.location.pathname,
             anonymize_ip: true,
           });
+
+          // Detect AI search engine referrals and tag them as custom traffic source
+          (function() {
+            var ref = document.referrer || '';
+            var aiSources = {
+              'chat.openai.com': 'ChatGPT',
+              'chatgpt.com': 'ChatGPT',
+              'perplexity.ai': 'Perplexity',
+              'you.com': 'You.com',
+              'phind.com': 'Phind',
+              'bing.com/chat': 'Bing Copilot',
+              'copilot.microsoft.com': 'Bing Copilot',
+              'gemini.google.com': 'Gemini',
+              'claude.ai': 'Claude',
+              'kagi.com': 'Kagi',
+            };
+            for (var domain in aiSources) {
+              if (ref.indexOf(domain) !== -1) {
+                gtag('event', 'ai_referral', {
+                  ai_source: aiSources[domain],
+                  referrer_url: ref,
+                  landing_page: window.location.pathname,
+                });
+                break;
+              }
+            }
+          })();
         `}
       </Script>
     </>

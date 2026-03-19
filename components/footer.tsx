@@ -20,6 +20,17 @@ interface FooterProps {
           petMemorial: string;
         };
       };
+      explore: {
+        title: string;
+        links: {
+          about: string;
+          blog: string;
+          useCases: string;
+          alternatives: string;
+          glossary: string;
+          shop: string;
+        };
+      };
       support: {
         title: string;
         links: {
@@ -52,7 +63,7 @@ export function Footer({ dict, lang }: FooterProps) {
   return (
     <footer className="bg-gray-900 text-white py-12">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7 md:gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-7 md:gap-8 mb-8">
           {/* Column 1: Brand & Mission */}
           <div className="md:col-span-1">
             <Link href={`/${lang}`} className="flex items-center gap-2 mb-4 group">
@@ -108,7 +119,44 @@ export function Footer({ dict, lang }: FooterProps) {
             </ul>
           </div>
 
-          {/* Column 3: Support */}
+          {/* Column 3: Explore (SEO Content Pages) */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-white">{dict.footer.explore.title}</h2>
+            <ul className="space-y-2 text-gray-400">
+              <li>
+                <Link href={`/${lang}/about`} className="hover:text-coral transition-colors">
+                  {dict.footer.explore.links.about}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/blog`} className="hover:text-coral transition-colors">
+                  {dict.footer.explore.links.blog}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/use-cases`} className="hover:text-coral transition-colors">
+                  {dict.footer.explore.links.useCases}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/alternatives`} className="hover:text-coral transition-colors">
+                  {dict.footer.explore.links.alternatives}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/glossary`} className="hover:text-coral transition-colors">
+                  {dict.footer.explore.links.glossary}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/shop`} className="hover:text-coral transition-colors">
+                  {dict.footer.explore.links.shop}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Support */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-white">{dict.footer.support.title}</h2>
             <ul className="space-y-2 text-gray-400">

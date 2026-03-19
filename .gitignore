@@ -69,3 +69,6 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+
+# Agent skills (installed via npx skills)
+.agents/

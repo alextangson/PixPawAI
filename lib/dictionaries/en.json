@@ -186,6 +186,17 @@
         "petMemorial": "Pet Memorial"
       }
     },
+    "explore": {
+      "title": "Explore",
+      "links": {
+        "about": "About Us",
+        "blog": "Blog",
+        "useCases": "Use Cases",
+        "alternatives": "Alternatives",
+        "glossary": "Glossary",
+        "shop": "Shop"
+      }
+    },
     "support": {
       "title": "Support",
       "links": {

@@ -1,12 +1,36 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { getDictionary } from '@/lib/dictionary';
-import { Locale } from '@/lib/i18n-config';
+import type { Locale } from '@/lib/i18n-config';
 import { Mail, MessageCircle, Twitter } from 'lucide-react';
+import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  title: 'Contact Us - PixPaw AI',
-  description: 'Get in touch with the PixPaw AI team for support and inquiries.',
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: Locale }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/contact`;
+
+  return {
+    title: 'Contact Us - PixPaw AI',
+    description: 'Get in touch with the PixPaw AI team for support, inquiries, or privacy-related requests.',
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: 'Contact Us - PixPaw AI',
+      description: 'Reach out to PixPaw AI for support, feedback, or privacy requests.',
+      url: pageUrl,
+      type: 'website',
+      images: [{ url: DEFAULT_OG_IMAGE_URL, width: 1200, height: 630, alt: 'Contact PixPaw AI' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Contact Us - PixPaw AI',
+      description: 'Reach out to PixPaw AI for support, feedback, or privacy requests.',
+      images: [DEFAULT_TWITTER_IMAGE_URL],
+    },
+  };
+}
 
 export default async function ContactPage({
   params,

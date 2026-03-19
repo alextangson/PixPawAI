@@ -1,12 +1,36 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { getDictionary } from '@/lib/dictionary';
-import { Locale } from '@/lib/i18n-config';
+import type { Locale } from '@/lib/i18n-config';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  title: 'Refund Policy - PixPaw AI',
-  description: 'Learn about PixPaw AI refund policy and satisfaction guarantee.',
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: Locale }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const pageUrl = `${SEO_SITE_URL}/${lang}/refund`;
+
+  return {
+    title: 'Refund Policy - PixPaw AI',
+    description: 'Learn about PixPaw AI refund policy, satisfaction guarantee, and how to request a refund.',
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: 'Refund Policy - PixPaw AI',
+      description: 'PixPaw AI refund policy and first-time satisfaction guarantee.',
+      url: pageUrl,
+      type: 'website',
+      images: [{ url: DEFAULT_OG_IMAGE_URL, width: 1200, height: 630, alt: 'PixPaw AI Refund Policy' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Refund Policy - PixPaw AI',
+      description: 'PixPaw AI refund policy and first-time satisfaction guarantee.',
+      images: [DEFAULT_TWITTER_IMAGE_URL],
+    },
+  };
+}
 
 export default async function RefundPage({
   params,
