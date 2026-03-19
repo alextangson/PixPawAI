@@ -2,6 +2,14 @@
 const nextConfig = {
   trailingSlash: true,
   // Redirects for SEO
+  async rewrites() {
+    return [
+      {
+        source: '/5d6f3058001c4ea8a1db7fc252f417fb.txt',
+        destination: '/api/indexnow/verify/?key=5d6f3058001c4ea8a1db7fc252f417fb',
+      },
+    ]
+  },
   async redirects() {
     return [
       // www to non-www canonical unification
