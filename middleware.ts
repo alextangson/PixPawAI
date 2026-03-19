@@ -25,6 +25,16 @@ function getLocale(request: NextRequest): string | undefined {
 }
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Serve IndexNow key file at standard path (required for domain verification)
+  const INDEXNOW_KEY = process.env.INDEXNOW_API_KEY || '5d6f3058001c4ea8a1db7fc252f417fb'
+  if (pathname === `/${INDEXNOW_KEY}.txt`) {
+    return new NextResponse(INDEXNOW_KEY, {
+      headers: { 'Content-Type': 'text/plain' },
+    })
+  }
+
   // Skip middleware for RSC prefetch requests
   const requestHeaders = new Headers(request.headers)
   const isRSCRequest = requestHeaders.get('RSC') === '1' || 
@@ -38,7 +48,6 @@ export async function middleware(request: NextRequest) {
   // First, handle Supabase session refresh
   const supabaseResponse = await updateSession(request)
   
-  const pathname = request.nextUrl.pathname
   const { searchParams } = request.nextUrl
 
   // ============================================
@@ -137,5 +146,6 @@ export const config = {
   // Also ignore static files (images, fonts, json, etc.) and RSC prefetch requests
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|json|woff|woff2|ttf|eot)$).*)',
+    '/5d6f3058001c4ea8a1db7fc252f417fb.txt',
   ],
 }
