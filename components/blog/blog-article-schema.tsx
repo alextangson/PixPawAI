@@ -13,7 +13,7 @@ interface BlogArticleSchemaProps {
 export function BlogArticleSchema({ article, url }: BlogArticleSchemaProps) {
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: article.title,
     description: article.excerpt,
     image: article.coverImage ? [article.coverImage.url] : [],

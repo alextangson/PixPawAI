@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   authors: [{ name: "PixPaw AI" }],
   manifest: '/manifest.json',
   alternates: {
-    canonical: '/en',
+    canonical: 'https://pixpawai.com/en/',
   },
   icons: {
     icon: [

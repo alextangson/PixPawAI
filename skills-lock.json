@@ -1,0 +1,850 @@
+{
+  "version": 1,
+  "skills": {
+    "404-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "24507969881b9d289cea3963d57887c75c7dcf18c13582e1225afae49d753885"
+    },
+    "about-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "d9a3901af244e8eaf64f1696338eeda7f0e0b3e4f3ea37ae8e9a41929eeadc29"
+    },
+    "affiliate-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "d8a16257df4c92ad11199c1368d3f9e747cc062e5afe2e2db61991a59373eb3a"
+    },
+    "affiliate-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "20ef9c7075a7a7116f7a4eb419c41bcd24489ac07194b1501bd4d6b998255b3a"
+    },
+    "ai-traffic-tracking": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "fae52a50c6ab15586896d628b8eb356cd6286c99a5f7cf8f8ce9ee9df737087d"
+    },
+    "alternatives-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "c519bf5c67b2478c87eeb97074e64ab167f3608076fead596e5bd5d1099c1bbc"
+    },
+    "analytics-tracking": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6fa2b27cacd16547c311feb1a4215397df33009a4571a678abd63c69d6cdb82d"
+    },
+    "app-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "fea19ebbf39fa990e425717197130f485cab093a8cf439ac55d9eba4558237c3"
+    },
+    "article-content": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "735e1c1fc526bbfb5aab30849db58e3b49f71de3a1740056d072c6539f402875"
+    },
+    "article-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ff602bae1ba33e5c1160395ae1f94a6267a38d16dfdccbe9158ae50074217adf"
+    },
+    "backlink-analysis": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ad3380990e817e713df423f86a1a971f97d6c79138d2a59f05dac122a880b805"
+    },
+    "blog-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "76117ca5ef5a6eaad4320b56d6ec00f641eb06aa3f040a6c0fb7df1994d7a572"
+    },
+    "brand-monitoring": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f8cc9d3ee28034b4b53fcbfbaebee14b8283015a375113cf20b22d85d0582094"
+    },
+    "brand-protection": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a42d0f4c98a77e82ef7dcd4fe15ff022c6d1598a346aa1d671ff84608171668b"
+    },
+    "brand-visual-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5b83cd86de57e8da5224072b4d0c836c06b1ee52d6baf5dba60049ad3ef20866"
+    },
+    "branding": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "43757fb284528af806305e532ac9f441acfe58a60d410e91db51a2e187f807b5"
+    },
+    "breadcrumb-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "586a50f6006f66644e13475791a7c0eee4b194ce0a6969b1da8bf33662215184"
+    },
+    "canonical-tag": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "75006de49663dc97ff959b042b1d06989a64d99ea953aeb34bd63fe5f416352b"
+    },
+    "card": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5b2bb3089acfc6f7ec513c70eadeb34af3b2bc4725a0f8fe3555dcbe31296b5a"
+    },
+    "careers-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "13542f2a11a177742d507aa30e598075ce5f5f7ad83450762de27e018df6bccf"
+    },
+    "carousel": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "84e9a03b20269b88876fdbffc3c3b3c6f7c3f3af79ab086ea3d6ded1b7a73a7d"
+    },
+    "category-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "cdc4265a1bcb668d1fbe4192b6adcfae553bf15a5c3d880c8ec2dc0977ee7f4d"
+    },
+    "changelog-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "90eb04b6c8fdc6048f5544be9b068f5b9bc7c5d555176a1a006b0122b1e26b33"
+    },
+    "cold-start-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "061a14b3f3760dd08120bfae8b74455213f0b2d3a00cb96b5f8fc62ca3c43f19"
+    },
+    "community-forum": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "4456241e7035f482b453637edaa389cc8d0c430d7405c10bd4607446dd1432cb"
+    },
+    "competitor-research": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "519866ad06ffd889eefd84e6801652aff6b9fd2e4651e40dd0788788627e3852"
+    },
+    "contact-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "e700892f6db554f90537cc0b6f398c368cf482ea1ea3aed29fa4201b8fffc662"
+    },
+    "content-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6c29b396cdc504080e5f305bec5d55ab26a32a31d9aac45b935e5a9a9d0ecf0b"
+    },
+    "content-optimization": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0829595e342c500866a255403505bf3947da42a0b2308165d506a2303399588e"
+    },
+    "content-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5b322bd8890b20f7d3f7bdf299d8274eb07a653064ff3d62325a8c5bed9a0f60"
+    },
+    "contest-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "3946e16082c343fc3fe4e143b11919d3f710af1599cca60bd19db931001c99c1"
+    },
+    "conversion-optimization": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "bffdaec43a4006f7ceeff28e89971807951ddb2a05ce4ad4414b60739288f5e2"
+    },
+    "cookie-policy-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6eb51322e1f8ea4914e6d48e9c4206735a309b93d1466bbd052f00f2dcc7b41a"
+    },
+    "copywriting": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9e31d03094309f4ec199cbc1e06a1d0f0469bd53c512631dc95a9480f5eea3d1"
+    },
+    "core-web-vitals": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f917be273941a21f791defa20419cafa322b17e9e8a284676842f905bb82d127"
+    },
+    "creator-program": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "95542e8d30501f3307791d722eb3797c9a2de231b36da12d82e34ff29cf006af"
+    },
+    "cta-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0e3fe8267b2582d74d71b153e2a19e53ca54070e612a01a7a3c44afca5ffbd6c"
+    },
+    "ctv-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ae1b60f614e9be923673c9bbf1986cc03f142cf0afc2ac50a319e675dd94fc7d"
+    },
+    "customer-stories-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "3a24a928daa3e62d19c2c0187dc89dc9af90c3dcb716246081c719a74e9f8d1b"
+    },
+    "directory-listing-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "491c2102ea0a53a4aa16d9b1cdf0ef31ecfc1215ea18527f10712b31ec035370"
+    },
+    "directory-submission": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "97ae0b085fe9123a7743a8123d27dafeb785e7db52692417dd51c29e7d562eec"
+    },
+    "disclosure-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "69ded6be2029ee98a9a96c18659659708920e7d24e93858c45e60bce2420bee3"
+    },
+    "discount-marketing-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5553bca3999002b32e9b9f6e715a9bab20f3a1a3d31046b967ade4bdbc6dedee"
+    },
+    "display-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "8c149e6dc2d0d38a20338bbd08bff131477ff28b8942e075f776c7c92ea5fa40"
+    },
+    "distribution-channels": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "cfe9ab529ebafa7ce838109421f5dbe86ed975ccb7a348dc8297ca8efbdeb937"
+    },
+    "docs-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6adfd40238759d0e3db778bdcc55dfd51a0ab4d82d763f542ccf47da8f7242b3"
+    },
+    "domain-architecture": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5de4aa82e930d46d69f6980a2eafd38d8e60b36dd08e734ebd076c3d72dbb0d0"
+    },
+    "domain-selection": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a5df97fd7756b92fbb150fa34c4981c925aa47bda001b55a82852e7b34065a78"
+    },
+    "download-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "3bf4cbc7e2823ff8f11f239f68ea34f666ac027a7ac24abfe823f86238dd6f6e"
+    },
+    "education-program": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "788215981b41ecd98421fd5ac9285c6f4196d5070789295f6cf4ab0237d9f4eb"
+    },
+    "eeat-signals": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "83ee553a86db7876094b9c1c589b204680f9f4bcf59d193d70f9d355fac98da0"
+    },
+    "email-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "2e8af7bd65b01d880e406ba6c50e5fab2091f5c13ed597e60f4bee847bd18f70"
+    },
+    "employee-generated-content": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "fd570e1dd9261818310474b0d3c2cd60535724fbfa984a20c699f58571bd32a8"
+    },
+    "entity-seo": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a34e6511193b3f8382e07cef705a57e5b2220b9feebbd0495439ce33697e5732"
+    },
+    "faq-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ccc4619130d8f407e3778f86cb1a68689f47ec039008deff6a7caaf7531ed176"
+    },
+    "favicon-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "58aea86476b9c6f3fae19c4e7fee3307ce3a44234e3d9d274cb03dc62df2d352"
+    },
+    "featured-snippet": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6ca0897f9e29fba6e3a60204983aaaa732b9d4e2cd23a7b08a572114781e756c"
+    },
+    "features-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "c35547601465861455144a80a3a4fcdecc0dc173168877de5f6df82b2a89766e"
+    },
+    "feedback-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "cb8de8a16f257a2dfb7b1dc2f5a87c2d53f4477fead7cffa34591efe4377a6ad"
+    },
+    "footer-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "1099964217b39f238af3b5177522b10b9b21fbcd72ee58e79675c7ec370b7c8c"
+    },
+    "generative-engine-optimization": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "1faad941f6b0281b9156b57c8b6e6f9cda5a22cbb9b71e880f762cb9b6afe0cb"
+    },
+    "github": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "1c21f12f5de0fdacf62af934bbb7e7860e2e9bf5ed85153f123f8f915292e2cc"
+    },
+    "glossary-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "357e3d2b755d6063cc1237bdb154d8cbbece4c6e58151a87ad59323ccf78a899"
+    },
+    "google-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ccd122a2b63bfe0092e957c069c0976ce20d130ce8f828098f2d805e1416d81d"
+    },
+    "google-search-console": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "00070f9d64948fbcb65a118b756ad3f1b2f2feb90e0746ba7926a4a2a3ba8d0c"
+    },
+    "grid": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "3b1dc273cc6bea2ea0a1aa9daf51f89e678f588a2a960b528afc136af0478847"
+    },
+    "grokipedia-recommendations": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "08a6b155a2f2ffa5020b60fadab299bdfd988e9f77d3243628f0044ea52bd9f7"
+    },
+    "growth-funnel": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0d536527216bdec3a2f0c573004fbf8c69a9d51fe856cb66d7b34fc34465951c"
+    },
+    "gtm-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9d61be55341be2623d6083eef3655a97e9ddbed16849817023b06af11a0d0e93"
+    },
+    "heading-structure": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "3ea14cd0b64533c4f1ae9fd9d4a5d3a31e3473e945d4baf7bc1071a49f889101"
+    },
+    "hero-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "33ff695d19ddd1d73160360d34c5de758fcc8506bf265991253578d66188b8ca"
+    },
+    "homepage-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "4525147c5621f407031ffd2031b844ae31614b72a3c2653b5ebcae71d73b66c5"
+    },
+    "image-optimization": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "7d579827c728c3cd6af1ba1082c5d4cdf6fcb3a959c3dde32a6e04ee1e26a90e"
+    },
+    "indexing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "069d430ea56fffec9e5d25b728480d558f76679e610ebb4749c4c8ab6c1ec633"
+    },
+    "indexnow": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "701a353e05ecc30417d73c9036658850a614ef6f14e37e309b1273e60605c348"
+    },
+    "indie-hacker-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "b34227752f2b7fb1522cf862c6a21b3f95146a65706fd86044c161c39a80284f"
+    },
+    "influencer-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "36a66a625027b8cd7eeb901ee61a86be5a6ba744f7a5836a936d49b3e4dc59d7"
+    },
+    "integrated-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "4ad4878006a26ca2c9390de762bb3c11f77058c404414f1331e02eafaa902281"
+    },
+    "integrations-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "680702b510a7d7b45fac5055f23dd026d39f2fbc329259104219826c596636c6"
+    },
+    "internal-links": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "899a57492947798dc7bf7d95ebb4021a6d03c32f3eae34660a92027fa59fc113"
+    },
+    "keyword-research": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "35fd5cae840f7202305ebb82bd0e50292b9a4faf7e1aed1bf83c4aba2cafba79"
+    },
+    "landing-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "52f20b32b57a985a5a59741934b4df14a94bf0fcc8936d657849d77565bd73ed"
+    },
+    "legal-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "b6b2100c1cf9516ba42676e8e9186a657b9c22442a8145c436a78957acfcedcb"
+    },
+    "link-building": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "920350c194ebd2be3f9ba77daa6bafe5ffa23e3b6462c585cc5172cb2e9db9be"
+    },
+    "linkedin-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "d6a131f80589f2c6987c9d6db64a6ad4168f4b243c43b23766e03ca7be0fab2d"
+    },
+    "linkedin-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "d4181ab02876eb91d8c60ff9ca15edb0686c04dea91e0c7984155357e962734e"
+    },
+    "list": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "bcaec459216bee426f4e14cb712455fd0a191aab6cd437523467d7f20a7918be"
+    },
+    "local-seo": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "383bc40bf7ea1918fc8af725bad7cd7f180293a9d762a6ad6f77c4acc07cbe67"
+    },
+    "localization-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9851bbc19c8b51bb77e8a7b7a5c4c983e03d8ab76621f2e9b5c1cec35fe07fb9"
+    },
+    "logo-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "4742c2df83ce4cca83ecbecdc1ea88341ef4a38f5a6dc8a9706f7168e0f70a24"
+    },
+    "masonry": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "3b3ab50d0cba9e2a393dffeed4fdd5ae87f83948a44ab1e55a1d8e71a491c1f9"
+    },
+    "media-kit-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "63804516b3d5c5fd32c4c55498e62c824c17d9439c4c95f31a71910dd2765f0e"
+    },
+    "medium-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "89748e4ea39cc11cced9ccd8ad2596cf99024ccdc13853201823e6590f726c26"
+    },
+    "meta-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "097c38e2229cf1cddd04c9239e3689f1ce42bde0ef8ff3db1d8a5a615e1699d8"
+    },
+    "meta-description": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5709fc738ae28a08e616854c6007d25d4d2ef8ea2a2f687154062a01b2af1429"
+    },
+    "migration-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "263e1fa583e36961fe5fc8384aa535cd7fba6abc9228249076d3ccbd5d11710d"
+    },
+    "mobile-friendly": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "45a02273eaa910f2c02cde3cb2c675ba25e5ae34d9f0d1357dfae9dd061c4fc4"
+    },
+    "multi-domain-brand-seo": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "89845a0c41562d5da1e8846036f22fa5a7a5687cc098767a3a493b11d34d549b"
+    },
+    "native-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a23ca13edfb5f6c1f7a3725798133615b3823b4d9a893c3e797a6d18c178201c"
+    },
+    "navigation-menu-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "afc53ef1816334626b1d81844c62f177a0a75b0338c757074c621e0622919756"
+    },
+    "newsletter-signup-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "2ecd5f422cc705ab089d7f6bb5cf51dd1642a47dec68e02c2017a340be999ba2"
+    },
+    "open-graph": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "afecfb6acd7c2fa139cde1ad2f7797198033fae7b0dff449be8ae4ce5955abd2"
+    },
+    "open-source-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "b294c58addc5ed64640c883770417902d5a448990d74108a85478926f9b43b23"
+    },
+    "page-metadata": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a12b401aa1c76aa9263613a433773eb510fd08156237f5fb5ed0eb306d8edaeb"
+    },
+    "paid-ads-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ce55922f956e0bb8c73c4a18aabcf30de82ef3007d3fdcfa0e7f0ed3fe69da99"
+    },
+    "parasite-seo": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "e56d10580bad3bd9cb663836de1b0cb2b0e23637fc849cb8c79ed1ce6a7fe7c8"
+    },
+    "pinterest-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a5e3bda03c8b6f2faaa37634bf79ff523219e2c9205607229867c10f5de4b3b0"
+    },
+    "pmf-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f52496442a206c74c669b29c6df2d9a8628c20746b83c1e9487cdaa4ff074984"
+    },
+    "podcast-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "d215b8f8fff2347ff286d4025acd1feeab07797a6fd4cd431f6fe52d09c6e416"
+    },
+    "popup-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "cb109b16d4687356771d17c3e18179d232ef855ba030c4e1aefe8c20183f1bdb"
+    },
+    "press-coverage-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "e5fac6411469702b0e2ce198a3c8e7bbfbcbf10bcb3e92937d7a49f7c65899d6"
+    },
+    "pricing-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "c1fb9be148f4ba4917263ec56971940a6a456466902fde1f3518e300a49eae3f"
+    },
+    "pricing-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9644ce5f59b399d01d93588317100f20608a863ccfc158042a2bd6ea5f48b2ee"
+    },
+    "privacy-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "68ad8252a19a1696c12a0975104afe5edda9a511afec5e99ca2ec5f384c2b28f"
+    },
+    "product-hunt-launch": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "941bc6106d2915d9dcd5df80c46866033c8f05a39e49640300ff083a812fe571"
+    },
+    "product-launch": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "ebf8bb2acc2d6b295b7db652cf92db85a894aecbf913876d17db039f9414911d"
+    },
+    "products-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "8636e61c088fa42c4e6e80c92160d8bbf1bf156deca04d425197774d9f023e62"
+    },
+    "programmatic-seo": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "fe90606eec20a28ab2e73b6459d544dd04ff9138f8f8ef2347c1c31458f2e5fd"
+    },
+    "public-relations": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "58f6e216ee67c348a3eedeece1f3b4a8fdc398fce9c1a11f9c4c78b5a1990e40"
+    },
+    "rebranding-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0a444fc333e6c1671215708761f8d9614b40b0dcc0b6c527eab7d8ad4849569e"
+    },
+    "reddit-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "63a44938e6417f7f4bd517e8d27ec5828c143cdae0ce4675aee9437cf997160c"
+    },
+    "reddit-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "e6a187305f2b1e0acc0dfa6594f435b3a4f2bbe6f400fe6902a67940736cf229"
+    },
+    "referral-program": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f7108cafd963f62b5ea84c4cc85a81ff67ed3c979e2d4854c2677f7c834130a7"
+    },
+    "refund-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6a35d0c7c6abedce7033e747082a300fffd13547d69d7dad2d530881fdaa6ab0"
+    },
+    "rendering-strategies": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "1025f2c1c3406a82da597bd590cb544df7231ecdc28ae19afb072d17c6dd9d64"
+    },
+    "research-sources": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "03d3299a262de84ae01e7fd256451bddb9db36c014386a5cd5205ced03a0d091"
+    },
+    "resources-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "b8d6d1936e23cc80dbaf96641ed90671a767d1c9f627fb2b514932ba22f701e6"
+    },
+    "retention-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "c0e0956df0f255d6f88000fafbee075e66733c34891ece84fcaea12a24a40af6"
+    },
+    "robots-txt": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a3d0259ca04242e2480e4fa6cca4a04380fee31a790c1808e0d537d6c0ee6909"
+    },
+    "schema-markup": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "1d0ce706c2ec9c119593cf8f1750b68af7a903996adc5a859cf5d5653282235f"
+    },
+    "seo-audit": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a1bffc9a2cd4778aa6ca3de4ee94e28c6149936bb6fc31ffd8376100cb91cd1d"
+    },
+    "seo-monitoring": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "88ec1c290d84e608cbffd3a49b6252ff9cff59d2246e31f828c9a218e44f67da"
+    },
+    "seo-strategy": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "326c01a179a4aaf7b85b4142f3fcf0f540bbb1f10ef03154b11f4f8190aae978"
+    },
+    "serp-features": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9fa7240a75a86bf8afeb85f6c85f5a05e7892175526681a7346e5b384e751566"
+    },
+    "services-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "27450879bfa390423a73363ac6d118309fe603041fab478f761c99e25a43491b"
+    },
+    "shipping-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "5b3a2d9c51046723a0b83e1db5feb216af2829df2a18ade5d8aa55ef7e0d40a9"
+    },
+    "showcase-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "801f475280c33aab78a8fdaaf134eebc2e0906f12650f26806ee1853daa22b21"
+    },
+    "sidebar-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "04c6db7722a501d422d1bf061266b88a5842e2d3f3bae9ca05ce2cb790489420"
+    },
+    "signup-login-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9eccb5fc30dee66983ca9a5f14595be0eec6d3e43fd1dc490e502c8950819ef4"
+    },
+    "site-crawlability": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "9355cb479d27fd7e098c06af6e5a0a84284772929a9cd973446c815724765547"
+    },
+    "social-share-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f47b14aee5129083945932b2f8db0b04db93fbe48c2fbefaf99b700fcb6003ae"
+    },
+    "solutions-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "204ec7ec38237d24a7960e070f6999919b65aa4c8b936220c56d7b27129ebb53"
+    },
+    "startups-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "e880f8950396358f8831811f054467a2fdee0bc5c190e651fbcf4b358e44eb9e"
+    },
+    "status-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f6e93e5f87d518e47aa68207536d74d8723476357313688a386b59a0d3b4ec93"
+    },
+    "tab-accordion": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "18d8b0c7f31c8c966ccf12394e5207289637a24ed1a7e1f4f8e9bdc69deead24"
+    },
+    "template-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "26b4541df12339344d98f312362eca4e285a473d726f0fabb4fd4f8ec9b03222"
+    },
+    "terms-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0ebd520374bfde0a505fcba487ba52fc0253cb0d70a0f66f69d1cf6318ef71fd"
+    },
+    "testimonials-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "c77e9a6cc98838f03d809788d463e0d584cf99041b9e5a6a6b55a9e55b4ded45"
+    },
+    "tiktok-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "58a753e4fa07c3af015b82974812de15c91f075c48ae43c7a513ee7ab5c75739"
+    },
+    "tiktok-captions": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "206bcd1f033c39c3398ad059d49726e55477563ad9278584278280de5fc57e00"
+    },
+    "title-tag": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "7ff78a2d5a140b0cf2ccdb1c62cf339885c32239d6b2d1dc9b1bad60869f7b47"
+    },
+    "toc-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "7f79357daa3575dc7693ee4852a4a542c63a96ad9d98f8b6e4de11d32c5e1a8d"
+    },
+    "tools-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "82d750c50f9a7e145b70c9c45f61c2728709fb9413cd46d7a48ed1646d632476"
+    },
+    "top-banner-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "7c576f11148414007f810737dc6c8d8abb9b889b68733930fd03a12f248b5d33"
+    },
+    "traffic-analysis": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "59367b1ff4db56085dc26544360cb6bcfe4794a7f197fec0555cabdfdb3e4f85"
+    },
+    "translation": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "d3b45338971cf0a423a2646a5ac300a2ce6f0d3f63c7c63185be30380726511a"
+    },
+    "trust-badges-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "83f2c2e046a70daa9b3b3255dc31f4f755bcfe553991c6a36db54c0a4d0c5a8c"
+    },
+    "twitter-cards": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "01d6f6f4014ec23f278883b385b548f05f42db7ca3849759f066bfd05ababde1"
+    },
+    "twitter-x-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0e2d2397a907204665d926f5d9f590ac3fb246dbb88879ea49cdccc70c06369f"
+    },
+    "url-slug-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "c03d2cc58f463cfb7978ef9dd110678b18e694c23aca4a39feca6f6a943ab437"
+    },
+    "url-structure": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0853759250591849a80a1130705ae9273113103dae9c27468db5a5511a9250d6"
+    },
+    "use-cases-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "8809c4ea86cb78b6d87ebd3dfe250e70d44e36168f7ff744cc951468f467d78e"
+    },
+    "video-marketing": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "8c2f35fd1ec0f450fa5b08bd984e5a8ad49302599ff1d6f5ae09ad5643fe1b66"
+    },
+    "video-optimization": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "2250c8857fb45e57a0ad832afbf7b5881b1228b8ac96bea015a3a0654d670715"
+    },
+    "visual-content": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "0bb7913c8029cc6b1f7bc0b28480336d8687668e65689607cbfd66f0b8ebe7d2"
+    },
+    "website-structure": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "6a34cc1dbfcbb928fcb5a220e6f0bbfd4e954aaed5373d25973e2c00141ead56"
+    },
+    "xml-sitemap": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "a31f865edc5a9286256dc3f62696381b1c3d0f8dfe59310c5799d9256afdf6d0"
+    },
+    "youtube-ads": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "f9b2dd6d4c42abc93f0e0e6b7cb866958a5988a9aa3e4a43309a967ecd7357f4"
+    },
+    "youtube-seo": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "4478054c52b552eeda451be978c52dd7143f2a98f33a69a1a463d9a0eb7ae0f6"
+    }
+  }
+}

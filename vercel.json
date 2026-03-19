@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/5d6f3058001c4ea8a1db7fc252f417fb.txt",
+      "destination": "/api/indexnow/verify/?key=5d6f3058001c4ea8a1db7fc252f417fb"
+    }
+  ]
+}

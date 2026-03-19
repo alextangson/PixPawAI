@@ -52,12 +52,12 @@ export async function generateMetadata({
       // 5. Add to .env.local: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=YOUR_CODE
     },
     alternates: {
-      canonical: `https://pixpawai.com/${lang}`,
+      canonical: `https://pixpawai.com/${lang}/`,
       languages: {
-        'en': 'https://pixpawai.com/en',
-        'x-default': 'https://pixpawai.com/en',
+        'en': 'https://pixpawai.com/en/',
+        'x-default': 'https://pixpawai.com/en/',
         // Add more languages when available:
-        // 'zh': 'https://pixpawai.com/zh',
+        // 'zh': 'https://pixpawai.com/zh/',
       },
     },
     icons: {
@@ -72,7 +72,7 @@ export async function generateMetadata({
     openGraph: {
       title: dict.metadata.title,
       description: dict.metadata.description,
-      url: `https://pixpawai.com/${lang}`,
+      url: `https://pixpawai.com/${lang}/`,
       siteName: "PixPaw AI",
       locale: 'en_US',
       type: "website",
