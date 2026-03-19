@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { Locale } from '@/lib/i18n-config';
 import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
-import { BreadcrumbSchema, ItemListSchema } from '@/components/seo/page-schema';
+import { BreadcrumbSchema } from '@/components/seo/page-schema';
 import { SHOP_PRODUCTS } from '@/lib/seo/shop-products';
 
 export async function generateMetadata({
@@ -76,23 +76,18 @@ function ShopProductsSchema() {
   );
 }
 
-export default async function ShopLayout({
+export default function ShopLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ lang: Locale }>;
 }) {
-  const { lang } = await params;
-  const pageUrl = `${SEO_SITE_URL}/${lang}/shop`;
-
   return (
     <>
       <ShopProductsSchema />
       <BreadcrumbSchema
         items={[
-          { name: 'Home', url: `${SEO_SITE_URL}/${lang}` },
-          { name: 'Shop', url: pageUrl },
+          { name: 'Home', url: `${SEO_SITE_URL}/en` },
+          { name: 'Shop', url: `${SEO_SITE_URL}/en/shop` },
         ]}
       />
       {children}
