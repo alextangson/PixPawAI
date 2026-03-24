@@ -55,7 +55,7 @@ export async function generateMetadata({
       canonical: `https://pixpawai.com/${lang}/`,
       languages: {
         'en': 'https://pixpawai.com/en/',
-        'x-default': 'https://pixpawai.com/en/',
+        'x-default': 'https://pixpawai.com/',
         // Add more languages when available:
         // 'zh': 'https://pixpawai.com/zh/',
       },
