@@ -21,8 +21,8 @@ const pacifico = Pacifico({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com'),
-  title: "PixPaw AI - Turn Your Pet Into a Stunning Portrait",
-  description: "Transform your furry friend into a custom AI-generated pet portrait in just 30 seconds. Stunning art with 4K downloads and custom merchandise.",
+  title: "AI Pet Portrait Generator | Turn Pet Photos Into Art | PixPawAI",
+  description: "Create a unique AI pet portrait in seconds. Perfect gift for pet lovers & memorials. 15+ art styles, free to try — ships on canvas, mugs & pillows worldwide.",
   keywords: ["pet portraits", "AI art", "AI pet portraits", "pet photo to art", "custom pet art", "custom pet merchandise"],
   authors: [{ name: "PixPaw AI" }],
   manifest: '/manifest.json',
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     apple: '/favicons/apple-touch-icon.png',
   },
   openGraph: {
-    title: "PixPaw AI - Turn Your Pet Into a Stunning Portrait",
-    description: "Transform your furry friend into a custom AI-generated pet portrait in just 30 seconds.",
+    title: "AI Pet Portrait Generator | Turn Pet Photos Into Art | PixPawAI",
+    description: "Create a unique AI pet portrait in seconds. Perfect gift for pet lovers & memorials. 15+ art styles, free to try — ships on canvas, mugs & pillows worldwide.",
     url: "https://pixpawai.com/en",
     siteName: "PixPaw AI",
     locale: "en_US",
@@ -50,14 +50,14 @@ export const metadata: Metadata = {
         url: '/brand/png/logo-orange-256.png',
         width: 256,
         height: 256,
-        alt: 'PixPaw AI - Turn Your Pet Into a Stunning Portrait',
+        alt: 'AI Pet Portrait Generator | PixPaw AI',
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PixPaw AI - Turn Your Pet Into a Stunning Portrait",
-    description: "Transform your furry friend into a custom AI-generated pet portrait in just 30 seconds.",
+    title: "AI Pet Portrait Generator | Turn Pet Photos Into Art | PixPawAI",
+    description: "Create a unique AI pet portrait in seconds. Perfect gift for pet lovers & memorials. 15+ art styles, free to try — ships on canvas, mugs & pillows worldwide.",
     images: ['/brand/png/logo-orange-256.png'],
   },
 }
