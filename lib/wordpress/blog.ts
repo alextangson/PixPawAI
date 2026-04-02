@@ -118,6 +118,20 @@ function cleanText(text: string): string {
   return cleaned;
 }
 
+const WORDPRESS_ORIGIN = process.env.WORDPRESS_ORIGIN || process.env.NEXT_PUBLIC_WORDPRESS_ORIGIN;
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
+
+/**
+ * Replace WordPress/Hostinger image URLs in HTML content with the canonical
+ * site domain so social-share previews and OG images always resolve correctly.
+ * Falls back to a no-op if WORDPRESS_ORIGIN is not configured.
+ */
+function rewriteContentImageUrls(html: string): string {
+  if (!WORDPRESS_ORIGIN) return html;
+  const origin = WORDPRESS_ORIGIN.replace(/\/+$/, '');
+  return html.replaceAll(origin, SITE_ORIGIN.replace(/\/+$/, ''));
+}
+
 /**
  * Transform WordPress post to normalized BlogArticle format
  */
@@ -126,7 +140,7 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
   const featuredMedia = post._embedded?.['wp:featuredmedia']?.[0];
   const cleanTitle = cleanText(post.title.rendered);
   const coverImage = featuredMedia ? {
-    url: featuredMedia.source_url,
+    url: rewriteContentImageUrls(featuredMedia.source_url),
     alt: featuredMedia.alt_text || cleanTitle,
     width: featuredMedia.media_details?.width || 1200,
     height: featuredMedia.media_details?.height || 630,
@@ -214,7 +228,7 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     slug: post.slug,
     title: cleanTitle,
     excerpt: cleanExcerpt,
-    content: post.content.rendered,
+    content: rewriteContentImageUrls(post.content.rendered),
     coverImage,
     category,
     author,

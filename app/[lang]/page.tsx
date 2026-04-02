@@ -130,7 +130,7 @@ export default function Home() {
       {/* Structured Data for SEO */}
       <HomeSchema 
         lang={lang}
-        faqs={dict.faq?.items?.map((item: any) => ({
+        faqs={dict.faq?.questions?.map((item: any) => ({
           question: item.question,
           answer: item.answer
         }))}
