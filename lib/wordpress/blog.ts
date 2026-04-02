@@ -118,18 +118,24 @@ function cleanText(text: string): string {
   return cleaned;
 }
 
-const WORDPRESS_ORIGIN = process.env.WORDPRESS_ORIGIN || process.env.NEXT_PUBLIC_WORDPRESS_ORIGIN;
-const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
+const WORDPRESS_ORIGIN = (process.env.WORDPRESS_ORIGIN || process.env.NEXT_PUBLIC_WORDPRESS_ORIGIN || '').replace(/\/+$/, '');
+const SITE_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com').replace(/\/+$/, '');
 
 /**
- * Replace WordPress/Hostinger image URLs in HTML content with the canonical
- * site domain so social-share previews and OG images always resolve correctly.
- * Falls back to a no-op if WORDPRESS_ORIGIN is not configured.
+ * Parse a WordPress API response, rewriting all Hostinger/WP-origin URLs
+ * (og_image, featured_media, content images, yoast_head_json, etc.) to the
+ * canonical site domain in one pass — before JSON.parse so no field is missed.
  */
+async function wpParseJson<T>(res: Response): Promise<T> {
+  const raw = await res.text();
+  const sanitized = WORDPRESS_ORIGIN ? raw.replaceAll(WORDPRESS_ORIGIN, SITE_ORIGIN) : raw;
+  return JSON.parse(sanitized) as T;
+}
+
+/** @deprecated Use wpParseJson instead. Kept for any remaining direct HTML rewrites. */
 function rewriteContentImageUrls(html: string): string {
   if (!WORDPRESS_ORIGIN) return html;
-  const origin = WORDPRESS_ORIGIN.replace(/\/+$/, '');
-  return html.replaceAll(origin, SITE_ORIGIN.replace(/\/+$/, ''));
+  return html.replaceAll(WORDPRESS_ORIGIN, SITE_ORIGIN);
 }
 
 /**
@@ -140,7 +146,7 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
   const featuredMedia = post._embedded?.['wp:featuredmedia']?.[0];
   const cleanTitle = cleanText(post.title.rendered);
   const coverImage = featuredMedia ? {
-    url: rewriteContentImageUrls(featuredMedia.source_url),
+    url: featuredMedia.source_url,
     alt: featuredMedia.alt_text || cleanTitle,
     width: featuredMedia.media_details?.width || 1200,
     height: featuredMedia.media_details?.height || 630,
@@ -228,7 +234,7 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     slug: post.slug,
     title: cleanTitle,
     excerpt: cleanExcerpt,
-    content: rewriteContentImageUrls(post.content.rendered),
+    content: post.content.rendered,
     coverImage,
     category,
     author,
@@ -358,9 +364,7 @@ export async function getBlogArticles(
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
-    const posts: WordPressPost[] = await res.json();
-
-    console.log(`[WordPress] Received ${posts.length} posts from API`);
+    const posts: WordPressPost[] = await wpParseJson(res);;
 
     // Log first post structure for debugging
     if (posts.length > 0) {
@@ -502,7 +506,7 @@ export async function getBlogArticleForHub(
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
-    const posts: WordPressPost[] = await res.json();
+    const posts: WordPressPost[] = await wpParseJson(res);
 
     console.log(`[WordPress] getBlogArticle - Received ${posts.length} posts for slug "${slug}"`);
 
@@ -634,7 +638,7 @@ export async function getRelatedArticles(
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
-    const posts: WordPressPost[] = await res.json();
+    const posts: WordPressPost[] = await wpParseJson(res);
 
     // Additional client-side filtering to ensure only PixPaw-related posts
     const filteredPosts = posts.filter(post => {
@@ -677,7 +681,7 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
-    const categories: WordPressCategory[] = await res.json();
+    const categories: WordPressCategory[] = await wpParseJson(res);
     return categories[0] || null;
   } catch (error) {
     console.error(`[WordPress] Error fetching category "${slug}":`, error);
@@ -733,7 +737,7 @@ export async function getCategories(): Promise<WordPressCategory[]> {
       throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
     }
 
-    const categories = await res.json();
+    const categories = await wpParseJson<WordPressCategory[]>(res);
     console.log(`[WordPress] Successfully fetched ${categories.length} categories`);
     return categories;
   } catch (error) {
