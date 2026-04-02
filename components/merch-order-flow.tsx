@@ -22,13 +22,10 @@ interface Props {
 
 const PRODUCT_EMOJIS: Record<string, string> = {
   pillow: '🛋️',
-  'wall-art': '🖼️',
+  'canvas-print': '🖼️',
   't-shirt': '👕',
   'phone-case': '📱',
   mug: '☕',
-  tumbler: '🥤',
-  socks: '🧦',
-  'floor-mat': '🏠',
 };
 
 type Step = 'product' | 'shipping' | 'review' | 'success';
