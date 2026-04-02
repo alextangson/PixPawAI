@@ -1,105 +1,21 @@
-'use client';
-
-import { type Locale } from '@/lib/i18n-config';
-import { getDictionary } from '@/lib/dictionary';
+import type { Locale } from '@/lib/i18n-config';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { PRINTFUL_PRODUCTS } from '@/lib/printful/config';
 
-export default function ShopPage() {
-  const params = useParams();
-  const lang = (params?.lang as Locale) || 'en';
-  
-  const [dict, setDict] = useState<any>(null);
-
-  useEffect(() => {
-    getDictionary(lang).then(setDict);
-  }, [lang]);
-
-  if (!dict) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-coral border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const products = [
-    {
-      name: 'Custom Pillow',
-      description: 'Cozy 16x16" plush cushion',
-      price: 'from $49',
-      image: 'https://images.unsplash.com/photo-1560790671-bd42f6076e85?w=600&h=600&fit=crop',
-      productId: 'pillow',
-      featured: true,
-    },
-    {
-      name: 'Framed Wall Art',
-      description: 'Premium canvas frame',
-      price: 'from $59',
-      image: 'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=600&h=600&fit=crop',
-      productId: 'wall-art',
-      featured: true,
-    },
-    {
-      name: 'Custom T-Shirt',
-      description: 'Soft cotton, all sizes',
-      price: 'from $29',
-      image: 'https://images.unsplash.com/photo-1576566527230-e99e0b760156?w=600&h=600&fit=crop',
-      productId: 't-shirt',
-      featured: false,
-    },
-    {
-      name: 'Phone Case',
-      description: 'Durable protective case',
-      price: 'from $24',
-      image: 'https://images.unsplash.com/photo-1610945265064-003444b62e9a?w=600&h=600&fit=crop',
-      productId: 'phone-case',
-      featured: false,
-    },
-    {
-      name: 'Ceramic Mug',
-      description: '11oz coffee mug',
-      price: 'from $19',
-      image: 'https://images.unsplash.com/photo-1578159311134-f099bbd66868?w=600&h=600&fit=crop',
-      productId: 'mug',
-      featured: false,
-    },
-    {
-      name: 'Travel Tumbler',
-      description: '20oz stainless steel',
-      price: 'from $34',
-      image: 'https://images.unsplash.com/photo-1627483262614-ad7d792b5606?w=600&h=600&fit=crop',
-      productId: 'tumbler',
-      featured: false,
-    },
-    {
-      name: 'Patterned Socks',
-      description: 'All-over print design',
-      price: 'from $14',
-      image: 'https://images.unsplash.com/photo-1603291606188-367759410317?w=600&h=600&fit=crop',
-      productId: 'socks',
-      featured: false,
-    },
-    {
-      name: 'Floor Mat',
-      description: '24x36" doormat',
-      price: 'from $39',
-      image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&h=600&fit=crop',
-      productId: 'floor-mat',
-      featured: false,
-    },
-  ];
+export default async function ShopPage({
+  params,
+}: {
+  params: Promise<{ lang: Locale }>;
+}) {
+  const { lang } = await params;
+  const products = Object.values(PRINTFUL_PRODUCTS);
 
   return (
     <main className="min-h-screen bg-cream">
       {/* Header Section */}
       <section className="bg-gradient-to-br from-coral to-orange-600 text-white py-20 relative overflow-hidden">
-        {/* Decorative Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-32 h-32">
             <Sparkles className="w-full h-full text-white" />
@@ -131,67 +47,75 @@ export default function ShopPage() {
                   How It Works
                 </h3>
                 <p className="text-gray-700 leading-relaxed">
-                  Choose a product below, then upload your pet's photo. Our AI will generate a stunning portrait, 
-                  and you can preview it on your selected item before ordering. No design skills needed!
+                  Choose a product below, then select one of your AI pet portraits or create a new one.
+                  Preview your design on the product and order — we handle printing and shipping!
                 </p>
               </div>
             </div>
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product, index) => (
-              <Link
-                key={index}
-                href={`/${lang}?product=${product.productId}`}
-                className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer"
-              >
-                {/* Featured Badge */}
-                {product.featured && (
-                  <div className="absolute top-4 right-4 z-20 bg-coral text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                    <Sparkles className="w-3 h-3" />
-                    Popular
-                  </div>
-                )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.map((product) => {
+              const minPrice = Math.round(
+                Math.min(...product.variants.map((v) => v.price)) / 100
+              );
 
-                {/* Product Image */}
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  
-                  {/* Hover Overlay with CTA */}
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
-                    <div className="bg-white text-black font-bold px-6 py-3 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-2xl flex items-center gap-2">
-                      Create Now
-                      <ArrowRight className="w-4 h-4" />
+              return (
+                <Link
+                  key={product.productId}
+                  href={`/${lang}/shop/${product.productId}`}
+                  className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer"
+                >
+                  {/* Featured Badge */}
+                  {product.featured && (
+                    <div className="absolute top-4 right-4 z-20 bg-coral text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                      <Sparkles className="w-3 h-3" />
+                      Popular
+                    </div>
+                  )}
+
+                  {/* Product Image */}
+                  <div className="relative h-64 overflow-hidden">
+                    <Image
+                      src={product.imageUrl}
+                      alt={product.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                    {/* Hover Overlay with CTA */}
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
+                      <div className="bg-white text-black font-bold px-6 py-3 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-2xl flex items-center gap-2">
+                        Customize Now
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Product Info */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-darkgray mb-2 group-hover:text-coral transition-colors">
-                    {product.name}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-3">
-                    {product.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-coral font-bold text-lg">
-                      {product.price}
-                    </span>
-                    <span className="text-gray-500 text-sm flex items-center gap-1">
-                      Customize
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
+                  {/* Product Info */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-darkgray mb-2 group-hover:text-coral transition-colors">
+                      {product.name}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {product.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-coral font-bold text-lg">
+                        from ${minPrice}
+                      </span>
+                      <span className="text-gray-500 text-sm flex items-center gap-1">
+                        Customize
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Bottom CTA */}
@@ -201,7 +125,7 @@ export default function ShopPage() {
                 Not Sure Which Product to Choose?
               </h3>
               <p className="text-gray-600 mb-6">
-                Start by creating your pet's portrait first. You can choose the product later!
+                Start by creating your pet&apos;s portrait first. You can choose the product later!
               </p>
               <Link
                 href={`/${lang}`}

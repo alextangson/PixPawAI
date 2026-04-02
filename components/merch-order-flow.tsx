@@ -18,6 +18,10 @@ interface ShippingForm {
 
 interface Props {
   generationId: string;
+  /** Pre-selected product ID — skips product selection step */
+  initialProductId?: string;
+  /** Pre-selected variant ID */
+  initialVariantId?: number;
 }
 
 const PRODUCT_EMOJIS: Record<string, string> = {
@@ -30,10 +34,13 @@ const PRODUCT_EMOJIS: Record<string, string> = {
 
 type Step = 'product' | 'shipping' | 'review' | 'success';
 
-export function MerchOrderFlow({ generationId }: Props) {
-  const [step, setStep] = useState<Step>('product');
-  const [selectedProduct, setSelectedProduct] = useState<PrintfulProduct | null>(null);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+export function MerchOrderFlow({ generationId, initialProductId, initialVariantId }: Props) {
+  const preSelectedProduct = initialProductId ? PRINTFUL_PRODUCTS[initialProductId] ?? null : null;
+  const preSelectedVariantId = initialVariantId ?? preSelectedProduct?.variants[0]?.variantId ?? null;
+
+  const [step, setStep] = useState<Step>(preSelectedProduct ? 'shipping' : 'product');
+  const [selectedProduct, setSelectedProduct] = useState<PrintfulProduct | null>(preSelectedProduct);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(preSelectedVariantId);
   const [shipping, setShipping] = useState<ShippingForm>({
     name: '', email: '', address1: '', address2: '',
     city: '', state_code: '', country_code: 'US', zip: '',
@@ -81,8 +88,8 @@ export function MerchOrderFlow({ generationId }: Props) {
       setCosts(data.costs);
       setPaypalOrderId(data.paypalOrderId);
       setStep('review');
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -93,8 +100,6 @@ export function MerchOrderFlow({ generationId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      // In production, open PayPal JS SDK popup here first, then confirm.
-      // For now we call confirm directly (assumes PayPal approved externally).
       const res = await fetch('/api/printful/confirm-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,8 +108,8 @@ export function MerchOrderFlow({ generationId }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order confirmation failed');
       setStep('success');
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -116,7 +121,7 @@ export function MerchOrderFlow({ generationId }: Props) {
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h2>
         <p className="text-gray-600">
-          Your {selectedProduct?.name} is being prepared. You'll receive a shipping confirmation by email.
+          Your {selectedProduct?.name} is being prepared. You&apos;ll receive a shipping confirmation by email.
         </p>
       </div>
     );
@@ -124,7 +129,7 @@ export function MerchOrderFlow({ generationId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Step 1: Product selection */}
+      {/* Step 1: Product selection (skipped when pre-selected) */}
       {step === 'product' && (
         <>
           <h2 className="text-xl font-bold text-gray-900">Choose a Product</h2>
@@ -190,10 +195,21 @@ export function MerchOrderFlow({ generationId }: Props) {
         <>
           <div className="flex items-center gap-3 mb-2">
             <button onClick={() => setStep('product')} className="text-sm text-coral hover:underline">
-              ← Back
+              &larr; Back
             </button>
             <h2 className="text-xl font-bold text-gray-900">Shipping Details</h2>
           </div>
+
+          {/* Show selected product summary when pre-selected */}
+          {preSelectedProduct && selectedProduct && (
+            <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
+              <span className="text-2xl">{PRODUCT_EMOJIS[selectedProduct.productId]}</span>
+              <div>
+                <div className="font-semibold text-sm text-gray-900">{selectedProduct.name}</div>
+                <div className="text-xs text-gray-500">{selectedVariant?.label} — ${selectedVariant ? (selectedVariant.price / 100).toFixed(0) : ''}</div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3">
             {[
@@ -247,7 +263,7 @@ export function MerchOrderFlow({ generationId }: Props) {
             className="w-full h-12 bg-coral hover:bg-orange-600 text-white font-bold"
           >
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            Calculate Shipping & Tax
+            Calculate Shipping &amp; Tax
           </Button>
         </>
       )}
@@ -257,7 +273,7 @@ export function MerchOrderFlow({ generationId }: Props) {
         <>
           <div className="flex items-center gap-3 mb-2">
             <button onClick={() => setStep('shipping')} className="text-sm text-coral hover:underline">
-              ← Back
+              &larr; Back
             </button>
             <h2 className="text-xl font-bold text-gray-900">Order Summary</h2>
           </div>
@@ -297,7 +313,7 @@ export function MerchOrderFlow({ generationId }: Props) {
           </Button>
 
           <p className="text-xs text-center text-gray-400">
-            Powered by PayPal · Fulfilled by Printful · Ships in 3–7 business days
+            Powered by PayPal &middot; Fulfilled by Printful &middot; Ships in 3&ndash;7 business days
           </p>
         </>
       )}

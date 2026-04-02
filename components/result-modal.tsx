@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { BRANDING } from '@/lib/constants/branding'
 import { ArtCardModal } from '@/components/art-card-modal'
-import { ShopFakeDoorDialog } from '@/components/shop-fake-door-dialog'
+import Link from 'next/link'
 import { ReferralLinkModal } from '@/components/referral-link-modal'
 import {
   DropdownMenu,
@@ -96,8 +96,8 @@ export function ResultModal({
   // Art Card Modal
   const [artCardModalOpen, setArtCardModalOpen] = useState(false)
   
-  // Shop Fake Door Dialog
-  const [shopFakeDoorOpen, setShopFakeDoorOpen] = useState(false)
+  // Shop link
+  const shopUrl = `/en/shop/pillow?generationId=${generationId}`
   
   // Referral Modal
   const [showReferralPrompt, setShowReferralPrompt] = useState(false)
@@ -131,13 +131,7 @@ export function ResultModal({
   if (!isOpen) return null
 
   const handleShopClick = () => {
-    // Log fake door interaction
-    console.log('🚪 FakeDoor_Shop_Clicked', {
-      source: 'ResultModal',
-      generationId,
-      timestamp: new Date().toISOString()
-    })
-    setShopFakeDoorOpen(true)
+    window.location.href = shopUrl
   }
 
   const handleShareClick = () => {
@@ -908,13 +902,7 @@ export function ResultModal({
         />
       )}
 
-      {/* Shop Fake Door Dialog */}
-      <ShopFakeDoorDialog
-        isOpen={shopFakeDoorOpen}
-        onClose={() => setShopFakeDoorOpen(false)}
-        generationId={generationId}
-        petName={shareTitle || 'your pet'}
-      />
+      {/* Shop link is now handled via navigation */}
 
       {/* Referral Link Modal */}
       {showReferralPrompt && (
