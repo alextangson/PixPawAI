@@ -45,7 +45,7 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     printfulProductId: 48,
     placementKey: 'default',
     description: 'Cozy plush cushion with your pet portrait',
-    imageUrl: 'https://images.unsplash.com/photo-1560790671-bd42f6076e85?w=600&h=600&fit=crop',
+    imageUrl: '/products/generated/pillow.png',
     featured: true,
     variants: [
       { variantId: 5254819432, label: '18×18"', price: 4499 },
@@ -58,7 +58,7 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     printfulProductId: 2,
     placementKey: 'front',
     description: 'Premium framed wall art for your home',
-    imageUrl: 'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=600&h=600&fit=crop',
+    imageUrl: '/products/generated/canvas-print.png',
     featured: true,
     variants: [
       { variantId: 5254819144, label: '11×14"', price: 4999 },
@@ -71,7 +71,7 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     printfulProductId: 71,
     placementKey: 'front',
     description: 'Soft cotton tee in all sizes',
-    imageUrl: 'https://images.unsplash.com/photo-1576566527230-e99e0b760156?w=600&h=600&fit=crop',
+    imageUrl: '/products/generated/t-shirt.png',
     featured: false,
     variants: [
       { variantId: 5254819464, label: 'White S', price: 2999 },
@@ -86,7 +86,7 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     printfulProductId: 266,
     placementKey: 'case',
     description: 'Durable protective case with your pet art',
-    imageUrl: 'https://images.unsplash.com/photo-1610945265064-003444b62e9a?w=600&h=600&fit=crop',
+    imageUrl: '/products/generated/phone-case.png',
     featured: false,
     variants: [
       { variantId: 5254819508, label: 'iPhone 11 Pro Max', price: 3499 },
@@ -100,7 +100,7 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     printfulProductId: 19,
     placementKey: 'front',
     description: '11oz coffee mug with your pet portrait',
-    imageUrl: 'https://images.unsplash.com/photo-1578159311134-f099bbd66868?w=600&h=600&fit=crop',
+    imageUrl: '/products/generated/mug.png',
     featured: false,
     variants: [
       { variantId: 5254819366, label: 'White 11oz', price: 1999 },

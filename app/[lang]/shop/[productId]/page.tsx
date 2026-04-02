@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${product.name} — Custom Pet Portrait`,
       description: product.description,
       url: pageUrl,
-      images: [{ url: product.imageUrl, width: 600, height: 600, alt: product.name }],
+      images: [{ url: `${SEO_SITE_URL}${product.imageUrl}`, width: 600, height: 600, alt: product.name }],
     },
   };
 }
