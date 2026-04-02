@@ -18,23 +18,26 @@ function toSlug(value: string) {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const staticPages: MetadataRoute.Sitemap = ([
-    { url: `${SITE_URL}/en/`, changeFrequency: 'daily' as const, priority: 1 },
-    { url: `${SITE_URL}/en/gallery/`, changeFrequency: 'daily' as const, priority: 0.9 },
-    { url: `${SITE_URL}/en/blog/`, changeFrequency: 'daily' as const, priority: 0.8 },
-    { url: `${SITE_URL}/en/pricing/`, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${SITE_URL}/en/shop/`, changeFrequency: 'weekly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/about/`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/faq/`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/glossary/`, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${SITE_URL}/en/alternatives/`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/use-cases/`, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${SITE_URL}/en/contact/`, changeFrequency: 'yearly' as const, priority: 0.4 },
-    { url: `${SITE_URL}/en/privacy/`, changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${SITE_URL}/en/terms/`, changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${SITE_URL}/en/refund/`, changeFrequency: 'yearly' as const, priority: 0.3 },
-  ]).map((page) => ({ ...page, lastModified: now }));
+  // Use real last-modified dates so Google doesn't waste crawl budget
+  // re-crawling pages that haven't changed. Update these when you make
+  // meaningful content changes to the corresponding page.
+  const staticPages: MetadataRoute.Sitemap = [
+    { url: `${SITE_URL}/en/`,              changeFrequency: 'daily'   as const, priority: 1,   lastModified: new Date('2025-03-01') },
+    { url: `${SITE_URL}/en/gallery/`,      changeFrequency: 'daily'   as const, priority: 0.9, lastModified: now },
+    { url: `${SITE_URL}/en/blog/`,         changeFrequency: 'daily'   as const, priority: 0.8, lastModified: now },
+    { url: `${SITE_URL}/en/pricing/`,      changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2025-03-01') },
+    { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2025-03-01') },
+    { url: `${SITE_URL}/en/shop/`,         changeFrequency: 'weekly'  as const, priority: 0.7, lastModified: new Date('2025-03-01') },
+    { url: `${SITE_URL}/en/about/`,        changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/faq/`,          changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2025-03-01') },
+    { url: `${SITE_URL}/en/glossary/`,     changeFrequency: 'monthly' as const, priority: 0.6, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/alternatives/`, changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/use-cases/`,    changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/contact/`,      changeFrequency: 'yearly'  as const, priority: 0.4, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/privacy/`,      changeFrequency: 'yearly'  as const, priority: 0.3, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/terms/`,        changeFrequency: 'yearly'  as const, priority: 0.3, lastModified: new Date('2025-01-01') },
+    { url: `${SITE_URL}/en/refund/`,       changeFrequency: 'yearly'  as const, priority: 0.3, lastModified: new Date('2025-01-01') },
+  ];
 
   const stylePages: MetadataRoute.Sitemap = STYLES.map((style) => ({
     url: `${SITE_URL}/en/styles/${toSlug(style.id)}/`,
