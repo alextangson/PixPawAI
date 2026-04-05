@@ -36,22 +36,6 @@ const nextConfig = {
         destination: '/:lang/blog/:slug*',
         statusCode: 301, // permanent redirect
       },
-      // Trailing slash enforcement (301 instead of framework 308)
-      {
-        source: '/:lang/blog/:slug',
-        destination: '/:lang/blog/:slug/',
-        permanent: true,
-      },
-      {
-        source: '/:lang/gallery/:slug',
-        destination: '/:lang/gallery/:slug/',
-        permanent: true,
-      },
-      {
-        source: '/:lang/styles/:slug',
-        destination: '/:lang/styles/:slug/',
-        permanent: true,
-      },
     ]
   },
   images: {
