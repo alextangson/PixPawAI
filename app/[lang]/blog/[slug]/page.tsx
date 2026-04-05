@@ -24,6 +24,28 @@ interface ArticlePageProps {
   }>;
 }
 
+/**
+ * Per-slug SEO overrides for meta title/description.
+ * These take priority over WordPress-sourced metadata to fix GSC CTR issues.
+ */
+const SEO_OVERRIDES: Record<string, { title: string; description: string }> = {
+  'best-ai-pet-portrait-generator': {
+    title: '7 Best AI Pet Portrait Generators in 2026 (Tested & Ranked)',
+    description:
+      "We tested 7 AI pet portrait generators and ranked them. PixPawAI, Pawcaso, DreamPets — here's which one gives the best results for your money.",
+  },
+  'pet-portrait-gift-guide': {
+    title: 'Best Pet Portrait Gift Ideas in 2026 — For Every Budget & Occasion',
+    description:
+      'Find the perfect pet portrait gift for any occasion. From AI-generated art to custom canvas prints, discover unique gifts pet lovers will treasure.',
+  },
+  'pet-loss-gift-ideas': {
+    title: '15 Meaningful Pet Loss Gift Ideas That Actually Help (2026 Guide)',
+    description:
+      'Searching for pet loss gift ideas? Discover 15 thoughtful gifts that actually help grieving pet parents, from memorial portraits to living tributes.',
+  },
+};
+
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug, lang } = await params;
   const article = await findHubArticleBySlug(slug, 'blog');
@@ -33,18 +55,21 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   }
 
   const articleUrl = `https://pixpawai.com/${lang}/blog/${slug}/`;
+  const seoOverride = SEO_OVERRIDES[slug];
+  const metaTitle = seoOverride?.title ?? article.metaTitle;
+  const metaDescription = seoOverride?.description ?? article.metaDescription;
 
   return {
-    title: article.metaTitle,
-    description: article.metaDescription,
+    title: metaTitle,
+    description: metaDescription,
     keywords: article.seoKeywords,
     alternates: {
       canonical: articleUrl,
     },
     openGraph: {
       type: 'article',
-      title: article.metaTitle,
-      description: article.metaDescription,
+      title: metaTitle,
+      description: metaDescription,
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt,
       authors: [article.author.name],
@@ -54,8 +79,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     },
     twitter: {
       card: 'summary_large_image',
-      title: article.metaTitle,
-      description: article.metaDescription,
+      title: metaTitle,
+      description: metaDescription,
       images: article.coverImage ? [article.coverImage.url] : [],
     },
   };
