@@ -20,8 +20,8 @@ export function BlogArticleSchema({ article, url }: BlogArticleSchemaProps) {
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
     author: {
-      '@type': 'Organization',
-      name: article.author.name || 'PixPaw AI',
+      '@type': 'Person',
+      name: article.author.name || 'PixPaw AI Team',
       url: 'https://pixpawai.com',
     },
     publisher: {

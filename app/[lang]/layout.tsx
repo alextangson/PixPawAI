@@ -8,7 +8,7 @@ import { Footer } from '@/components/footer'
 import { getUser } from '@/lib/auth/actions'
 import { ReferralWelcomeToast } from '@/components/referral-welcome-toast'
 import { Analytics } from '@/components/analytics'
-import { OrganizationSchema, FAQPageSchema } from '@/components/home-schema'
+import { OrganizationSchema } from '@/components/home-schema'
 
 const inter = Inter({
   subsets: ["latin"],
@@ -112,10 +112,6 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Organization Schema - appears on all pages */}
         <OrganizationSchema />
-        {/* FAQ Schema - homepage FAQ section, helps Google show rich results */}
-        {dict.faq?.questions?.length > 0 && (
-          <FAQPageSchema faqs={dict.faq.questions} />
-        )}
         {/* Preload LCP image for faster first contentful paint */}
         <link
           rel="preload"

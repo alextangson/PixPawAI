@@ -119,13 +119,13 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
   });
 
   const breadcrumbItems = [
-    { label: 'Home', href: `/${lang}` },
-    { label: 'Blog', href: `/${lang}/blog` },
+    { label: 'Home', href: `/${lang}/` },
+    { label: 'Blog', href: `/${lang}/blog/` },
     { label: article.title },
   ];
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
-  const articleUrl = `${siteUrl}/${lang}/blog/${article.slug}`;
+  const articleUrl = `${siteUrl}/${lang}/blog/${article.slug}/`;
 
   return (
     <>
