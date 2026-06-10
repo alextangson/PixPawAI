@@ -12,6 +12,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { X, Shield, Zap, CheckCircle, Sparkles, Lock, Clock } from 'lucide-react';
 import { PayPalButtonsAdvanced } from './paypal-buttons-advanced';
+import { trackEvent, trackPurchase } from '@/components/analytics';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -78,13 +79,17 @@ export function PaymentModal({
   const [paymentSuccess, setPaymentSuccess] = React.useState(false);
   const tierInfo = TIER_INFO[tier];
   const Icon = tierInfo.icon;
+  const numericPrice = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
 
   // Pre-warm PayPal token when modal opens
   React.useEffect(() => {
     if (isOpen) {
       // Reset success state when modal opens
       setPaymentSuccess(false);
-      
+
+      // Funnel event: reached checkout (bottom-of-funnel for paid-traffic tests)
+      trackEvent('begin_checkout', { value: numericPrice, currency: 'USD', tier });
+
       // Warmup token in background
       fetch('/api/payments/paypal/warmup', { method: 'POST' })
         .then(() => console.log('🔥 PayPal token pre-warmed'))
@@ -95,7 +100,24 @@ export function PaymentModal({
   // Handle payment success
   const handlePaymentSuccess = (payment: any) => {
     setPaymentSuccess(true);
-    
+
+    // Conversion event: fire GA4 purchase so paid-traffic ROAS/CPA is measurable
+    const transactionId =
+      payment?.id ?? payment?.transactionId ?? payment?.orderId ?? '';
+    trackPurchase({
+      transactionId,
+      value: numericPrice,
+      currency: 'USD',
+      items: [
+        {
+          item_id: tier,
+          item_name: tierInfo.name,
+          price: numericPrice,
+          quantity: 1,
+        },
+      ],
+    });
+
     // Auto-close after 5 seconds and reload
     setTimeout(() => {
       onClose();

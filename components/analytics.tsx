@@ -105,11 +105,39 @@ export function trackConversion(
   }
 }
 
+interface PurchaseItem {
+  item_id: string;
+  item_name: string;
+  price: number;
+  quantity: number;
+}
+
+/**
+ * Track a GA4 ecommerce `purchase` event (value + transaction_id + items).
+ * Mark this as a key event in GA4 to compute ROAS/CPA for paid-traffic tests.
+ * Usage: trackPurchase({ transactionId, value: 19.99, items: [...] })
+ */
+export function trackPurchase(params: {
+  transactionId: string;
+  value: number;
+  currency?: string;
+  items: PurchaseItem[];
+}) {
+  if (typeof window === 'undefined' || !(window as any).gtag) return;
+  (window as any).gtag('event', 'purchase', {
+    transaction_id: params.transactionId,
+    value: params.value,
+    currency: params.currency ?? 'USD',
+    items: params.items,
+  });
+}
+
 /**
  * Recommended events to track:
- * 
+ *
  * - 'page_view' - Automatic
  * - 'generate_image' - When user generates an image
+ * - 'begin_checkout' - When the payment modal opens
  * - 'purchase' - When user buys credits
  * - 'share' - When user shares to gallery
  * - 'download' - When user downloads an image
