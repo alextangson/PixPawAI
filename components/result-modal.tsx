@@ -9,6 +9,7 @@ import { BRANDING } from '@/lib/constants/branding'
 import { ArtCardModal } from '@/components/art-card-modal'
 import Link from 'next/link'
 import { ReferralLinkModal } from '@/components/referral-link-modal'
+import { trackEvent } from '@/components/analytics'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,8 +97,9 @@ export function ResultModal({
   // Art Card Modal
   const [artCardModalOpen, setArtCardModalOpen] = useState(false)
   
-  // Shop link
-  const shopUrl = `/en/shop/pillow?generationId=${generationId}`
+  // Shop link — canvas matches the wall-art mockup shown on the "Love it" screen
+  // and fits the memorial/gift scenario better than pillow (higher AOV too)
+  const shopUrl = `/en/shop/canvas-print?generationId=${generationId}`
   
   // Referral Modal
   const [showReferralPrompt, setShowReferralPrompt] = useState(false)
@@ -131,6 +133,7 @@ export function ResultModal({
   if (!isOpen) return null
 
   const handleShopClick = () => {
+    trackEvent('merch_cta_click', { product_id: 'canvas-print' })
     window.location.href = shopUrl
   }
 
