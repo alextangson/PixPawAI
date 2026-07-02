@@ -517,7 +517,8 @@ export async function POST(request: NextRequest) {
 
     // Get client IP for guest credit tracking
     const clientIp = getClientIp(request)
-    const userIdForRecord = user?.id || `guest_${clientIp}`
+    const userIdForRecord = user?.id || `guest_${clientIp}` // display/logging only — never a DB uuid
+    const storageOwnerId = user?.id || 'guest' // storage folder name (IPs contain ':' which storage keys reject)
 
     // 🛡️ Rate Limiting: 智能速率限制（登录用户 5次/分钟，匿名 3次/分钟）
     const rateLimit = await checkRateLimitSmart(request, 'generate', user?.id)
@@ -660,17 +661,19 @@ export async function POST(request: NextRequest) {
     const filterResult = filterPrompt(userPrompt || '')
     
     if (filterResult.blocked) {
-      // Log violation
-      await logViolation({
-        userId: userIdForRecord,
-        violationType: 'sensitive_prompt',
-        prompt: userPrompt,
-        metadata: {
-          matchedWords: filterResult.matchedBlacklist,
-          style,
-          timestamp: new Date().toISOString()
-        }
-      })
+      // Log violation (logged-in users only — moderation_logs.user_id is a uuid)
+      if (user) {
+        await logViolation({
+          userId: user.id,
+          violationType: 'sensitive_prompt',
+          prompt: userPrompt,
+          metadata: {
+            matchedWords: filterResult.matchedBlacklist,
+            style,
+            timestamp: new Date().toISOString()
+          }
+        })
+      }
       
       return NextResponse.json(
         { 
@@ -853,7 +856,7 @@ export async function POST(request: NextRequest) {
           imageUrl,
           targetWidth,
           targetHeight,
-          userIdForRecord,
+          storageOwnerId,
           crypto.randomUUID()  // Generate temp ID for preprocessing
         )
         console.log('✅ Image pre-processed successfully')
@@ -1114,7 +1117,7 @@ export async function POST(request: NextRequest) {
         
         const { publicUrl } = await generateWithReplicate(
           finalPrompt,
-          userIdForRecord,
+          storageOwnerId,
           'test-' + crypto.randomUUID(),
           processedImageUrl,
           finalStrength,
@@ -1186,13 +1189,15 @@ export async function POST(request: NextRequest) {
     // Generate Art Card title
     const artCardTitle = generateArtCardTitle(petName, styleConfig.label || style)
 
-    // For guest users, we use a temporary user ID (client IP) for the generation record
-    // This allows tracking but won't persist permanently
+    // Guest generations have user_id = NULL (guest IP is kept in metadata).
+    // Guests have no auth session, so their insert must go through the admin
+    // client — RLS only allows inserts where auth.uid() = user_id.
+    const adminSupabase = createAdminClient()
 
-    const { data: generation, error: genError } = await supabase
+    const { data: generation, error: genError } = await (user ? supabase : adminSupabase)
       .from('generations')
       .insert({
-        user_id: userIdForRecord,
+        user_id: user?.id ?? null,
         status: 'processing',
         prompt: finalPrompt,
         style: style || 'test-style',  // Use temp ID for create mode
@@ -1265,7 +1270,7 @@ export async function POST(request: NextRequest) {
 
       const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
         finalPrompt,
-        userIdForRecord, // Use temp ID for guests
+        storageOwnerId,
         generation.id,
         processedImageUrl,  // Pre-processed image (already correct dimensions)
         finalStrength,  // Use frontend or database strength
@@ -1280,7 +1285,6 @@ export async function POST(request: NextRequest) {
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
-      const adminSupabase = createAdminClient()
       const { error: updateError } = await adminSupabase
         .from('generations')
         .update({
@@ -1429,8 +1433,8 @@ export async function POST(request: NextRequest) {
       // Generation failed, update status and refund credits (if logged in user)
       console.error('Generation failed:', error)
 
-      // Update record to failed status
-      await supabase
+      // Update record to failed status (admin client: guests can't pass RLS)
+      await adminSupabase
         .from('generations')
         .update({
           status: 'failed',
