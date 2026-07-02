@@ -37,13 +37,6 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
       highlight: true,
     },
     {
-      name: featuresDict.resolution || 'Image Resolution',
-      free: '1024px',
-      starter: '1024px',
-      pro: '2048px',
-      master: '4096px (4K)',
-    },
-    {
       name: featuresDict.aspectRatios || 'Aspect Ratios',
       free: '2 basic',
       starter: 'All 9 types',

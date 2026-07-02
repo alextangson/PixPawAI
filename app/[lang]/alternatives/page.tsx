@@ -127,7 +127,7 @@ export default function AlternativesPage() {
           <ul className="space-y-3 text-gray-700">
             <li className="flex gap-2"><span className="text-coral font-bold">1.</span> Styles are tuned specifically for pets — preserving breed features, coat patterns, and eye color.</li>
             <li className="flex gap-2"><span className="text-coral font-bold">2.</span> Results in under 40 seconds, not days. Try multiple styles before deciding.</li>
-            <li className="flex gap-2"><span className="text-coral font-bold">3.</span> Print-ready 2048px output for wall art, gifts, and merchandise.</li>
+            <li className="flex gap-2"><span className="text-coral font-bold">3.</span> Print-ready high-resolution output for wall art, gifts, and merchandise.</li>
             <li className="flex gap-2"><span className="text-coral font-bold">4.</span> First-time satisfaction guarantee — unhappy results get an instant credit refund.</li>
             <li className="flex gap-2"><span className="text-coral font-bold">5.</span> 10% of profits donated to animal shelters.</li>
           </ul>
