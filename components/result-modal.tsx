@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { HdUnlockDialog } from '@/components/hd-unlock-dialog'
 
 // ✨ Magical placeholder suggestions for naming PixPaw Stars
 const PIXPAW_NAME_SUGGESTIONS = [
@@ -116,6 +117,7 @@ export function ResultModal({
   // Image loading state
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [hdDialogOpen, setHdDialogOpen] = useState(false)
 
   // ✨ Random placeholder for naming (stable per render)
   const randomPlaceholder = useMemo(() => {
@@ -308,20 +310,9 @@ export function ResultModal({
     document.body.removeChild(link)
   }
 
-  const handleDownloadOriginal = async () => {
+  const downloadFreeWatermarked = async () => {
     setIsDownloading(true)
     try {
-      // Entitled users (paid tier owner / admin / HD unlock) get the clean original.
-      // Block ② TODO: guest HD buyers have no session — this fetch must forward
-      // their ?orderId= (returned by capture-order) or paid guests will 403 here.
-      const res = await fetch(`/api/generations/${generationId}/hd`)
-      if (res.ok) {
-        const { downloadUrl } = await res.json()
-        triggerDownload(downloadUrl, `pixpaw-${generationId}-hd.png`)
-        return
-      }
-
-      // Everyone else: free watermarked download.
       trackEvent('download_free', { generation_id: generationId })
       const watermarkedUrl = generationMetadata?.watermarkedUrl
       if (watermarkedUrl) {
@@ -329,12 +320,33 @@ export function ResultModal({
         triggerDownload(watermarkedUrl, `pixpaw-${generationId}.png`)
         return
       }
-
       // Legacy generations (pre server-watermark): keep the client-side path.
       await addWatermarkAndDownload(generatedImageUrl, `pixpaw-${generationId}.png`)
     } catch (error) {
-      console.error('Download failed:', error)
+      console.error('Free download failed:', error)
       window.open(generatedImageUrl, '_blank')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  const handleDownloadOriginal = async () => {
+    setIsDownloading(true)
+    try {
+      // Entitled users (paid tier owner / admin / prior HD unlock) get the clean original.
+      const res = await fetch(`/api/generations/${generationId}/hd`)
+      if (res.ok) {
+        const { downloadUrl } = await res.json()
+        triggerDownload(downloadUrl, `pixpaw-${generationId}-hd.png`)
+        return
+      }
+      // Un-entitled: surface the download-intent gate ($9.99 HD vs free watermarked).
+      trackEvent('hd_unlock_view', { generation_id: generationId })
+      setHdDialogOpen(true)
+    } catch (error) {
+      console.error('Download gate check failed:', error)
+      // Network hiccup on the gate check — fall back to the free download rather than blocking.
+      await downloadFreeWatermarked()
     } finally {
       setIsDownloading(false)
     }
@@ -558,22 +570,13 @@ export function ResultModal({
                   <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
                   {!isShared ? (
                     <>
-                      <Button
-                        onClick={handleShareClick}
-                        disabled={showShareInput}
-                        className="w-full sm:col-span-2 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-12 text-base shadow-lg"
-                      >
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Share to Gallery (+1 Credit)
-                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
-                            variant="outline"
-                            className="w-full sm:col-span-2 border-2 hover:bg-gray-50 font-medium h-11"
+                            className="w-full sm:col-span-2 bg-gray-900 hover:bg-gray-800 text-white font-bold h-12 text-base shadow-lg"
                           >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
+                            <Download className="w-5 h-5 mr-2" />
+                            Download High-Res
                             <ChevronDown className="w-4 h-4 ml-2" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -588,6 +591,15 @@ export function ResultModal({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <Button
+                        onClick={handleShareClick}
+                        disabled={showShareInput}
+                        variant="outline"
+                        className="w-full sm:col-span-2 border-2 border-coral/40 text-coral hover:bg-coral/5 font-semibold h-11"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Share to Gallery (+1 Credit)
+                      </Button>
                     </>
                   ) : (
                     <>
@@ -930,6 +942,14 @@ export function ResultModal({
           onClose={() => setShowReferralPrompt(false)}
         />
       )}
+
+      <HdUnlockDialog
+        isOpen={hdDialogOpen}
+        generationId={generationId}
+        imageUrl={generatedImageUrl}
+        onFreeDownload={downloadFreeWatermarked}
+        onClose={() => setHdDialogOpen(false)}
+      />
     </>
   )
 }

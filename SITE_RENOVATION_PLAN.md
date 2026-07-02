@@ -56,7 +56,8 @@
 - 主变现从积分包 → keepsake + 数字高清上卖；积分降级为次要"更多生成/高清下载"
 - 重写 pricing 页定位
 - 时机：Stage 1 跑通、keepsake 转化被验证后再做（避免一次动太多）
-- **[2026-07-02 已上线] 数字高清底座**：服务端水印 + 私有原图桶 + $9.99 单次 HD 解锁后端（PayPal）+ 门控下载路由，生产验证通过（详见 `docs/superpowers/plans/2026-07-01-hd-unlock-server-watermark.md`）。购买 UI 与 CTA 重排在下一计划。顺带修复：游客生成（nullable user_id）、Art Card 覆写 metadata、全站虚假 2K/4K 宣传清零。
+- **[2026-07-02 已上线] 数字高清底座**：服务端水印 + 私有原图桶 + $9.99 单次 HD 解锁后端（PayPal）+ 门控下载路由，生产验证通过（详见 `docs/superpowers/plans/2026-07-01-hd-unlock-server-watermark.md`）。顺带修复：游客生成（nullable user_id）、Art Card 覆写 metadata、全站虚假 2K/4K 宣传清零。
+- **[2026-07-02 已上线] HD 购买 UI（Block ②）**：结果弹窗"下载即闸口"——免费用户点 Download High-Res 弹出 $9.99 无水印 vs 免费带水印二选一（`HdUnlockDialog` + `PayPalButtonsHdUnlock`），支付成功用返回的 `?orderId=` 自动交付干净原图（闭合游客依赖）。左栏轻重排：Download 提为主按钮、Share 降为轮廓。详见 `docs/superpowers/plans/2026-07-02-hd-unlock-purchase-ui.md`。**待你做**：真金 PayPal 走一单验证 capture 后退款；GA4 DebugView 确认 `hd_unlock_view` / `purchase`。
 
 ### Stage 5 · 首页重定位（最后）
 - 生成器 → "honor / celebrate your pet" 礼品品牌
