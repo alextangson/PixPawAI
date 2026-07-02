@@ -146,7 +146,7 @@ export function HowItWorks({ dict, onOpenUpload }: HowItWorksProps) {
                 Preview & Customize
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Love the result? Download in 4K or print it on a pillow.
+                Love the result? Download in HD or print it on a pillow.
               </p>
             </div>
           </div>

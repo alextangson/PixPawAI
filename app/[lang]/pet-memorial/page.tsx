@@ -23,7 +23,7 @@ const MEMORIAL_FAQS = [
   },
   {
     question: 'Can I print it?',
-    answer: 'Yes. Up to 2048×2048px — suitable for canvas, framed prints, pillows, or mugs.',
+    answer: 'Yes. High-resolution PNG output — suitable for canvas, framed prints, pillows, or mugs.',
   },
   {
     question: 'How long does it take?',

@@ -14,6 +14,7 @@
 
 **Known accepted gaps:**
 - Legacy generations (created before this ships) keep their clean originals in the public bucket. New code paths handle them via fallbacks; we do not migrate old files.
+- Abandoned `hd_unlocks` rows stay `pending` forever (same lifecycle as the existing `payments` table — no reaper project-wide). Accepted as debt; a per-generation attempt cap (5/hour) bounds the growth. Revisit if a cleanup cron is ever added for `payments`.
 - Server can't fire GA4 events; `hd_unlock` purchase events ship with the result-modal HD purchase UI in the Block ② plan. Only `download_free` lands here.
 - A generation can theoretically be unlocked twice by two different buyers; both get what they paid for. No dedup beyond the pre-purchase `alreadyUnlocked` check.
 

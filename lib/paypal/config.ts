@@ -38,6 +38,13 @@ export const PRICING_TIERS = {
   },
 } as const;
 
+// One-time per-generation HD unlock (watermark-free download)
+export const HD_UNLOCK = {
+  amount: '9.99',
+  name: 'HD Portrait Unlock',
+  description: 'Watermark-free high-resolution portrait download + personal print license',
+} as const;
+
 export type PricingTier = keyof typeof PRICING_TIERS;
 
 // Validate tier

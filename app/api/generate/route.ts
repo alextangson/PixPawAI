@@ -18,6 +18,7 @@ import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, b
 import { startFilteredFeaturesCollection, logFilteredFeature, getFilteredFeatures } from '@/lib/prompt-system/conflict-cleaner'
 import { checkRateLimitSmart, getClientIp } from '@/lib/rate-limit'
 import { checkGuestFreeTier, incrementGuestUsage } from '@/lib/guest-credits'
+import { applyWatermark } from '@/lib/watermark'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -296,11 +297,12 @@ async function uploadBase64ToStorage(
   base64Data: string,
   userId: string,
   generationId: string,
-  format: 'png' | 'webp' = 'png'
+  format: 'png' | 'webp' = 'png',
+  bucket: string = 'generated-results'
 ): Promise<{ publicUrl: string; storagePath: string }> {
   // Use admin client to bypass RLS policies
   const supabase = createAdminClient()
-  
+
   // Convert Base64 to Buffer
   const buffer = Buffer.from(base64Data, 'base64')
 
@@ -309,9 +311,9 @@ async function uploadBase64ToStorage(
   const extension = format === 'webp' ? 'webp' : 'png'
   const filePath = `${userId}/${timestamp}-${generationId}.${extension}`
 
-  // Upload to Supabase Storage (public bucket)
+  // Upload to Supabase Storage
   const { data, error } = await supabase.storage
-    .from('generated-results')
+    .from(bucket)
     .upload(filePath, buffer, {
       contentType: `image/${format}`,
       cacheControl: '31536000', // 1 year
@@ -323,11 +325,13 @@ async function uploadBase64ToStorage(
     throw new Error(`Failed to upload to storage: ${error.message}`)
   }
 
-  // Get public URL
+  // Get public URL. NOTE: for a private bucket (e.g. generated-originals) this
+  // URL will 403 if fetched directly — private-bucket callers must use
+  // storagePath (with a signed URL / server-side read) instead of publicUrl.
   const { data: publicUrlData } = supabase.storage
-    .from('generated-results')
+    .from(bucket)
     .getPublicUrl(data.path)
-  
+
   return {
     publicUrl: publicUrlData.publicUrl,
     storagePath: data.path
@@ -353,7 +357,13 @@ async function generateWithReplicate(
   goFast: boolean = true,   // Test mode: speed vs quality
   megapixels: string = "1",
   outputQuality: number = 80
-): Promise<{ publicUrl: string; storagePath: string; originalPath?: string }> {
+): Promise<{
+  publicUrl: string
+  storagePath: string
+  originalPath?: string
+  watermarkedUrl: string
+  watermarkedPath: string
+}> {
   console.log('🚀 generateWithReplicate called:', {
     generationId,
     userId: userId.substring(0, 8) + '...',
@@ -474,31 +484,38 @@ async function generateWithReplicate(
     const arrayBuffer = await imageResponse.arrayBuffer()
     const originalBuffer = Buffer.from(arrayBuffer)
 
-    // Use sharp to compress image for fast loading (WebP format, 80% quality)
+    // Server-side watermark: public assets are watermarked at rest.
+    // The clean original goes to the PRIVATE bucket and is only reachable
+    // through /api/generations/[id]/hd (paid tier / admin / HD unlock).
+    const watermarkedBuffer = await applyWatermark(originalBuffer)
+
     const sharp = require('sharp')
-    const compressedBuffer = await sharp(originalBuffer)
+    const compressedBuffer = await sharp(watermarkedBuffer)
       .webp({ quality: 80 })
       .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
       .toBuffer()
 
-    // Convert compressed image to Base64 for storage
-    const compressedBase64 = compressedBuffer.toString('base64')
-    
-    // Upload compressed image to Supabase Storage for quick preview
-    const compressedResult = await uploadBase64ToStorage(compressedBase64, userId, generationId, 'webp')
-    
-    // Also save original image info in metadata for high-quality download
-    // Store original buffer reference for later download if needed
-    const originalBase64 = originalBuffer.toString('base64')
-    const originalResult = await uploadBase64ToStorage(originalBase64, userId, `${generationId}_original`, 'png')
-    
+    // Watermarked webp — fast preview (public)
+    const compressedResult = await uploadBase64ToStorage(
+      compressedBuffer.toString('base64'), userId, generationId, 'webp')
+
+    // Watermarked full-res PNG — free download (public)
+    const watermarkedResult = await uploadBase64ToStorage(
+      watermarkedBuffer.toString('base64'), userId, `${generationId}_wm`, 'png')
+
+    // Clean original PNG — private bucket, gated
+    const originalResult = await uploadBase64ToStorage(
+      originalBuffer.toString('base64'), userId, `${generationId}_original`, 'png',
+      'generated-originals')
+
     console.log(`✅ Image compression: Original=${(originalBuffer.length / 1024 / 1024).toFixed(2)}MB, Compressed=${(compressedBuffer.length / 1024 / 1024).toFixed(2)}MB`)
-    
-    // Return compressed URL for fast display, but include original path in metadata
-    return { 
-      publicUrl: compressedResult.publicUrl, 
+
+    return {
+      publicUrl: compressedResult.publicUrl,
       storagePath: compressedResult.storagePath,
-      originalPath: originalResult.storagePath
+      originalPath: originalResult.storagePath,
+      watermarkedUrl: watermarkedResult.publicUrl,
+      watermarkedPath: watermarkedResult.storagePath,
     }
   } catch (error: any) {
     console.error('❌ Replicate API error:', error)
@@ -1268,7 +1285,7 @@ export async function POST(request: NextRequest) {
       const finalOutputQuality = outputQuality !== undefined ? outputQuality : defaultOutputQuality
       const finalMegapixels = megapixels || "1"
 
-      const { publicUrl: publicImageUrl, storagePath, originalPath} = await generateWithReplicate(
+      const { publicUrl: publicImageUrl, storagePath, originalPath, watermarkedUrl, watermarkedPath } = await generateWithReplicate(
         finalPrompt,
         storageOwnerId,
         generation.id,
@@ -1285,6 +1302,25 @@ export async function POST(request: NextRequest) {
 
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
+      // Kept as a local so later metadata writes (art card below) merge on top of it
+      // instead of resurrecting the stale insert-time snapshot in generation.metadata.
+      const successMetadata = {
+        ...generation.metadata,
+        completedAt: new Date().toISOString(),
+        storageUrl: publicImageUrl,
+        originalImagePath: originalPath, // High-quality PNG for download
+        originalBucket: 'generated-originals', // clean original lives in the private bucket
+        watermarkedPath,                       // full-res watermarked PNG (public, free download)
+        preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
+        visionAnalysis: petComplexity.keyFeatures || undefined,
+        petComplexity: petComplexity,
+        analysisDataSource: dataSource, // 🆕 Confirm data source used
+        generationParams: {
+          strength: finalStrength,
+          guidance: finalGuidance,
+          aspectRatio: aspectRatio
+        },
+      }
       const { error: updateError } = await adminSupabase
         .from('generations')
         .update({
@@ -1292,21 +1328,7 @@ export async function POST(request: NextRequest) {
           output_url: publicImageUrl, // Compressed WebP for fast preview
           output_storage_path: storagePath, // ✅ Save storage path for reliable deletion
           input_url: imageUrl || '',  // Original image URL (not pre-processed)
-          metadata: {
-            ...generation.metadata,
-            completedAt: new Date().toISOString(),
-            storageUrl: publicImageUrl,
-            originalImagePath: originalPath, // High-quality PNG for download
-            preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
-            visionAnalysis: petComplexity.keyFeatures || undefined,
-            petComplexity: petComplexity,
-            analysisDataSource: dataSource, // 🆕 Confirm data source used
-            generationParams: {
-              strength: finalStrength,
-              guidance: finalGuidance,
-              aspectRatio: aspectRatio
-            },
-          },
+          metadata: successMetadata,
         })
         .eq('id', generation.id)
 
@@ -1345,12 +1367,15 @@ export async function POST(request: NextRequest) {
         if (defaultCardResponse.ok) {
           const { share_card_url } = await defaultCardResponse.json()
           
-          // Update generation with pre-generated card URL
+          // Update generation with pre-generated card URL.
+          // Merge on top of successMetadata — spreading generation.metadata here
+          // would overwrite the success update with the stale insert-time snapshot
+          // (this erased originalImagePath for every generation until 2026-07).
           await adminSupabase
             .from('generations')
             .update({
               metadata: {
-                ...generation.metadata,
+                ...successMetadata,
                 preGeneratedCardUrl: share_card_url
               }
             })
@@ -1424,6 +1449,7 @@ export async function POST(request: NextRequest) {
         success: true,
         generationId: generation.id,
         outputUrl: publicImageUrl,
+        watermarkedUrl, // full-res watermarked PNG public URL for free download
         remainingCredits,
         message: 'Generation completed successfully!',
         isGuest: !user, // Indicate if this was a guest generation
