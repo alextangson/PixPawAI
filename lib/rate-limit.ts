@@ -169,33 +169,45 @@ export async function checkRateLimitSmart(
     };
   }
   
-  // 2. 如果用户已登录，使用更宽松的限制（基于 User ID）
-  if (userId) {
-    const limiter = authenticatedRateLimiters[endpoint];
-    const result = await limiter.limit(userId);
-    
-    console.log(`👤 [Rate Limit] Authenticated user ${userId}: ${result.remaining}/${result.limit} remaining`);
-    
+  // Redis 故障时放行（fail-open）：限流器挂掉不应导致整个接口 500
+  try {
+    // 2. 如果用户已登录，使用更宽松的限制（基于 User ID）
+    if (userId) {
+      const limiter = authenticatedRateLimiters[endpoint];
+      const result = await limiter.limit(userId);
+
+      console.log(`👤 [Rate Limit] Authenticated user ${userId}: ${result.remaining}/${result.limit} remaining`);
+
+      return {
+        success: result.success,
+        limit: result.limit,
+        remaining: result.remaining,
+        reset: result.reset,
+        authenticated: true,
+      };
+    }
+
+    // 3. 匿名用户，使用严格的 IP 限制
+    const limiter = rateLimiters[endpoint];
+    const result = await limiter.limit(clientIp);
+
+    console.log(`🌐 [Rate Limit] Anonymous IP ${clientIp}: ${result.remaining}/${result.limit} remaining`);
+
     return {
       success: result.success,
       limit: result.limit,
       remaining: result.remaining,
       reset: result.reset,
-      authenticated: true,
+      authenticated: false,
+    };
+  } catch (error) {
+    console.error(`❌ [Rate Limit] Redis unavailable, failing open for ${endpoint}:`, error);
+    return {
+      success: true,
+      limit: 0,
+      remaining: 0,
+      reset: Date.now() + 60000,
+      authenticated: !!userId,
     };
   }
-  
-  // 3. 匿名用户，使用严格的 IP 限制
-  const limiter = rateLimiters[endpoint];
-  const result = await limiter.limit(clientIp);
-  
-  console.log(`🌐 [Rate Limit] Anonymous IP ${clientIp}: ${result.remaining}/${result.limit} remaining`);
-  
-  return {
-    success: result.success,
-    limit: result.limit,
-    remaining: result.remaining,
-    reset: result.reset,
-    authenticated: false,
-  };
 }
