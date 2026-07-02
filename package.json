@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:unit": "tsx --test lib/__tests__/*.test.ts",
+    "test:unit": "tsx --test lib/__tests__/*.test.ts lib/hd-unlock/__tests__/*.test.ts",
     "optimize:products": "node scripts/optimize-product-images.js"
   },
   "dependencies": {
