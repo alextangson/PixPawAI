@@ -312,6 +312,8 @@ export function ResultModal({
     setIsDownloading(true)
     try {
       // Entitled users (paid tier owner / admin / HD unlock) get the clean original.
+      // Block ② TODO: guest HD buyers have no session — this fetch must forward
+      // their ?orderId= (returned by capture-order) or paid guests will 403 here.
       const res = await fetch(`/api/generations/${generationId}/hd`)
       if (res.ok) {
         const { downloadUrl } = await res.json()

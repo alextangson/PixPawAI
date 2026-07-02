@@ -49,7 +49,7 @@
       },
       "shop": {
         "title": "Preview & Customize",
-        "description": "Love the result? Download in 4K or print it on a pillow."
+        "description": "Love the result? Download in HD or print it on a pillow."
       }
     }
   },
@@ -134,7 +134,7 @@
       },
       {
         "question": "What file format will I receive?",
-        "answer": "You'll receive high-resolution PNG images (up to 2048×2048 pixels) perfect for printing, sharing on social media, or creating custom merchandise like mugs, pillows, and phone cases."
+        "answer": "You'll receive high-resolution PNG images perfect for printing, sharing on social media, or creating custom merchandise like mugs, pillows, and phone cases."
       },
       {
         "question": "Can I choose specific art styles?",
@@ -311,7 +311,6 @@
         "features": [
           "50 Generation Credits",
           "✨ 3-Image Selection (Choose Best)",
-          "2K High Resolution (2048px)",
           "15 Premium Styles",
           "🔒 Partial Redraw (Coming Soon)",
           "🔒 Image Refinement (1x per image)",
@@ -330,9 +329,8 @@
         "badge": "For Creators",
         "limitedOffer": "Limited Time: $39.99",
         "features": [
-          "200 Ultra-HD Generations",
+          "200 Generation Credits",
           "✨ 5-Image Selection (Best Quality)",
-          "4K Resolution (4096px)",
           "30+ Premium Styles",
           "🔒 Unlimited Partial Redraw",
           "🔒 Image Refinement (3x per image)",
@@ -392,7 +390,7 @@
       "items": [
         {
           "question": "What's the difference between Pro and Master?",
-          "answer": "Pro gives you 3-image selection and 2K resolution, perfect for most users. Master offers 5-image selection, 4K resolution, style mixing, and priority processing - ideal for professional creators and commercial projects."
+          "answer": "Pro gives you 3-image selection, perfect for most users. Master offers 5-image selection, style mixing, and priority processing - ideal for professional creators and commercial projects."
         },
         {
           "question": "Can I print these on t-shirts?",
