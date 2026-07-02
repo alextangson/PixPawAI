@@ -1298,6 +1298,25 @@ export async function POST(request: NextRequest) {
       // 9. Update generation record (status: succeeded)
       // Use admin client to bypass any RLS issues
       const adminSupabase = createAdminClient()
+      // Kept as a local so later metadata writes (art card below) merge on top of it
+      // instead of resurrecting the stale insert-time snapshot in generation.metadata.
+      const successMetadata = {
+        ...generation.metadata,
+        completedAt: new Date().toISOString(),
+        storageUrl: publicImageUrl,
+        originalImagePath: originalPath, // High-quality PNG for download
+        originalBucket: 'generated-originals', // clean original lives in the private bucket
+        watermarkedPath,                       // full-res watermarked PNG (public, free download)
+        preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
+        visionAnalysis: petComplexity.keyFeatures || undefined,
+        petComplexity: petComplexity,
+        analysisDataSource: dataSource, // 🆕 Confirm data source used
+        generationParams: {
+          strength: finalStrength,
+          guidance: finalGuidance,
+          aspectRatio: aspectRatio
+        },
+      }
       const { error: updateError } = await adminSupabase
         .from('generations')
         .update({
@@ -1305,23 +1324,7 @@ export async function POST(request: NextRequest) {
           output_url: publicImageUrl, // Compressed WebP for fast preview
           output_storage_path: storagePath, // ✅ Save storage path for reliable deletion
           input_url: imageUrl || '',  // Original image URL (not pre-processed)
-          metadata: {
-            ...generation.metadata,
-            completedAt: new Date().toISOString(),
-            storageUrl: publicImageUrl,
-            originalImagePath: originalPath, // High-quality PNG for download
-            originalBucket: 'generated-originals', // clean original lives in the private bucket
-            watermarkedPath,                       // full-res watermarked PNG (public, free download)
-            preprocessedUrl: processedImageUrl !== imageUrl ? processedImageUrl : undefined,
-            visionAnalysis: petComplexity.keyFeatures || undefined,
-            petComplexity: petComplexity,
-            analysisDataSource: dataSource, // 🆕 Confirm data source used
-            generationParams: {
-              strength: finalStrength,
-              guidance: finalGuidance,
-              aspectRatio: aspectRatio
-            },
-          },
+          metadata: successMetadata,
         })
         .eq('id', generation.id)
 
@@ -1360,12 +1363,15 @@ export async function POST(request: NextRequest) {
         if (defaultCardResponse.ok) {
           const { share_card_url } = await defaultCardResponse.json()
           
-          // Update generation with pre-generated card URL
+          // Update generation with pre-generated card URL.
+          // Merge on top of successMetadata — spreading generation.metadata here
+          // would overwrite the success update with the stale insert-time snapshot
+          // (this erased originalImagePath for every generation until 2026-07).
           await adminSupabase
             .from('generations')
             .update({
               metadata: {
-                ...generation.metadata,
+                ...successMetadata,
                 preGeneratedCardUrl: share_card_url
               }
             })
