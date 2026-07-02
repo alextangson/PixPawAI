@@ -59,6 +59,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   const [error, setError] = useState<string>('')
   const [errorType, setErrorType] = useState<'credits' | 'storage' | 'api' | 'general' | 'auth'>('general')
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
+  const [watermarkedUrl, setWatermarkedUrl] = useState<string>('')
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
   const [showGuestLoginModal, setShowGuestLoginModal] = useState(false)
 
@@ -257,6 +258,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
         setError('')
         setErrorType('general')
         setGeneratedImageUrl('')
+        setWatermarkedUrl('')
         setProgress(0)
         setMessageIndex(0)
         setStrength(0.92) // Default to 92% for optimal quality
@@ -817,6 +819,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       // 5. Success - jump progress to 100%
       setProgress(100)
       setGeneratedImageUrl(result.outputUrl)
+      setWatermarkedUrl(result.watermarkedUrl || '')
       setRemainingCredits(result.remainingCredits)
       setGenerationId(result.generationId || '')
 
@@ -1738,6 +1741,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 // Reset to upload step
                 setStep('upload')
                 setGeneratedImageUrl('')
+                setWatermarkedUrl('')
                 setGenerationId('')
                 setIsGuestGeneration(false)
                 setGuestRemainingCredits(null)
@@ -1746,7 +1750,8 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                 hasHeterochromia: qualityCheckResult?.hasHeterochromia,
                 heterochromiaDetails: qualityCheckResult?.heterochromiaDetails,
                 style: selectedStyle,
-                strength: strength
+                strength: strength,
+                watermarkedUrl: watermarkedUrl || undefined
               }}
             />
           )}

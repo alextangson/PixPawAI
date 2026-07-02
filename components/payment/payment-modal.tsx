@@ -46,7 +46,6 @@ const TIER_INFO = {
     features: [
       '50 Generation Credits',
       '✨ 3-Image Selection',
-      '2K High Resolution (2048px)',
       '15 Premium Styles',
       '10% Off Physical Products',
     ],
@@ -58,9 +57,8 @@ const TIER_INFO = {
     gradient: 'from-purple-600 to-pink-600',
     badgeColor: 'bg-purple-600',
     features: [
-      '200 Ultra-HD Generations',
+      '200 Generation Credits',
       '5-Image Selection (Best Quality)',
-      '4K Resolution (4096px)',
       '30+ Premium Styles',
       'Priority Queue (2x Speed)',
       'Full Commercial License',

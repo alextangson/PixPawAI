@@ -69,6 +69,7 @@ interface ResultModalProps {
     strength?: number
     preGeneratedCardUrl?: string
     originalImagePath?: string // High-quality PNG for download
+    watermarkedUrl?: string // Full-res server-watermarked PNG (public) for free download
     inputImageUrl?: string // User's uploaded image for blur preview
   }
 }
@@ -297,31 +298,44 @@ export function ResultModal({
     }
   }
 
+  const triggerDownload = (url: string, filename: string) => {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const handleDownloadOriginal = async () => {
-    // If original high-quality image path is available in metadata, fetch it
-    const originalImagePath = generationMetadata?.originalImagePath
-    
-    if (originalImagePath) {
-      try {
-        // Initialize Supabase client
-        const supabase = createClient()
-        
-        // Get signed URL for original high-quality image
-        const { data } = await supabase.storage
-          .from('generated-results')
-          .createSignedUrl(originalImagePath, 60) // 1 minute expiry
-        
-        if (data?.signedUrl) {
-          await addWatermarkAndDownload(data.signedUrl, `pixpaw-${generationId}-hq.png`)
-          return
-        }
-      } catch (error) {
-        console.error('Failed to get original image URL:', error)
+    setIsDownloading(true)
+    try {
+      // Entitled users (paid tier owner / admin / HD unlock) get the clean original.
+      const res = await fetch(`/api/generations/${generationId}/hd`)
+      if (res.ok) {
+        const { downloadUrl } = await res.json()
+        triggerDownload(downloadUrl, `pixpaw-${generationId}-hd.png`)
+        return
       }
+
+      // Everyone else: free watermarked download.
+      trackEvent('download_free', { generation_id: generationId })
+      const watermarkedUrl = generationMetadata?.watermarkedUrl
+      if (watermarkedUrl) {
+        // Server-watermarked at rest — download directly.
+        triggerDownload(watermarkedUrl, `pixpaw-${generationId}.png`)
+        return
+      }
+
+      // Legacy generations (pre server-watermark): keep the client-side path.
+      await addWatermarkAndDownload(generatedImageUrl, `pixpaw-${generationId}.png`)
+    } catch (error) {
+      console.error('Download failed:', error)
+      window.open(generatedImageUrl, '_blank')
+    } finally {
+      setIsDownloading(false)
     }
-    
-    // Fallback to compressed image if original is not available
-    await addWatermarkAndDownload(generatedImageUrl, `pixpaw-${generationId}.png`)
   }
 
   const handleCreateArtCard = () => {
