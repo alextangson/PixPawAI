@@ -61,8 +61,8 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     imageUrl: '/products/generated/canvas-print.png',
     featured: true,
     variants: [
-      { variantId: 5254819144, label: '11×14"', price: 4999 },
-      { variantId: 5254819146, label: '12×24"', price: 5999 },
+      { variantId: 5254819144, label: '11×14"', price: 6499 },
+      { variantId: 5254819146, label: '12×24"', price: 7999 },
     ],
   },
   't-shirt': {
@@ -107,3 +107,11 @@ export const PRINTFUL_PRODUCTS: Record<string, PrintfulProduct> = {
     ],
   },
 };
+
+/**
+ * "Digital + physical" bundle: buyers of a physical print can add the clean,
+ * watermark-free HD download of the same portrait at checkout for a small uplift
+ * (a $9.99 value). Lifts AOV and locks in the digital experience — see the GTM
+ * unit-economics model. Granted server-side on order confirmation.
+ */
+export const HD_ADDON_PRICE_CENTS = 400;

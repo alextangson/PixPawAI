@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { estimateOrder, type PrintfulRecipient } from '@/lib/printful/client';
-import { PRINTFUL_PRODUCTS } from '@/lib/printful/config';
+import { PRINTFUL_PRODUCTS, HD_ADDON_PRICE_CENTS } from '@/lib/printful/config';
 import { PAYPAL_API_BASE, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET } from '@/lib/paypal/config';
 
 async function getPayPalAccessToken(): Promise<string> {
@@ -40,12 +40,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { generationId, productId, variantId, quantity = 1, shipping } = body as {
+    const { generationId, productId, variantId, quantity = 1, shipping, includeHd = false } = body as {
       generationId: string;
       productId: string;
       variantId: number;
       quantity?: number;
       shipping: PrintfulRecipient;
+      includeHd?: boolean;
     };
 
     // Validate product + variant
@@ -82,7 +83,8 @@ export async function POST(req: NextRequest) {
 
     const shippingCents = Math.round(parseFloat(estimate.retail_costs.shipping) * 100);
     const taxCents = Math.round(parseFloat(estimate.retail_costs.tax) * 100);
-    const subtotalCents = variant.price * quantity;
+    const hdAddonCents = includeHd ? HD_ADDON_PRICE_CENTS : 0;
+    const subtotalCents = variant.price * quantity + hdAddonCents;
     const totalCents = subtotalCents + shippingCents + taxCents;
     const totalUsd = (totalCents / 100).toFixed(2);
 
@@ -106,13 +108,21 @@ export async function POST(req: NextRequest) {
               tax_total: { currency_code: 'USD', value: (taxCents / 100).toFixed(2) },
             },
           },
-          items: [{
-            name: `${product.name} — ${variant.label}`,
-            unit_amount: { currency_code: 'USD', value: (variant.price / 100).toFixed(2) },
-            quantity: String(quantity),
-            category: 'PHYSICAL_GOODS',
-          }],
-          description: `PixPaw AI — ${product.name} (${variant.label})`,
+          items: [
+            {
+              name: `${product.name} — ${variant.label}`,
+              unit_amount: { currency_code: 'USD', value: (variant.price / 100).toFixed(2) },
+              quantity: String(quantity),
+              category: 'PHYSICAL_GOODS',
+            },
+            ...(includeHd ? [{
+              name: 'HD Digital Download',
+              unit_amount: { currency_code: 'USD', value: (HD_ADDON_PRICE_CENTS / 100).toFixed(2) },
+              quantity: '1',
+              category: 'DIGITAL_GOODS',
+            }] : []),
+          ],
+          description: `PixPaw AI — ${product.name} (${variant.label})${includeHd ? ' + HD digital' : ''}`,
         }],
         application_context: {
           shipping_preference: 'NO_SHIPPING', // we collect shipping ourselves
@@ -141,6 +151,7 @@ export async function POST(req: NextRequest) {
       paypal_order_id: paypalOrder.id,
       payment_status: 'pending',
       shipping_address: shipping,
+      include_hd: includeHd,
       printful_response: estimate,
     });
 

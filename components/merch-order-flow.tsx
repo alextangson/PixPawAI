@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingCart, Loader2, CheckCircle, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Loader2, CheckCircle, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PRINTFUL_PRODUCTS, type PrintfulProduct } from '@/lib/printful/config';
+import { PRINTFUL_PRODUCTS, HD_ADDON_PRICE_CENTS, type PrintfulProduct } from '@/lib/printful/config';
 import { trackEvent, trackPurchase } from '@/components/analytics';
 
 interface ShippingForm {
@@ -48,6 +48,7 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
   });
   const [costs, setCosts] = useState<{ subtotal: string; shipping: string; tax: string; total: string } | null>(null);
   const [paypalOrderId, setPaypalOrderId] = useState<string | null>(null);
+  const [includeHd, setIncludeHd] = useState(true); // "digital + physical" bundle, opt-out
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +73,7 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
           productId: selectedProduct.productId,
           variantId: selectedVariantId,
           quantity: 1,
+          includeHd,
           shipping: {
             name: shipping.name,
             email: shipping.email,
@@ -123,21 +125,31 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
       // digital→physical attach North Star. GA4 stitches to the digital
       // `purchase` by client_id, so attach rate becomes computable.
       if (costs && selectedProduct) {
+        const items = [{
+          item_id: selectedProduct.productId,
+          item_name: selectedVariant
+            ? `${selectedProduct.name} - ${selectedVariant.label}`
+            : selectedProduct.name,
+          item_category: 'physical',
+          price: selectedVariant ? selectedVariant.price / 100 : Number(costs.subtotal),
+          quantity: 1,
+        }];
+        if (includeHd) {
+          items.push({
+            item_id: 'hd_unlock',
+            item_name: 'HD Digital Download',
+            item_category: 'digital',
+            price: HD_ADDON_PRICE_CENTS / 100,
+            quantity: 1,
+          });
+        }
         trackPurchase({
           transactionId: paypalOrderId,
           value: Number(costs.total),
           currency: 'USD',
           tax: Number(costs.tax),
           shipping: Number(costs.shipping),
-          items: [{
-            item_id: selectedProduct.productId,
-            item_name: selectedVariant
-              ? `${selectedProduct.name} - ${selectedVariant.label}`
-              : selectedProduct.name,
-            item_category: 'physical',
-            price: Number(costs.subtotal),
-            quantity: 1,
-          }],
+          items,
         });
       }
 
@@ -289,6 +301,33 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
             </div>
           </div>
 
+          {/* "Digital + physical" bundle — add the clean HD download */}
+          <button
+            type="button"
+            onClick={() => setIncludeHd(v => !v)}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+              includeHd ? 'border-coral bg-coral/5' : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <span className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center ${
+              includeHd ? 'bg-coral border-coral text-white' : 'border-gray-300'
+            }`}>
+              {includeHd && <CheckCircle className="w-4 h-4" />}
+            </span>
+            <span className="flex-1">
+              <span className="flex items-center gap-1.5 font-semibold text-sm text-gray-900">
+                <Sparkles className="w-4 h-4 text-coral" />
+                Add HD digital download
+              </span>
+              <span className="block text-xs text-gray-500 mt-0.5">
+                The clean, watermark-free file to keep &amp; reprint — normally $9.99.
+              </span>
+            </span>
+            <span className="shrink-0 text-sm font-bold text-coral">
+              +${(HD_ADDON_PRICE_CENTS / 100).toFixed(0)}
+            </span>
+          </button>
+
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <Button
@@ -315,8 +354,16 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
           <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">{selectedProduct?.name} ({selectedVariant?.label})</span>
-              <span>${costs.subtotal}</span>
+              <span>${selectedVariant ? (selectedVariant.price / 100).toFixed(2) : costs.subtotal}</span>
             </div>
+            {includeHd && (
+              <div className="flex justify-between">
+                <span className="text-gray-600 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-coral" /> HD digital download
+                </span>
+                <span>${(HD_ADDON_PRICE_CENTS / 100).toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-600">Shipping</span>
               <span>${costs.shipping}</span>
