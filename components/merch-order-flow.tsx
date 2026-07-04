@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ShoppingCart, Loader2, CheckCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PRINTFUL_PRODUCTS, type PrintfulProduct } from '@/lib/printful/config';
+import { trackEvent, trackPurchase } from '@/components/analytics';
 
 interface ShippingForm {
   name: string;
@@ -87,6 +88,16 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
       if (!res.ok) throw new Error(data.error || 'Failed to estimate order');
       setCosts(data.costs);
       setPaypalOrderId(data.paypalOrderId);
+
+      // Funnel event: reached physical checkout (mirrors digital begin_checkout)
+      trackEvent('begin_checkout', {
+        value: Number(data.costs.total),
+        currency: 'USD',
+        item_id: selectedProduct.productId,
+        item_name: selectedProduct.name,
+        product_category: 'physical',
+      });
+
       setStep('review');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'An error occurred');
@@ -107,6 +118,29 @@ export function MerchOrderFlow({ generationId, initialProductId, initialVariantI
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order confirmation failed');
+
+      // Conversion event: physical purchase — the missing half of the
+      // digital→physical attach North Star. GA4 stitches to the digital
+      // `purchase` by client_id, so attach rate becomes computable.
+      if (costs && selectedProduct) {
+        trackPurchase({
+          transactionId: paypalOrderId,
+          value: Number(costs.total),
+          currency: 'USD',
+          tax: Number(costs.tax),
+          shipping: Number(costs.shipping),
+          items: [{
+            item_id: selectedProduct.productId,
+            item_name: selectedVariant
+              ? `${selectedProduct.name} - ${selectedVariant.label}`
+              : selectedProduct.name,
+            item_category: 'physical',
+            price: Number(costs.subtotal),
+            quantity: 1,
+          }],
+        });
+      }
+
       setStep('success');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'An error occurred');

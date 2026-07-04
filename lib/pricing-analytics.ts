@@ -3,6 +3,8 @@
  * Centralized tracking for pricing page events
  */
 
+import { trackEvent } from '@/components/analytics';
+
 export type PricingTier = 'free' | 'starter' | 'pro' | 'master';
 export type ModalAction = 'upgrade' | 'dismiss' | 'close';
 
@@ -53,9 +55,9 @@ export function trackPricingEvent(event: PricingEvent): void {
     console.log('[Pricing Analytics]', eventWithTimestamp);
   }
 
-  // TODO: Send to analytics service
-  // Example: mixpanel.track(event.event, eventWithTimestamp);
-  // Example: amplitude.track(event.event, eventWithTimestamp);
+  // Forward to GA4 so the pricing funnel is measurable alongside purchases
+  const { event: eventName, ...eventParams } = event;
+  trackEvent(eventName, eventParams as Record<string, string | number | boolean>);
 
   // Store in localStorage for debugging
   if (typeof window !== 'undefined') {
