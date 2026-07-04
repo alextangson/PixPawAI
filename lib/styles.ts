@@ -81,6 +81,31 @@ export const STYLES: Style[] = [
     src: '/styles/birthday-celebration.jpg',
     promptSuffix: ', celebrating a joyful birthday party, wearing a vibrant rainbow-colored striped party hat and a festive colorful bow tie around the neck, sweet cheerful expression with closed mouth and happy eyes, sitting behind a beautiful birthday cake with lit candles on a golden cake stand, festive party scene with floating soft pink and peach balloons in the background, hanging golden yellow party streamers cascading from above, colorful bunting flags strung across, scattered warm-toned confetti on the table surface, wrapped pastel gift boxes with satin ribbons nearby, twinkling warm string lights creating bokeh, warm indoor lighting with golden amber glow, WARM PEACHY PINK AMBIENT ATMOSPHERE, cozy cheerful celebration, professional party photography, 8k resolution',
     description: 'Warm festive birthday with decorative elements - party hat, bow tie, cake'
+  },
+  // ============================================
+  // Memorial Styles - Added 2026-07-04
+  // Tribute-first (light / atmosphere / medium, no costumes) to preserve identity.
+  // ============================================
+  {
+    id: 'rainbow-bridge',
+    label: 'Rainbow Bridge',
+    src: '/styles/rainbow-bridge.jpg',
+    promptSuffix: ', sitting peacefully in a serene heavenly meadow, a soft luminous rainbow arcing gently across a dreamy pastel sky, wispy glowing clouds and warm golden backlight, gentle ethereal glow around the pet, delicate wildflowers, tender and comforting memorial atmosphere, soft and painterly, sharp focus on the face, high detail, 8k',
+    description: 'Peaceful rainbow-bridge tribute in a soft heavenly meadow'
+  },
+  {
+    id: 'guardian-angel',
+    label: 'Guardian Angel',
+    src: '/styles/guardian-angel.jpg',
+    promptSuffix: ', gentle guardian angel tribute, soft white feathered angel wings behind the pet, a delicate faint golden halo glowing softly above the head, bathed in warm divine white and gold light, soft heavenly clouds, serene and loving expression, luminous ethereal glow, tender and peaceful, sharp focus on the face, high detail, 8k',
+    description: 'Angelic tribute — soft wings, a gentle halo, divine light'
+  },
+  {
+    id: 'watercolor-keepsake',
+    label: 'Watercolor Keepsake',
+    src: '/styles/watercolor-keepsake.jpg',
+    promptSuffix: ', delicate hand-painted watercolor painting, soft translucent color washes, wet-on-wet bleeding pigments, visible watercolor paper texture, loose expressive brush strokes, muted pastel palette, timeless keepsake artwork, fine art watercolor illustration, painterly not photographic',
+    description: 'Tender hand-painted watercolor tribute, soft and timeless'
   }
 ]
 
