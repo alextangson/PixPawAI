@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import sharp from 'sharp'
+import { SILICONFLOW_VISION_MODEL } from '@/lib/vision-config'
 import { checkRateLimitSmart } from '@/lib/rate-limit'
+import { hasUsablePetIdentity } from '@/lib/pet-generation'
 
 interface QualityCheckResult {
   isSafe: boolean
@@ -183,7 +185,7 @@ If no pet detected but safe:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+        model: SILICONFLOW_VISION_MODEL,
         messages: [
           {
             role: 'user',
@@ -248,6 +250,10 @@ If no pet detected but safe:
       console.log('📝 Extracted JSON string:', jsonStr)
       
       const parsed = JSON.parse(jsonStr) as QualityCheckResult
+      if (typeof parsed.isSafe !== 'boolean' || typeof parsed.hasPet !== 'boolean' ||
+          (parsed.isSafe && parsed.hasPet && !hasUsablePetIdentity(parsed))) {
+        throw new Error('Incomplete pet analysis')
+      }
       console.log('✅ Parsed Quality Check:', parsed)
       
       return parsed
@@ -255,46 +261,7 @@ If no pet detected but safe:
       console.error('❌ Failed to parse JSON from Qwen:', content)
       console.error('Parse error:', parseError)
       
-      // If parsing fails, check if content contains indicators of no pet
-      const lowerContent = content.toLowerCase()
-      const noPetDetected = lowerContent.includes('no pet') || lowerContent.includes('not a pet') || 
-          lowerContent.includes('no animal') || lowerContent.includes('not an animal')
-      
-      if (noPetDetected) {
-        return {
-          isSafe: true,
-          unsafeReason: 'none',
-          hasPet: false,
-          petType: 'none',
-          quality: 'unusable',
-          issues: ['no_pet'],
-          hasHeterochromia: false,
-          heterochromiaDetails: '',
-          breed: '',
-          complexPattern: false,
-          multiplePets: 0,
-          detectedColors: ''
-        }
-      }
-      
-      // Otherwise, proceed with caution - mark as poor quality to show warning
-      console.warn('⚠️ Qwen parsing failed, returning fallback result. Raw content length:', content.length)
-      console.warn('⚠️ First 200 chars of content:', content.substring(0, 200))
-      
-      return {
-        isSafe: true,
-        unsafeReason: 'none',
-        hasPet: true,
-        petType: 'unknown',
-        quality: 'poor',
-        issues: ['unclear_detection', 'qwen_parsing_failed'],
-        hasHeterochromia: false,
-        heterochromiaDetails: '',
-        breed: 'unknown',
-        complexPattern: false,
-        multiplePets: 1,
-        detectedColors: ''
-      }
+      throw new Error('Pet analysis returned an invalid response')
     }
   } catch (error) {
     console.error('❌ Qwen API Error:', error)
@@ -339,22 +306,8 @@ If no pet detected but safe:
       console.error('⚠️ Failed to log error to database:', logError)
     }
     
-    // On API error, skip quality check and proceed (assume safe)
-    // But log the error for debugging
-    return {
-      isSafe: true,
-      unsafeReason: 'none',
-      hasPet: true,
-      petType: 'unknown',
-      quality: 'good',
-      issues: ['qwen_api_error'],
-      hasHeterochromia: false,
-      heterochromiaDetails: '',
-      breed: 'unknown',
-      complexPattern: false,
-      multiplePets: 1,
-      detectedColors: ''
-    }
+    // A provider failure is not a successful or safe pet identification.
+    throw new Error('Pet analysis temporarily unavailable')
   }
 }
 
@@ -440,26 +393,9 @@ export async function POST(request: NextRequest) {
       console.error('⚠️ Failed to log error to database:', logError)
     }
     
-    // Return detailed error for debugging (in production, you might want to hide details)
     return NextResponse.json(
-      { 
-        error: 'Failed to check image quality',
-        details: isApiError ? errorMessage : undefined, // Only expose API errors
-        // Return safe fallback result instead of error
-        isSafe: true,
-        unsafeReason: 'none' as const,
-        hasPet: true,
-        petType: 'unknown',
-        quality: 'good' as const,
-        issues: ['quality_check_failed'],
-        hasHeterochromia: false,
-        heterochromiaDetails: '',
-        breed: 'unknown',
-        complexPattern: false,
-        multiplePets: 1,
-        detectedColors: ''
-      },
-      { status: 200 } // Return 200 with fallback data instead of 500
+      { error: 'Pet photo analysis is temporarily unavailable. Please try again.', code: 'PET_ANALYSIS_UNAVAILABLE' },
+      { status: 503 }
     )
   }
 }

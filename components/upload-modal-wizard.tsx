@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { STYLES } from '@/lib/styles'
+import { normalizePetType } from '@/lib/pet-generation'
 import { useStyles } from '@/lib/hooks/use-styles'
 import { FUN_FACTS } from '@/lib/constants/fun-facts'
 import { cn } from '@/lib/utils'
@@ -77,7 +78,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
   } | null>(null)
   const [progress, setProgress] = useState<number>(0)
   const [messageIndex, setMessageIndex] = useState<number>(0)
-  const [strength, setStrength] = useState<number>(0.92) // Image preservation strength (0.1-1.0) - Very high to preserve exact animal features
+  const [strength, setStrength] = useState<number>(0.92) // Legacy saved UI state; actual transformation strength is selected on the server
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
   const [aspectRatio, setAspectRatio] = useState<string>('1:1') // Aspect ratio selection
   const [generationId, setGenerationId] = useState<string>('')
@@ -741,13 +742,16 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
           imageUrl: imageUrl,
           style: selectedStyle,
           prompt: finalUserPrompt,  // Use finalUserPrompt (defaults to 'my pet' if empty)
-          petType: qualityCheckResult?.petType || quickAnalysisResult?.petType || 'pet',
+          petType: normalizePetType(qualityCheckResult?.petType) || normalizePetType(quickAnalysisResult?.petType) || 'pet',
           aspectRatio: aspectRatio,
           // strength removed - backend will use tier-based calculation
           petName: petName.trim(), // Pet name for Art Card title
           // 🎯 THREE-TIER STRATEGY: Pass both detailed and quick analysis
           // Backend will use: detailed (best) → quick (fallback) → backend analysis (last resort)
           detailedAnalysis: qualityCheckResult ? {
+            hasPet: qualityCheckResult.hasPet,
+            isSafe: qualityCheckResult.isSafe,
+            issues: qualityCheckResult.issues,
             petType: qualityCheckResult.petType,
             breed: qualityCheckResult.breed,
             detectedColors: qualityCheckResult.detectedColors,

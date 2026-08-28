@@ -20,7 +20,7 @@ export const STYLES: Style[] = [
     id: 'Christmas-Vibe',
     label: 'Merry Christmas',
     src: '/styles/Christmas-Vibe.jpg',
-    promptSuffix: ', wearing a fluffy red and white Santa hat, festive holiday spirit, bright joyful eyes, solid bold red background, high-end commercial photography, clean composition, warm and cheerful atmosphere, 8k resolution.',
+    promptSuffix: ', pet portrait of the original animal wearing a fluffy red and white Santa hat fitted around its ears, preserve the pet face and natural animal anatomy, festive holiday spirit, bright joyful eyes, solid bold red background, professional pet photography, clean composition, warm and cheerful atmosphere, 8k resolution.',
     description: 'Festive holiday look with a classic Santa hat'
   },
   {

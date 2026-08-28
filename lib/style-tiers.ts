@@ -1,14 +1,9 @@
 /**
  * Style Tier Configuration for Dynamic Strength Adjustment
  * 
- * ⚠️ IMPORTANT: FLUX-dev prompt_strength 语义（经测试验证）
- * - 低值 (0.15-0.30): 几乎完全保留原图，无艺术化
- * - 高值 (0.80-0.95): 在保留原图特征基础上应用风格（推荐范围）
- * 
- * Tier 1 (写实增强): 0.92 + guidance 2.0 - 高保真 + 轻度艺术化 ✅ 已测试
- * Tier 2 (轻艺术): 0.85-0.88 + guidance 2.5 - 待测试
- * Tier 3 (强艺术): 0.75-0.80 + guidance 3.0 - 待测试
- * Tier 4 (极致艺术): 0.65-0.70 + guidance 3.5 - 待测试
+ * FLUX-dev prompt_strength controls how much the original is changed.
+ * 1.0 destroys all input-image information; higher is NOT higher resemblance.
+ * Christmas is capped server-side; other historical presets still need visual review.
  */
 
 export type StyleTier = 1 | 2 | 3 | 4
@@ -38,11 +33,11 @@ export const STYLE_TIER_MAP: Record<string, StyleTierConfig> = {
   // ============================================
   // Tier 1: 写实增强 (Realistic Enhancement)
   // 相似度目标: 85-90%
-  // ✅ 已测试：(strength=0.92, guidance=2.0) 效果最佳
+  // Values are transformation strengths, not resemblance scores.
   // ============================================
   'Christmas-Vibe': {
     tier: 1,
-    strength: 0.92,
+    strength: 0.9,
     guidance: 2.0,
     description: '写实摄影 + 简单配饰（圣诞帽）',
     expectedSimilarity: '85-90%',

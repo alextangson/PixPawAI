@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
+import { SILICONFLOW_VISION_MODEL } from '@/lib/vision-config'
+import { hasUsablePetIdentity } from '@/lib/pet-generation'
 
 interface QuickQualityCheckResult {
   hasPet: boolean
@@ -76,7 +78,7 @@ Output ONLY this JSON (no explanations):
     console.log('⚡ Quick Quality Check Request:', {
       originalSize: originalBuffer.byteLength,
       compressedSize: compressedBuffer.byteLength,
-      model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+      model: SILICONFLOW_VISION_MODEL,
       endpoint: 'https://api.siliconflow.com/v1/chat/completions'
     })
 
@@ -99,7 +101,7 @@ Output ONLY this JSON (no explanations):
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+            model: SILICONFLOW_VISION_MODEL,
             messages: [
               {
                 role: 'user',
@@ -159,15 +161,11 @@ Output ONLY this JSON (no explanations):
           const jsonText = jsonMatch[1] || jsonMatch[0]
           result = JSON.parse(jsonText)
         } else {
-          // Fallback parsing if JSON not found
-          console.warn('Qwen did not return valid JSON, attempting fallback parsing:', content)
-          const lowerContent = content.toLowerCase()
-          result = {
-            hasPet: lowerContent.includes('haspet": true') || lowerContent.includes('yes') && !lowerContent.includes('no pet'),
-            isClear: lowerContent.includes('clear') || lowerContent.includes('good'),
-            petType: (content.match(/"petType":\s*"(.*?)"/)?.[1] || 'other') as any,
-            quality: lowerContent.includes('poor') || lowerContent.includes('blurry') ? 'poor' : 'good'
-          }
+          throw new Error('Pet analysis returned an invalid response')
+        }
+        if (typeof result.hasPet !== 'boolean' ||
+            (result.hasPet && !hasUsablePetIdentity(result))) {
+          throw new Error('Incomplete pet analysis')
         }
 
         console.log('✅ Quick Check Result:', result)
@@ -183,32 +181,16 @@ Output ONLY this JSON (no explanations):
       }
     }
     
-    // All retries failed - return graceful fallback
-    console.error('❌ All Qwen API retry attempts failed, returning safe fallback')
-    console.error('Last error:', lastError)
-    
-    // 🛡️ Graceful degradation: return safe defaults
+    console.error('Quick pet analysis unavailable after retries')
     return NextResponse.json({
-      hasPet: true,          // Assume pet (fail-open)
-      isClear: true,         // Assume clear
-      petType: 'pet',        // Generic type
-      quality: 'good',       // Assume good
-      fallback: true,        // Flag indicating this is a fallback
-      error: lastError?.message || 'Qwen API unavailable'
-    })
-
+      error: 'Pet photo analysis is temporarily unavailable. Please try again.',
+      code: 'PET_ANALYSIS_UNAVAILABLE'
+    }, { status: 503 })
   } catch (error) {
-    console.error('Error in quick quality check API:', error)
-    
-    // 🛡️ Graceful degradation even for outer errors
-    return NextResponse.json({ 
-      hasPet: true,
-      isClear: true,
-      petType: 'pet',
-      quality: 'good',
-      fallback: true,
-      error: 'Failed to process quick quality check',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 200 }) // Return 200 with fallback data instead of 500
+    console.error('Error in quick quality check API')
+    return NextResponse.json({
+      error: 'Pet photo analysis is temporarily unavailable. Please try again.',
+      code: 'PET_ANALYSIS_UNAVAILABLE'
+    }, { status: 503 })
   }
 }

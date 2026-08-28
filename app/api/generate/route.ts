@@ -12,6 +12,7 @@ import { getStyleById } from '@/lib/styles'
 import { getStyleConfigWithFallback } from '@/lib/supabase/styles'
 import Replicate from 'replicate'
 import sharp from 'sharp'
+import { SILICONFLOW_VISION_MODEL } from '@/lib/vision-config'
 import { FEATURE_FLAGS } from '@/lib/feature-flags'
 import { logger } from '@/lib/logger'
 import { parseUserPrompt, parseQwenFeatures, parseStylePrompt, cleanConflicts, buildPrompt } from '@/lib/prompt-system'
@@ -19,6 +20,7 @@ import { startFilteredFeaturesCollection, logFilteredFeature, getFilteredFeature
 import { checkRateLimitSmart, getClientIp } from '@/lib/rate-limit'
 import { checkGuestFreeTier, incrementGuestUsage } from '@/lib/guest-credits'
 import { applyWatermark } from '@/lib/watermark'
+import { hasUsablePetIdentity, normalizePetType, preservePetIdentity, resolvePetPromptStrength } from '@/lib/pet-generation'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -146,7 +148,7 @@ interface PetComplexity {
 }
 
 /**
- * Analyze pet features using SiliconFlow Qwen2-VL-72B
+ * Analyze pet features using the configured SiliconFlow vision model
  * Returns structured data for dynamic strength adjustment
  */
 async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
@@ -175,7 +177,7 @@ async function analyzePetFeatures(imageUrl: string): Promise<PetComplexity> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen2.5-VL-72B-Instruct',  // 🔑 Updated to correct model name
+        model: SILICONFLOW_VISION_MODEL,  // 🔑 Updated to correct model name
         messages: [
           {
             role: 'user',
@@ -589,6 +591,13 @@ export async function POST(request: NextRequest) {
       numInferenceSteps,          // Will use database default (num_inference_steps) if not provided
     } = body
 
+    if (!testMode && (typeof imageUrl !== 'string' || !imageUrl.trim())) {
+      return NextResponse.json(
+        { error: 'A reference pet photo is required. No credits were used.' },
+        { status: 400 }
+      )
+    }
+
     // Validate: Either style ID or promptSuffix must be provided
     if (!style && !promptSuffix) {
       return NextResponse.json(
@@ -780,19 +789,26 @@ export async function POST(request: NextRequest) {
     let dataSource: 'detailed' | 'quick' | 'backend' = 'backend'
     
     // 🎯 THREE-TIER STRATEGY: detailed → quick → backend
-    if (detailedAnalysis) {
+    if (detailedAnalysis?.isSafe === false || detailedAnalysis?.hasPet === false || quickAnalysis?.hasPet === false) {
+      return NextResponse.json(
+        { error: 'Please upload an appropriate pet photo. No credits were used.' },
+        { status: 422 }
+      )
+    }
+
+    if (hasUsablePetIdentity(detailedAnalysis)) {
       // ✅ TIER 1: Frontend detailed analysis (best quality)
       console.log('✅ Using frontend detailed analysis')
       petComplexity = {
-        petType: detailedAnalysis.petType || petType,
+        petType: normalizePetType(detailedAnalysis.petType),
         detectedColors: detailedAnalysis.detectedColors || '',
         hasHeterochromia: detailedAnalysis.hasHeterochromia || false,
         heterochromiaDetails: detailedAnalysis.heterochromiaDetails || '',
         complexPattern: detailedAnalysis.complexPattern || false,
-        patternDetails: '', // Frontend doesn't provide patternDetails
+        patternDetails: detailedAnalysis.patternDetails || '',
         multiplePets: detailedAnalysis.multiplePets || 1,
         breed: detailedAnalysis.breed || 'unknown',
-        keyFeatures: 'detailed analysis'
+        keyFeatures: detailedAnalysis.keyFeatures || ''
       }
       dataSource = 'detailed'
       
@@ -804,11 +820,11 @@ export async function POST(request: NextRequest) {
         heterochromia: petComplexity.hasHeterochromia
       })
       
-    } else if (quickAnalysis) {
+    } else if (hasUsablePetIdentity(quickAnalysis)) {
       // ⚠️ TIER 2: Frontend quick analysis (fallback)
       console.warn('⚠️ Detailed analysis unavailable, using quick analysis fallback')
       petComplexity = {
-        petType: quickAnalysis.petType || petType,
+        petType: normalizePetType(quickAnalysis.petType),
         detectedColors: '', // Quick check doesn't include colors
         hasHeterochromia: false,
         heterochromiaDetails: '',
@@ -816,7 +832,7 @@ export async function POST(request: NextRequest) {
         patternDetails: '',
         multiplePets: 1,
         breed: 'unknown',
-        keyFeatures: 'quick analysis fallback'
+        keyFeatures: ''
       }
       dataSource = 'quick'
       
@@ -861,6 +877,16 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Failed/unknown analysis must not become a paid, subject-free generation.
+    // This also protects the old prompt builder and backend-analysis fallback.
+    if (imageUrl && !hasUsablePetIdentity(petComplexity)) {
+      return NextResponse.json(
+        { error: 'We could not identify your pet. Please retry the photo analysis. No credits were used.', code: 'PET_IDENTITY_UNAVAILABLE' },
+        { status: 503 }
+      )
+    }
+    petComplexity.petType = normalizePetType(petComplexity.petType)
+
     // Log final data source for analytics
     console.log(`📊 Analysis Data Source: ${dataSource.toUpperCase()}`)
 
@@ -892,11 +918,11 @@ export async function POST(request: NextRequest) {
       .eq('id', style)
       .single()
     
-    const defaultStrength = styleData?.recommended_strength_min || 0.45
+    const defaultStrength = resolvePetPromptStrength(style, undefined, styleData?.recommended_strength_min)
     const defaultGuidance = styleData?.recommended_guidance || 2.5
     const defaultNumSteps = styleData?.num_inference_steps || 50
     const defaultOutputQuality = styleData?.output_quality || 80
-    const defaultGoFast = styleData?.enable_go_fast ?? true
+    const defaultGoFast = styleData?.enable_go_fast ?? (style !== 'Christmas-Vibe')
     
     console.log(`🎯 Style Config: ${style}`)
     console.log(`   Strength: ${defaultStrength.toFixed(2)}`)
@@ -1095,6 +1121,9 @@ export async function POST(request: NextRequest) {
       console.log('📝 OLD SYSTEM - Final Prompt:', finalPrompt.substring(0, 150) + '...')
     }
 
+    // Apply after both builders so a fallback or conflict cleaner cannot drop identity.
+    if (imageUrl) finalPrompt = preservePetIdentity(finalPrompt, petComplexity.petType, style)
+
     // TEST MODE: Skip database operations and credits
     if (testMode) {
       console.log('🧪 TEST MODE: Skipping credits and database operations')
@@ -1116,7 +1145,7 @@ export async function POST(request: NextRequest) {
       try {
         // Use frontend params or database defaults
         // Priority: Frontend > Database > Fallback
-        const finalStrength = strength !== undefined ? strength : defaultStrength
+        const finalStrength = resolvePetPromptStrength(style, strength, defaultStrength)
         const finalGuidance = guidance !== undefined ? guidance : defaultGuidance
         const finalGoFast = goFast !== undefined ? goFast : defaultGoFast
         const finalOutputQuality = outputQuality !== undefined ? outputQuality : defaultOutputQuality
@@ -1226,7 +1255,7 @@ export async function POST(request: NextRequest) {
         pet_name: petName || null,
         art_card_title: artCardTitle,
         metadata: {
-          petType,
+          petType: petComplexity.petType,
           userPrompt: sanitizedUserPrompt,
           stylePromptSuffix: styleConfig.promptSuffix,
           requestedAt: new Date().toISOString(),
@@ -1279,7 +1308,7 @@ export async function POST(request: NextRequest) {
     try {
       // STEP F: Call Replicate API with style-specific parameters
       // Priority: Frontend > Database > Fallback
-      const finalStrength = strength || defaultStrength
+      const finalStrength = resolvePetPromptStrength(style, strength, defaultStrength)
       const finalGuidance = guidance || defaultGuidance
       const finalGoFast = goFast !== undefined ? goFast : defaultGoFast
       const finalOutputQuality = outputQuality !== undefined ? outputQuality : defaultOutputQuality
