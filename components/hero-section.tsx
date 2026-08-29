@@ -60,9 +60,9 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
       {/* Main Hero Content */}
       <div className="relative flex-1 flex items-center justify-center px-4 py-8 sm:py-12 md:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] gap-8 sm:gap-10 md:gap-12 lg:gap-16 items-center">
             {/* Left Column - Text Content */}
-            <div className="text-center lg:text-left space-y-4 sm:space-y-5 md:space-y-6 lg:space-y-8 z-10 order-2 lg:order-1">
+            <div className="min-w-0 text-center lg:text-left space-y-4 sm:space-y-5 md:space-y-6 lg:space-y-8 z-10 order-2 lg:order-1">
               {/* Social Proof - With Avatar Stack */}
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 rounded-full px-3 py-1 text-xs sm:text-sm font-medium">
                 <div className="flex -space-x-2">
@@ -80,10 +80,9 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               </div>
 
               {/* Main Headline (H1) - Responsive Typography */}
-              <h1 className="text-3xl xs:text-4xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold tracking-tight leading-[1.1] sm:leading-tight max-w-5xl mx-auto lg:mx-0">
-                <span className="md:whitespace-nowrap">{dict.hero.title.part1}</span>{' '}
-                <br className="hidden md:block" />
-                <span className="text-coral relative inline-block whitespace-nowrap">
+              <h1 className="text-3xl xs:text-4xl sm:text-4xl md:text-5xl lg:text-[clamp(2.75rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] sm:leading-tight max-w-5xl mx-auto lg:mx-0 text-balance">
+                <span className="block">{dict.hero.title.part1}</span>
+                <span className="text-coral relative inline-block max-w-full">
                   {dict.hero.title.part2}
                   <svg
                     className="absolute -bottom-2 left-0 w-full h-3"
@@ -127,7 +126,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
             </div>
 
             {/* Right Column - Hero Carousel with PiP */}
-            <div className="relative z-10 order-1 lg:order-2">
+            <div className="relative min-w-0 z-10 order-1 lg:order-2">
               {/* Auto-playing Carousel with Picture-in-Picture */}
               <HeroCarousel />
             </div>
