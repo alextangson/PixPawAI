@@ -8,6 +8,7 @@
 ## 战略前提（已对齐）
 
 - **流量引擎**：TikTok / Reels（病毒反转视频，主）+ Pinterest（买家意图，导自己站）。
+  **⚠️ 2026-08-29 修订：主渠道改为 SEO + GEO**（社媒 8 周零执行；首个付费用户来自入站）——判断依据与新计划见 `docs/gtm-strategy/2026-08-29-seo-geo-operating-plan.md`。
 - **不走 Etsy**（已决定）→ **自己的站是唯一成交入口**，所以站内转化质量要求被拉高。
 - **变现**：生成免费/慷慨当钩子 → 在情感峰值卖**实体 keepsake**（canvas / framed print / ornament / pillow）+ 数字高清上卖。
 - **场景**："送礼"是品类，**纪念是其中情绪最重的入口**；统一在 "honor / celebrate your pet" 品牌伞下。

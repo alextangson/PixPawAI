@@ -106,9 +106,9 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Skip i18n redirect for SEO files (sitemap, robots)
-  // These must be accessible at root level for search engines
-  if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
+  // Skip i18n redirect for SEO files (sitemap, robots, llms.txt)
+  // These must be accessible at root level for search engines and LLM crawlers
+  if (pathname === '/sitemap.xml' || pathname === '/robots.txt' || pathname === '/llms.txt') {
     return supabaseResponse || NextResponse.next()
   }
 
@@ -143,9 +143,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Matcher ignoring `/_next/` and `/api/`
-  // Also ignore static files (images, fonts, json, etc.) and RSC prefetch requests
+  // Also ignore static files (images, fonts, json, txt, etc.) and RSC prefetch requests.
+  // `.txt` is excluded so root-level files served from public/ (llms.txt) are not
+  // locale-redirected to /en/*.txt; the IndexNow key file opts back in below.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|json|woff|woff2|ttf|eot)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|json|txt|woff|woff2|ttf|eot)$).*)',
     '/5d6f3058001c4ea8a1db7fc252f417fb.txt',
   ],
 }

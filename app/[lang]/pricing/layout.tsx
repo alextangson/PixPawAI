@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CREDIT_PACK_OFFERS, buildCreditPackAggregateOffer } from "@/lib/seo/pricing";
 
 interface PricingLayoutProps {
   children: React.ReactNode;
@@ -11,17 +12,23 @@ export async function generateMetadata({
   params: Promise<{ lang: string }> 
 }): Promise<Metadata> {
   const { lang } = await params;
-  
+
+  // Built from the shared pricing constant so the meta copy cannot drift from
+  // what PayPal actually charges.
+  const packSummary = CREDIT_PACK_OFFERS
+    .map((offer) => `${offer.name} $${offer.price} (${offer.description})`)
+    .join(', ');
+
   return {
     title: 'Pricing | PixPaw AI - AI Pet Portrait Generator',
-    description: 'Choose the perfect plan for your pet portrait needs. Starter $4.99 (15 credits), Pro $19.99 (50 credits), Master $39.99 (200 credits). Transform your pet photos into stunning AI art.',
+    description: `Choose the perfect plan for your pet portrait needs. ${packSummary}. Transform your pet photos into stunning AI art.`,
     keywords: ['pet portrait pricing', 'AI pet art pricing', 'pet portrait generator cost', 'PixPaw AI pricing', 'AI pet portrait credits'],
     alternates: {
       canonical: `https://pixpawai.com/${lang}/pricing/`,
     },
     openGraph: {
       title: 'Pricing | PixPaw AI - AI Pet Portrait Generator',
-      description: 'Choose the perfect plan for your pet portrait needs. Starting at $4.99.',
+      description: `Choose the perfect plan for your pet portrait needs. Starting at $${CREDIT_PACK_OFFERS[0].price}.`,
       type: 'website',
       url: `https://pixpawai.com/${lang}/pricing`,
     },
@@ -47,36 +54,7 @@ export default async function PricingLayout({ children, params }: PricingLayoutP
               '@type': 'Brand',
               name: 'PixPaw AI',
             },
-            offers: {
-              '@type': 'AggregateOffer',
-              priceCurrency: 'USD',
-              lowPrice: '4.99',
-              highPrice: '39.99',
-              offerCount: '3',
-              offers: [
-                {
-                  '@type': 'Offer',
-                  name: 'Starter Bundle',
-                  price: '4.99',
-                  priceCurrency: 'USD',
-                  description: '15 credits - Perfect for trying out',
-                },
-                {
-                  '@type': 'Offer',
-                  name: 'Pro Bundle',
-                  price: '19.99',
-                  priceCurrency: 'USD',
-                  description: '50 credits - Best value for most users',
-                },
-                {
-                  '@type': 'Offer',
-                  name: 'Master Bundle',
-                  price: '39.99',
-                  priceCurrency: 'USD',
-                  description: '200 credits - For power users',
-                },
-              ],
-            },
+            offers: buildCreditPackAggregateOffer(),
           }),
         }}
       />

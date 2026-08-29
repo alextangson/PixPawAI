@@ -1,4 +1,5 @@
 import { BlogArticle } from '@/lib/wordpress/types';
+import type { ParsedFaqItem } from '@/lib/seo/faq';
 
 interface BlogArticleSchemaProps {
   article: BlogArticle;
@@ -40,6 +41,42 @@ export function BlogArticleSchema({ article, url }: BlogArticleSchemaProps) {
     articleSection: article.category.name,
     wordCount: article.content.replace(/<[^>]*>/g, '').split(/\s+/).length,
     timeRequired: `PT${article.readingTime}M`,
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
+/**
+ * FAQPage Schema built from Q/A pairs parsed out of the article HTML.
+ * Renders nothing below two pairs — Google ignores single-question FAQPage
+ * markup and it adds noise for LLM crawlers.
+ * https://schema.org/FAQPage
+ */
+interface BlogFaqSchemaProps {
+  faqs: ParsedFaqItem[];
+}
+
+export function BlogFaqSchema({ faqs }: BlogFaqSchemaProps) {
+  if (faqs.length < 2) {
+    return null;
+  }
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
   };
 
   return (

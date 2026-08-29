@@ -6,6 +6,8 @@ import { Package, Clock, CheckCircle, Info } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Track Order - PixPaw AI',
   description: 'Track your PixPaw AI digital downloads and future physical product orders.',
+  // Per-customer order lookup — nothing here is useful in search results.
+  robots: { index: false, follow: false },
 };
 
 export default async function TrackOrderPage({

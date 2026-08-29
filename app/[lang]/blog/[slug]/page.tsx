@@ -12,8 +12,9 @@ import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents';
 import { BlogSocialShare } from '@/components/blog/blog-social-share';
 import { BlogRelatedArticles } from '@/components/blog/blog-related-articles';
-import { BlogArticleSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
+import { BlogArticleSchema, BlogFaqSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
 import { BlogArticleBody } from '@/components/blog/article-body';
+import { extractFaqFromHtml } from '@/lib/seo/faq';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
 
@@ -32,7 +33,7 @@ const SEO_OVERRIDES: Record<string, { title: string; description: string }> = {
   'best-ai-pet-portrait-generator': {
     title: '7 Best AI Pet Portrait Generators in 2026 (Tested & Ranked)',
     description:
-      "We tested 7 AI pet portrait generators and ranked them. PixPawAI, Pawcaso, DreamPets — here's which one gives the best results for your money.",
+      "We checked 7 AI pet portrait generators' real pricing and free tiers (updated Aug 2026). PixPawAI, PetCanvas, Adobe Firefly & more — ranked honestly.",
   },
   'pet-portrait-gift-guide': {
     title: 'Best Pet Portrait Gift Ideas in 2026 — For Every Budget & Occasion',
@@ -40,9 +41,9 @@ const SEO_OVERRIDES: Record<string, { title: string; description: string }> = {
       'Find the perfect pet portrait gift for any occasion. From AI-generated art to custom canvas prints, discover unique gifts pet lovers will treasure.',
   },
   'pet-loss-gift-ideas': {
-    title: '15 Meaningful Pet Loss Gift Ideas That Actually Help (2026 Guide)',
+    title: 'Dog Passed Away? 15 Pet Loss Gifts That Actually Help (2026)',
     description:
-      'Searching for pet loss gift ideas? Discover 15 thoughtful gifts that actually help grieving pet parents, from memorial portraits to living tributes.',
+      "When a friend's dog passes away, the right gift says what words can't. What to say, what to avoid, and 15 pet loss gifts — from free to lasting keepsakes.",
   },
 };
 
@@ -126,10 +127,12 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
   const articleUrl = `${siteUrl}/${lang}/blog/${article.slug}/`;
+  const faqs = extractFaqFromHtml(article.content);
 
   return (
     <>
       <BlogArticleSchema article={article} url={articleUrl} />
+      <BlogFaqSchema faqs={faqs} />
       <BreadcrumbSchema
         items={breadcrumbItems.map((item) => ({
           name: item.label,

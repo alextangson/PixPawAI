@@ -33,6 +33,13 @@ export interface WordPressPost {
     reading_time?: number;
     seo_keywords?: string;
   };
+  // Present when the Yoast SEO plugin exposes its REST field. Editors set these
+  // in WordPress, so they beat the generated title/excerpt fallback.
+  yoast_head_json?: {
+    title?: string;
+    description?: string;
+    og_description?: string;
+  };
   _embedded?: {
     author?: Array<{
       id: number;

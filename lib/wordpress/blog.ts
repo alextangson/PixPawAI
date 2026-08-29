@@ -139,6 +139,25 @@ function rewriteContentImageUrls(html: string): string {
 }
 
 /**
+ * Resolve meta title/description with Yoast (editor-authored) taking priority
+ * over the generated title/excerpt fallback.
+ * Per-slug SEO_OVERRIDES in the article route still outrank both.
+ */
+export function resolveWordPressMeta(
+  post: Pick<WordPressPost, 'yoast_head_json'>,
+  fallback: { title: string; excerpt: string }
+): { metaTitle: string; metaDescription: string } {
+  const yoast = post.yoast_head_json;
+  const yoastTitle = cleanText(yoast?.title ?? '');
+  const yoastDescription = cleanText(yoast?.description || yoast?.og_description || '');
+
+  return {
+    metaTitle: yoastTitle || fallback.title,
+    metaDescription: yoastDescription || fallback.excerpt.substring(0, 160),
+  };
+}
+
+/**
  * Transform WordPress post to normalized BlogArticle format
  */
 function transformWordPressPost(post: WordPressPost): BlogArticle {
@@ -229,6 +248,11 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
   // Clean and decode excerpt (title already cleaned above)
   const cleanExcerpt = cleanText(post.excerpt.rendered);
 
+  const { metaTitle, metaDescription } = resolveWordPressMeta(post, {
+    title: cleanTitle,
+    excerpt: cleanExcerpt,
+  });
+
   return {
     id: post.id,
     slug: post.slug,
@@ -243,8 +267,8 @@ function transformWordPressPost(post: WordPressPost): BlogArticle {
     readingTime: post.acf?.reading_time || calculatedReadingTime,
     isFeatured: post.acf?.featured || false,
     seoKeywords,
-    metaTitle: cleanTitle,
-    metaDescription: cleanExcerpt.substring(0, 160),
+    metaTitle,
+    metaDescription,
   };
 }
 
@@ -754,6 +778,17 @@ export async function getCategories(): Promise<WordPressCategory[]> {
 export async function getAllArticleSlugs(options?: {
   hub?: ContentHub;
 }): Promise<string[]> {
+  const entries = await getAllArticleEntries(options);
+  return entries.map((entry) => entry.slug);
+}
+
+/**
+ * Same set as getAllArticleSlugs, but keeps the WordPress `modified` date so
+ * the sitemap can emit a truthful lastmod instead of "now".
+ */
+export async function getAllArticleEntries(options?: {
+  hub?: ContentHub;
+}): Promise<Array<{ slug: string; updatedAt: string }>> {
   try {
     const articles = await getBlogArticles({
       perPage: 100,
@@ -761,8 +796,8 @@ export async function getAllArticleSlugs(options?: {
     });
 
     return articles
-      .map((article) => article.slug)
-      .filter((slug) => !BLOCKED_SLUGS.includes(slug));
+      .filter((article) => !BLOCKED_SLUGS.includes(article.slug))
+      .map((article) => ({ slug: article.slug, updatedAt: article.updatedAt }));
   } catch (error) {
     console.error('[WordPress] Error fetching article slugs:', error);
     return [];
