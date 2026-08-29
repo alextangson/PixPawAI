@@ -19,6 +19,7 @@ import { ResultModal } from '@/components/result-modal'
 import { LoginButton } from '@/components/auth/login-button'
 import { GuestLoginModal } from '@/components/guest-login-modal'
 import { GuestSignupPrompt } from '@/components/guest-signup-prompt'
+import { trackEvent } from '@/components/analytics'
 
 interface UploadModalWizardProps {
   isOpen: boolean
@@ -827,6 +828,12 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
       setWatermarkedUrl(result.watermarkedUrl || '')
       setRemainingCredits(result.remainingCredits)
       setGenerationId(result.generationId || '')
+
+      trackEvent('generate_image', {
+        style: selectedStyle,
+        pet_type: normalizePetType(qualityCheckResult?.petType) || normalizePetType(quickAnalysisResult?.petType) || 'pet',
+        is_guest: Boolean(result.isGuest),
+      })
 
       // Track if this was a guest generation for display purposes
       if (result.isGuest) {
