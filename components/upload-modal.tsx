@@ -5,6 +5,7 @@ import { X, Upload, ChevronDown, ChevronUp, CheckCircle, XCircle, Sparkles, Load
 import { Button } from '@/components/ui/button';
 import { uploadUserImage } from '@/lib/supabase/storage';
 import { createClient } from '@/lib/supabase/client';
+import { trackEvent } from '@/components/analytics';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -137,6 +138,10 @@ export function UploadModal({ isOpen, onClose, dict, selectedStyle: initialStyle
       setProgress('Done! 🎉');
       setGeneratedImageUrl(result.outputUrl);
       setRemainingCredits(result.remainingCredits);
+      trackEvent('generate_image', {
+        style: selectedStyle,
+        pet_type: 'pet',
+      });
 
       // 延迟后关闭或显示结果
       setTimeout(() => {
