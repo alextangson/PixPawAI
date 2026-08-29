@@ -5,9 +5,11 @@ import { type Locale } from '@/lib/i18n-config'
 
 /**
  * Server component shell for the homepage.
- * The interactive tree lives in HomeClient; the JSON-LD is emitted here so it
- * ships in the server HTML for crawlers that never run the client bundle.
+ * Dictionary is loaded here (not in useEffect) so H1 / how-it-works / $4.99 / CTA
+ * ship in the initial HTML for no-JS crawlers.
  */
+export const revalidate = 3600
+
 export default async function Home({
   params,
 }: {
@@ -24,7 +26,7 @@ export default async function Home({
   return (
     <>
       <HomeSchema lang={lang} faqs={faqs} />
-      <HomeClient />
+      <HomeClient dict={dict} lang={lang} />
     </>
   )
 }

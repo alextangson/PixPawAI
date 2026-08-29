@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getAllArticleEntries } from '@/lib/wordpress/blog';
-import { createAdminClient } from '@/lib/supabase/server';
 import { STYLES } from '@/lib/styles';
+import { SHOP_PRODUCTS } from '@/lib/seo/shop-products';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
 
@@ -9,6 +9,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
 // A moving `now` here would make lastmod meaningless to crawlers.
 const HOME_LAST_UPDATED = new Date('2026-08-29');
 const STYLES_LAST_UPDATED = new Date('2026-01-20'); // last style added, see lib/styles.ts
+const SHOP_LAST_UPDATED = new Date('2026-04-02');
 
 function toSlug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -37,50 +38,33 @@ async function getArticlePages(): Promise<MetadataRoute.Sitemap> {
   }));
 }
 
-async function getGalleryPages(): Promise<MetadataRoute.Sitemap> {
-  try {
-    const supabase = createAdminClient();
-    const { data: images } = await supabase
-      .from('generations')
-      .select('id, created_at')
-      .eq('is_public', true)
-      .eq('status', 'succeeded')
-      .not('output_url', 'is', null)
-      .order('views', { ascending: false })
-      .limit(100);
-
-    return (images ?? []).map((image) => ({
-      url: `${SITE_URL}/en/gallery/${image.id}/`,
-      lastModified: toDate(image.created_at),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }));
-  } catch (error) {
-    console.error('[Sitemap] Error fetching gallery images:', error);
-    return [];
-  }
+function getShopPages(): MetadataRoute.Sitemap {
+  return SHOP_PRODUCTS.map((product) => ({
+    url: `${SITE_URL}/en/shop/${product.productId}/`,
+    lastModified: SHOP_LAST_UPDATED,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
 }
 
 /**
- * Static pages. `blogIndexUpdated` / `galleryIndexUpdated` are derived from the
- * newest item in each feed, so those two index pages get a real lastmod;
- * everything else carries a hand-maintained date.
+ * Static pages. `blogIndexUpdated` is derived from the newest article so the
+ * blog index gets a real lastmod; everything else carries a hand-maintained date.
+ * UUID gallery items are intentionally omitted — they dilute crawl budget.
  */
 function getStaticPages(
-  blogIndexUpdated: Date | undefined,
-  galleryIndexUpdated: Date | undefined
+  blogIndexUpdated: Date | undefined
 ): MetadataRoute.Sitemap {
   return [
     { url: `${SITE_URL}/en/`,              changeFrequency: 'daily'   as const, priority: 1,   lastModified: HOME_LAST_UPDATED },
-    { url: `${SITE_URL}/en/gallery/`,      changeFrequency: 'daily'   as const, priority: 0.9, lastModified: galleryIndexUpdated },
+    { url: `${SITE_URL}/en/gallery/`,      changeFrequency: 'daily'   as const, priority: 0.9, lastModified: HOME_LAST_UPDATED },
     { url: `${SITE_URL}/en/blog/`,         changeFrequency: 'daily'   as const, priority: 0.8, lastModified: blogIndexUpdated },
-    // lastModified = last real content change (git history of the page file); update when editing a page
     { url: `${SITE_URL}/en/pricing/`,      changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/gift/`,         changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
-    { url: `${SITE_URL}/en/shop/`,         changeFrequency: 'weekly'  as const, priority: 0.7, lastModified: new Date('2026-04-02') },
-    { url: `${SITE_URL}/en/about/`,        changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },
+    { url: `${SITE_URL}/en/shop/`,         changeFrequency: 'weekly'  as const, priority: 0.7, lastModified: SHOP_LAST_UPDATED },
     { url: `${SITE_URL}/en/faq/`,          changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },
+    { url: `${SITE_URL}/en/about/`,        changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/glossary/`,     changeFrequency: 'monthly' as const, priority: 0.6, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/alternatives/`, changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/alternatives/crown-and-paw/`,    changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-08-29') },
@@ -94,8 +78,8 @@ function getStaticPages(
 }
 
 /**
- * Dynamic sitemap including static pages, blog articles, gallery images,
- * content/SEO pages, style pages, and shop pages.
+ * Dynamic sitemap including static pages, blog articles, shop PDPs,
+ * content/SEO pages, and style pages. Gallery UUID permalinks are excluded.
  * https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -106,17 +90,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  const [articlePages, galleryPages] = await Promise.all([
-    getArticlePages(),
-    getGalleryPages(),
-  ]);
+  const articlePages = await getArticlePages();
+  const shopPages = getShopPages();
 
   const staticPages = getStaticPages(
-    newestDate(articlePages.map((page) => page.lastModified as Date | undefined)),
-    newestDate(galleryPages.map((page) => page.lastModified as Date | undefined))
+    newestDate(articlePages.map((page) => page.lastModified as Date | undefined))
   );
 
-  return [...staticPages, ...stylePages, ...articlePages, ...galleryPages];
+  return [...staticPages, ...stylePages, ...articlePages, ...shopPages];
 }
 
 // Revalidate sitemap every hour

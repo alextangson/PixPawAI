@@ -15,6 +15,7 @@ import { BlogRelatedArticles } from '@/components/blog/blog-related-articles';
 import { BlogArticleSchema, BlogFaqSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
 import { BlogArticleBody } from '@/components/blog/article-body';
 import { extractFaqFromHtml } from '@/lib/seo/faq';
+import { ARTICLE_SEO_OVERRIDES, applyArticlePresentation } from '@/lib/seo/article-overrides';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
 
@@ -25,28 +26,6 @@ interface ArticlePageProps {
   }>;
 }
 
-/**
- * Per-slug SEO overrides for meta title/description.
- * These take priority over WordPress-sourced metadata to fix GSC CTR issues.
- */
-const SEO_OVERRIDES: Record<string, { title: string; description: string }> = {
-  'best-ai-pet-portrait-generator': {
-    title: '7 Best AI Pet Portrait Generators in 2026 (Tested & Ranked)',
-    description:
-      "We checked 7 AI pet portrait generators' real pricing and free tiers (updated Aug 2026). PixPawAI, PetCanvas, Adobe Firefly & more — ranked honestly.",
-  },
-  'pet-portrait-gift-guide': {
-    title: 'Best Pet Portrait Gift Ideas in 2026 — For Every Budget & Occasion',
-    description:
-      'Find the perfect pet portrait gift for any occasion. From AI-generated art to custom canvas prints, discover unique gifts pet lovers will treasure.',
-  },
-  'pet-loss-gift-ideas': {
-    title: 'Dog Passed Away? 15 Pet Loss Gifts That Actually Help (2026)',
-    description:
-      "When a friend's dog passes away, the right gift says what words can't. What to say, what to avoid, and 15 pet loss gifts — from free to lasting keepsakes.",
-  },
-};
-
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug, lang } = await params;
   const article = await findHubArticleBySlug(slug, 'blog');
@@ -56,7 +35,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   }
 
   const articleUrl = `https://pixpawai.com/${lang}/blog/${slug}/`;
-  const seoOverride = SEO_OVERRIDES[slug];
+  const seoOverride = ARTICLE_SEO_OVERRIDES[slug];
   const metaTitle = seoOverride?.title ?? article.metaTitle;
   const metaDescription = seoOverride?.description ?? article.metaDescription;
 
@@ -105,13 +84,16 @@ export const dynamicParams = true;
 
 export default async function BlogArticlePage({ params }: ArticlePageProps) {
   const { lang, slug } = await params;
-  const article = await findHubArticleBySlug(slug, 'blog');
+  const rawArticle = await findHubArticleBySlug(slug, 'blog');
 
-  if (!article) {
+  if (!rawArticle) {
     notFound();
   }
 
-  const relatedArticles = await listRelatedHubArticles(article, 'blog', 3);
+  const article = applyArticlePresentation(rawArticle);
+  const relatedArticles = (await listRelatedHubArticles(rawArticle, 'blog', 3)).map(
+    applyArticlePresentation
+  );
 
   const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
