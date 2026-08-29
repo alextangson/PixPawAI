@@ -1,0 +1,49 @@
+# PixPawAI
+
+> PixPawAI is an AI pet portrait generator. Upload a photo of your pet and the
+> generator returns a stylized portrait in one of 9 art styles, typically in
+> 20-60 seconds. New accounts get free credits; free generations are watermarked
+> at standard resolution (1024px). A one-time $9.99 HD unlock removes the
+> watermark from a generation and adds a personal print license, and credit packs
+> are available at $4.99 (15 credits), $19.99 (50 credits) and $39.99
+> (200 credits). Finished portraits can be printed on physical keepsakes —
+> canvas prints, pillows, ceramic mugs, phone cases and t-shirts — fulfilled
+> through print-on-demand. Memorial and rainbow-bridge portraits are offered for
+> pet owners creating a tribute to a pet that has died. The site is English-only
+> and all pages live under the /en/ path.
+
+## Main pages
+
+- [Generator (home)](https://pixpawai.com/en/): Upload a pet photo, pick a style and generate a portrait.
+- [Pet Memorial](https://pixpawai.com/en/pet-memorial/): Memorial and rainbow-bridge portraits for pets that have passed away.
+- [Gallery](https://pixpawai.com/en/gallery/): Public portraits shared by other users, browsable by style.
+- [Shop](https://pixpawai.com/en/shop/): Physical products printed with a generated portrait — canvas print, pillow, ceramic mug, phone case, t-shirt.
+- [Pricing](https://pixpawai.com/en/pricing/): Free trial plus one-time credit packs; no subscription.
+- [FAQ](https://pixpawai.com/en/faq/): Answers on supported pets, generation time, credits, refunds and downloads.
+- [Blog](https://pixpawai.com/en/blog/): Guides on pet photography, gift ideas, pet loss and AI portrait styles.
+
+## Art styles
+
+- [Merry Christmas](https://pixpawai.com/en/styles/christmas-vibe/): Festive holiday portrait with a classic Santa hat.
+- [Smart Casual](https://pixpawai.com/en/styles/smart-casual/): Sweater and newsboy cap on a warm studio background.
+- [Music Lover](https://pixpawai.com/en/styles/music-lover/): Studio portrait with silver headphones on a deep blue background.
+- [Retro Pop Art](https://pixpawai.com/en/styles/retro-pop-art/): Bold geometric shapes and flat colour blocks in a vintage poster style.
+- [Bordeaux Muse](https://pixpawai.com/en/styles/bordeaux-muse/): Burgundy fashion-editorial portrait with beret, turtleneck and pearls.
+- [Emerald Muse](https://pixpawai.com/en/styles/emerald-muse/): Sage-green editorial portrait with beret, cashmere scarf and jade necklace.
+- [Magazine Chic](https://pixpawai.com/en/styles/magazine-chic/): Warm-toned fashion magazine portrait with designer accessories.
+- [Wes Anderson Pop](https://pixpawai.com/en/styles/wes-anderson-pop/): Symmetrical, colour-blocked portrait in a Wes Anderson-inspired palette.
+- [Birthday Celebration](https://pixpawai.com/en/styles/birthday-celebration/): Party scene with hat, bow tie, cake and balloons.
+
+## Reference
+
+- [Alternatives](https://pixpawai.com/en/alternatives/): Comparison of PixPawAI with other AI pet portrait tools.
+- [Use cases](https://pixpawai.com/en/use-cases/): Common reasons people generate pet portraits — gifts, memorials, social posts, wall art.
+- [Glossary](https://pixpawai.com/en/glossary/): Definitions of AI pet portrait terms used across the site.
+- [About](https://pixpawai.com/en/about/): What PixPawAI is and who builds it.
+- [Contact](https://pixpawai.com/en/contact/): Support contact — support@pixpawai.com.
+
+## Optional
+
+- [Refund policy](https://pixpawai.com/en/refund/): Credit refund and regeneration policy.
+- [Privacy policy](https://pixpawai.com/en/privacy/)
+- [Terms of service](https://pixpawai.com/en/terms/)

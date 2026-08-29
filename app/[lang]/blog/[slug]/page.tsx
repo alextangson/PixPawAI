@@ -12,8 +12,9 @@ import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents';
 import { BlogSocialShare } from '@/components/blog/blog-social-share';
 import { BlogRelatedArticles } from '@/components/blog/blog-related-articles';
-import { BlogArticleSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
+import { BlogArticleSchema, BlogFaqSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
 import { BlogArticleBody } from '@/components/blog/article-body';
+import { extractFaqFromHtml } from '@/lib/seo/faq';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
 
@@ -126,10 +127,12 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
   const articleUrl = `${siteUrl}/${lang}/blog/${article.slug}/`;
+  const faqs = extractFaqFromHtml(article.content);
 
   return (
     <>
       <BlogArticleSchema article={article} url={articleUrl} />
+      <BlogFaqSchema faqs={faqs} />
       <BreadcrumbSchema
         items={breadcrumbItems.map((item) => ({
           name: item.label,

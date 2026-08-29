@@ -9,11 +9,9 @@ async function read(relativePath) {
   return fs.readFile(path.join(root, relativePath), 'utf-8');
 }
 
-test('content hub rules keep tutorial and blog routes separated', async () => {
+test('content hub rules still classify categories, and only blog is routed', async () => {
   const helper = await read('lib/content-hubs.ts');
-  const howToPage = await read('app/[lang]/how-to/page.tsx');
   const blogPage = await read('app/[lang]/blog/page.tsx');
-  const howToArticlePage = await read('app/[lang]/how-to/[slug]/page.tsx');
   const blogArticlePage = await read('app/[lang]/blog/[slug]/page.tsx');
 
   assert.match(helper, /photo-tips/);
@@ -21,15 +19,14 @@ test('content hub rules keep tutorial and blog routes separated', async () => {
   assert.match(helper, /pet-care/);
   assert.match(helper, /return 'blog'/);
 
-  assert.match(howToPage, /getFeaturedArticleByHub\('how-to'\)/);
-  assert.match(howToPage, /getBlogArticles\(\{ category, perPage: 12, hub: 'how-to' \}\)/);
-  assert.match(blogPage, /getFeaturedArticleByHub\('blog'\)/);
-  assert.match(blogPage, /getBlogArticles\(\{ perPage: 12, hub: 'blog' \}\)/);
+  assert.match(blogPage, /pickFeaturedHubArticle\('blog'\)/);
+  assert.match(blogPage, /listHubArticles\(\{ perPage: 12, hub: 'blog' \}\)/);
+  assert.match(blogArticlePage, /findHubArticleBySlug\(slug, 'blog'\)/);
+  assert.match(blogArticlePage, /listHubArticleSlugs\('blog'\)/);
 
-  assert.match(howToArticlePage, /getBlogArticleForHub\(slug, 'how-to'\)/);
-  assert.match(howToArticlePage, /getAllArticleSlugs\(\{ hub: 'how-to' \}\)/);
-  assert.match(blogArticlePage, /getBlogArticleForHub\(slug, 'blog'\)/);
-  assert.match(blogArticlePage, /getAllArticleSlugs\(\{ hub: 'blog' \}\)/);
+  // The how-to hub route was removed — nothing should reference it again.
+  await assert.rejects(() => read('app/[lang]/how-to/page.tsx'));
+  await assert.rejects(() => read('app/[lang]/how-to/[slug]/page.tsx'));
 });
 
 test('pet memorial entry exists in blog page and footer', async () => {

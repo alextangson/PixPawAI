@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+export const metadata: Metadata = {
+  title: 'Authentication Error - PixPaw AI',
+  robots: { index: false, follow: false },
+}
 
 export default function AuthErrorPage() {
   return (

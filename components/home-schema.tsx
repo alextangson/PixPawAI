@@ -2,7 +2,11 @@
  * Structured Data (JSON-LD) for Homepage
  * Helps search engines understand the site structure and content
  * https://developers.google.com/search/docs/appearance/structured-data
+ *
+ * Server-only by design: rendered from server components so the JSON-LD lands
+ * in the initial HTML for crawlers that do not execute JavaScript.
  */
+import { buildCreditPackAggregateOffer } from '@/lib/seo/pricing';
 
 interface HomeSchemaProps {
   lang: string;
@@ -160,33 +164,7 @@ export function ProductSchema() {
       '@type': 'Brand',
       name: 'PixPaw AI',
     },
-    offers: {
-      '@type': 'AggregateOffer',
-      priceCurrency: 'USD',
-      lowPrice: '4.99',
-      highPrice: '49.99',
-      offerCount: '4',
-      offers: [
-        {
-          '@type': 'Offer',
-          name: 'Starter Pack',
-          price: '4.99',
-          priceCurrency: 'USD',
-        },
-        {
-          '@type': 'Offer',
-          name: 'Pro Bundle',
-          price: '19.99',
-          priceCurrency: 'USD',
-        },
-        {
-          '@type': 'Offer',
-          name: 'Master Plan',
-          price: '49.99',
-          priceCurrency: 'USD',
-        },
-      ],
-    },
+    offers: buildCreditPackAggregateOffer(),
   };
 
   return (
@@ -199,12 +177,13 @@ export function ProductSchema() {
 
 /**
  * Main Home Schema Component
- * Combines all structured data for the homepage
+ * Combines all structured data for the homepage.
+ * OrganizationSchema is deliberately absent: app/[lang]/layout.tsx already
+ * emits it on every page, and two Organization blocks on one page is noise.
  */
 export function HomeSchema({ lang, faqs }: HomeSchemaProps & { faqs?: FAQSchemaProps['faqs'] }) {
   return (
     <>
-      <OrganizationSchema />
       <WebSiteSchema />
       <SoftwareApplicationSchema />
       <ProductSchema />

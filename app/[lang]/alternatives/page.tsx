@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import type { Locale } from '@/lib/i18n-config';
 import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 import { WebPageSchema, ItemListSchema } from '@/components/seo/page-schema';
@@ -60,8 +62,18 @@ export default function AlternativesPage() {
         url={pageUrl}
         items={[
           { name: 'PixPaw AI', position: 1 },
-          { name: 'Commissioned artist', position: 2 },
-          { name: 'Photo filter apps', position: 3 },
+          {
+            name: 'Crown & Paw alternative',
+            url: `${SEO_SITE_URL}/en/alternatives/crown-and-paw/`,
+            position: 2,
+          },
+          {
+            name: 'West & Willow alternative',
+            url: `${SEO_SITE_URL}/en/alternatives/west-and-willow/`,
+            position: 3,
+          },
+          { name: 'Commissioned artist', position: 4 },
+          { name: 'Photo filter apps', position: 5 },
         ]}
       />
       <div className="container mx-auto max-w-5xl px-4">
@@ -76,6 +88,45 @@ export default function AlternativesPage() {
           Looking for the best way to create a pet portrait? Here is how PixPaw AI compares with
           commissioned artists, photo filter apps, and other AI generators.
         </p>
+
+        {/* Brand-by-brand comparisons — the pages people actually search for */}
+        <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="mb-2 text-2xl font-semibold text-gray-900">Compare a specific brand</h2>
+          <p className="mb-6 text-gray-600">
+            Already looking at a made-to-order pet portrait service? These are honest, side-by-side
+            breakdowns — what each brand does well, and where an instant AI portrait fits better.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                href: '/en/alternatives/crown-and-paw/',
+                label: 'Crown & Paw alternative',
+                blurb:
+                  'Hand-illustrated and well loved — but the proof only arrives 1–2 days after you order, then it prints and ships.',
+              },
+              {
+                href: '/en/alternatives/west-and-willow/',
+                label: 'West & Willow alternative',
+                blurb:
+                  'Beautiful modern illustration — but their FAQ states they do not offer artwork previews or proofs.',
+              },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group block rounded-xl border border-gray-100 p-5 transition-colors hover:border-coral/40 hover:bg-cream"
+              >
+                <span className="flex items-center gap-2 font-semibold text-gray-900 group-hover:text-coral">
+                  {item.label}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="mt-2 block text-sm leading-relaxed text-gray-600">
+                  {item.blurb}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
 
         <div className="overflow-x-auto rounded-2xl bg-white p-6 shadow-sm mb-8">
           <h2 className="mb-4 text-2xl font-semibold text-gray-900">Comparison Table</h2>

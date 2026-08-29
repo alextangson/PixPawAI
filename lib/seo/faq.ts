@@ -11,9 +11,24 @@ function stripHtml(input: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&hellip;/g, '...')
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    // WordPress emits smart quotes, dashes and ellipses as numeric entities;
+    // JSON-LD needs the real characters, not the escape sequences.
+    // Out-of-range code points are left verbatim rather than throwing.
+    .replace(/&#(\d+);/g, (match, code) => {
+      const point = Number(code);
+      return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : match;
+    })
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** Editors write "Q: …" / "A: …" in WordPress; schema.org wants the bare text. */
+function stripQaLabel(text: string): string {
+  return text.replace(/^(?:Q|A|Question|Answer)\s*[:.\-–—]\s*/i, '').trim();
 }
 
 /**
@@ -27,7 +42,11 @@ export function extractFaqFromHtml(html: string): ParsedFaqItem[] {
     return [];
   }
 
-  const faqHeadingMatch = html.match(/<h2[^>]*>\s*FAQ\s*<\/h2>/i);
+  // Real articles title the section "FAQ: Pet Loss Gift Ideas" or
+  // "Frequently Asked Questions", not a bare "FAQ".
+  const faqHeadingMatch = html.match(
+    /<h2[^>]*>\s*(?:FAQs?|Frequently Asked Questions)\b[^<]*<\/h2>/i
+  );
   const contentStart = faqHeadingMatch
     ? (faqHeadingMatch.index ?? 0) + faqHeadingMatch[0].length
     : 0;
@@ -42,8 +61,8 @@ export function extractFaqFromHtml(html: string): ParsedFaqItem[] {
   const strongPattern = /<p[^>]*>\s*<strong>([\s\S]*?)<\/strong>\s*<\/p>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
   let strongMatch: RegExpExecArray | null;
   while ((strongMatch = strongPattern.exec(faqSection)) !== null) {
-    const question = stripHtml(strongMatch[1]);
-    const answer = stripHtml(strongMatch[2]);
+    const question = stripQaLabel(stripHtml(strongMatch[1]));
+    const answer = stripQaLabel(stripHtml(strongMatch[2]));
 
     if (!question || !answer || seen.has(question.toLowerCase())) {
       continue;
@@ -60,8 +79,8 @@ export function extractFaqFromHtml(html: string): ParsedFaqItem[] {
   const headingPattern = /<h3[^>]*>([\s\S]*?)<\/h3>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
   let headingMatch: RegExpExecArray | null;
   while ((headingMatch = headingPattern.exec(faqSection)) !== null) {
-    const question = stripHtml(headingMatch[1]);
-    const answer = stripHtml(headingMatch[2]);
+    const question = stripQaLabel(stripHtml(headingMatch[1]));
+    const answer = stripQaLabel(stripHtml(headingMatch[2]));
 
     if (!question || !answer || seen.has(question.toLowerCase())) {
       continue;
