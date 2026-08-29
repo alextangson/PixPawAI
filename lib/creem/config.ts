@@ -81,7 +81,9 @@ export function verifyCreemRedirectSignature(params: CreemRedirectParams): boole
 }
 
 export function getCreemSuccessUrl(locale: string): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  const configured = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_SITE_URL;
   if (!configured) throw new Error('NEXT_PUBLIC_SITE_URL is not configured');
   const siteUrl = new URL(configured);
   if (process.env.NODE_ENV === 'production' && siteUrl.protocol !== 'https:') {
