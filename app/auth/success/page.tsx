@@ -3,6 +3,43 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { trackEvent } from '@/components/analytics'
+import type { User } from '@supabase/supabase-js'
+
+function authMethod(user: User): string {
+  const provider =
+    (typeof user.app_metadata?.provider === 'string' && user.app_metadata.provider) ||
+    user.identities?.[0]?.provider ||
+    'unknown'
+  return provider
+}
+
+/** New accounts have last_sign_in_at ≈ created_at; returning users do not. */
+function isNewSignup(user: User): boolean {
+  const createdAt = Date.parse(user.created_at)
+  if (!Number.isFinite(createdAt)) return false
+  const lastSignInAt = user.last_sign_in_at
+    ? Date.parse(user.last_sign_in_at)
+    : createdAt
+  return Math.abs(lastSignInAt - createdAt) < 60_000
+}
+
+function trackAuthSuccess(user: User) {
+  const dedupeKey = `pixpaw_ga_auth_${user.id}_${user.last_sign_in_at || user.created_at}`
+  try {
+    if (sessionStorage.getItem(dedupeKey) === '1') return
+    sessionStorage.setItem(dedupeKey, '1')
+  } catch {
+    // sessionStorage may be unavailable; still fire the event
+  }
+
+  const method = authMethod(user)
+  if (isNewSignup(user)) {
+    trackEvent('signup', { method })
+  } else {
+    trackEvent('login', { method })
+  }
+}
 
 function AuthSuccessContent() {
     const router = useRouter()
@@ -27,8 +64,9 @@ function AuthSuccessContent() {
                 }
 
                 if (session) {
-                    console.log('✅ Session verified:', session.user.email)
+                    console.log('✅ Session verified')
                     setStatus('success')
+                    trackAuthSuccess(session.user)
 
                     // Get redirect target
                     const next = searchParams.get('next') || '/en'
