@@ -41,9 +41,9 @@ const SEO_OVERRIDES: Record<string, { title: string; description: string }> = {
       'Find the perfect pet portrait gift for any occasion. From AI-generated art to custom canvas prints, discover unique gifts pet lovers will treasure.',
   },
   'pet-loss-gift-ideas': {
-    title: '15 Meaningful Pet Loss Gift Ideas That Actually Help (2026 Guide)',
+    title: 'Dog Passed Away? 15 Pet Loss Gifts That Actually Help (2026)',
     description:
-      'Searching for pet loss gift ideas? Discover 15 thoughtful gifts that actually help grieving pet parents, from memorial portraits to living tributes.',
+      "When a friend's dog passes away, the right gift says what words can't. What to say, what to avoid, and 15 pet loss gifts — from free to lasting keepsakes.",
   },
 };
 
