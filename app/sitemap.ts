@@ -76,7 +76,8 @@ function getStaticPages(
     { url: `${SITE_URL}/en/blog/`,         changeFrequency: 'daily'   as const, priority: 0.8, lastModified: blogIndexUpdated },
     // lastModified = last real content change (git history of the page file); update when editing a page
     { url: `${SITE_URL}/en/pricing/`,      changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
-    { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-07-02') },
+    { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
+    { url: `${SITE_URL}/en/gift/`,         changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/shop/`,         changeFrequency: 'weekly'  as const, priority: 0.7, lastModified: new Date('2026-04-02') },
     { url: `${SITE_URL}/en/about/`,        changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/faq/`,          changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },

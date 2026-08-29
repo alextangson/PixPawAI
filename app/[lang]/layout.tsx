@@ -8,6 +8,7 @@ import { Footer } from '@/components/footer'
 import { getUser } from '@/lib/auth/actions'
 import { ReferralWelcomeToast } from '@/components/referral-welcome-toast'
 import { Analytics } from '@/components/analytics'
+import { Clarity } from '@/components/clarity'
 import { OrganizationSchema } from '@/components/home-schema'
 
 const inter = Inter({
@@ -125,6 +126,7 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <Analytics />
+        <Clarity />
         <Navbar dict={dict} lang={lang} user={user} />
         {children}
         <Footer dict={dict} lang={lang} />

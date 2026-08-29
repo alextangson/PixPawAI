@@ -72,3 +72,8 @@ lerna-debug.log*
 
 # Agent skills (installed via npx skills)
 .agents/
+.env*
+.claude/
+.playwright-mcp/
+__pycache__/
+clash-sub.yaml

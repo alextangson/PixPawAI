@@ -1,7 +1,7 @@
 # PixPawAI
 
 > PixPawAI is an AI pet portrait generator. Upload a photo of your pet and the
-> generator returns a stylized portrait in one of 9 art styles, typically in
+> generator returns a stylized portrait in one of 12 art styles, typically in
 > 20-60 seconds. New accounts get free credits; free generations are watermarked
 > at standard resolution (1024px). A one-time $9.99 HD unlock removes the
 > watermark from a generation and adds a personal print license, and credit packs
@@ -16,6 +16,7 @@
 
 - [Generator (home)](https://pixpawai.com/en/): Upload a pet photo, pick a style and generate a portrait.
 - [Pet Memorial](https://pixpawai.com/en/pet-memorial/): Memorial and rainbow-bridge portraits for pets that have passed away.
+- [Pet Gifts](https://pixpawai.com/en/gift/): Instant pet-portrait gifts — generate in seconds, preview free, optionally printed on keepsakes.
 - [Gallery](https://pixpawai.com/en/gallery/): Public portraits shared by other users, browsable by style.
 - [Shop](https://pixpawai.com/en/shop/): Physical products printed with a generated portrait — canvas print, pillow, ceramic mug, phone case, t-shirt.
 - [Pricing](https://pixpawai.com/en/pricing/): Free trial plus one-time credit packs; no subscription.
@@ -33,6 +34,9 @@
 - [Magazine Chic](https://pixpawai.com/en/styles/magazine-chic/): Warm-toned fashion magazine portrait with designer accessories.
 - [Wes Anderson Pop](https://pixpawai.com/en/styles/wes-anderson-pop/): Symmetrical, colour-blocked portrait in a Wes Anderson-inspired palette.
 - [Birthday Celebration](https://pixpawai.com/en/styles/birthday-celebration/): Party scene with hat, bow tie, cake and balloons.
+- [Rainbow Bridge](https://pixpawai.com/en/styles/rainbow-bridge/): Peaceful memorial tribute in a soft heavenly meadow.
+- [Guardian Angel](https://pixpawai.com/en/styles/guardian-angel/): Angelic memorial tribute with soft wings and a gentle halo.
+- [Watercolor Keepsake](https://pixpawai.com/en/styles/watercolor-keepsake/): Delicate watercolor memorial portrait, soft and painterly.
 
 ## Reference
 

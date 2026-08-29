@@ -102,10 +102,30 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', order.id);
 
+    // Bundle: grant the clean HD digital download for the same generation.
+    // Physical checkout requires auth, so the buyer always has a user_id and
+    // isEntitledToHd() matches on it. Non-fatal — the print is already placed.
+    if (order.include_hd) {
+      const { error: hdError } = await supabase.from('hd_unlocks').insert({
+        generation_id: order.generation_id,
+        paypal_order_id: paypalOrderId,
+        paypal_capture_id: captureId,
+        payer_email: user.email,
+        user_id: user.id,
+        amount_usd: 4.00,
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      });
+      if (hdError) {
+        console.error('[Printful] bundle HD grant failed (order placed, HD not granted):', hdError, { orderId: order.id });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       printfulOrderId: printfulOrder.id,
       status: printfulOrder.status,
+      hdGranted: order.include_hd === true,
     });
   } catch (error: any) {
     console.error('[Printful] confirm-order error:', error);
