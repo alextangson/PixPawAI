@@ -110,6 +110,8 @@ interface PurchaseItem {
   item_name: string;
   price: number;
   quantity: number;
+  /** 'digital' | 'physical' — lets GA4 segment credit sales vs Printful orders */
+  item_category?: string;
 }
 
 /**
@@ -121,6 +123,8 @@ export function trackPurchase(params: {
   transactionId: string;
   value: number;
   currency?: string;
+  tax?: number;
+  shipping?: number;
   items: PurchaseItem[];
 }) {
   if (typeof window === 'undefined' || !(window as any).gtag) return;
@@ -128,6 +132,8 @@ export function trackPurchase(params: {
     transaction_id: params.transactionId,
     value: params.value,
     currency: params.currency ?? 'USD',
+    tax: params.tax,
+    shipping: params.shipping,
     items: params.items,
   });
 }

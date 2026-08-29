@@ -36,12 +36,12 @@ const MEMORIAL_FAQS = [
 ];
 
 const STYLE_GRID = [
+  { id: 'rainbow-bridge', name: 'Rainbow Bridge', image: '/styles/rainbow-bridge.jpg' },
+  { id: 'guardian-angel', name: 'Guardian Angel', image: '/styles/guardian-angel.jpg' },
+  { id: 'watercolor-keepsake', name: 'Watercolor Keepsake', image: '/styles/watercolor-keepsake.jpg' },
   { id: 'emerald-muse', name: 'Emerald Muse', image: '/styles/emerald-muse.jpg' },
   { id: 'bordeaux-muse', name: 'Bordeaux Muse', image: '/styles/bordeaux-muse.jpg' },
-  { id: 'wes-anderson-pop', name: 'Wes Anderson Pop', image: '/styles/wes-anderson-pop.jpg' },
-  { id: 'smart-casual', name: 'Smart Casual', image: '/styles/smart-casual.jpg' },
   { id: 'magazine-chic', name: 'Magazine Chic', image: '/styles/magazine-chic.jpg' },
-  { id: 'pop-art', name: 'Pop Art', image: '/styles/Pop-Art.jpg' },
 ];
 
 export async function generateMetadata({
@@ -75,10 +75,10 @@ export async function generateMetadata({
       url: pageUrl,
       type: 'website',
       images: [{
-        url: `${SITE_URL}/styles/emerald-muse.jpg`,
+        url: `${SITE_URL}/styles/rainbow-bridge.jpg`,
         width: 1200,
         height: 630,
-        alt: 'Pet memorial portrait in elegant emerald tones',
+        alt: 'Pet memorial portrait — a rainbow-bridge tribute',
       }],
     },
   };
