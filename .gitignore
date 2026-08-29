@@ -73,6 +73,7 @@ lerna-debug.log*
 # Agent skills (installed via npx skills)
 .agents/
 .env*
+!.env.example
 .claude/
 .playwright-mcp/
 __pycache__/

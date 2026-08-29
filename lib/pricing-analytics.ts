@@ -5,7 +5,7 @@
 
 import { trackEvent } from '@/components/analytics';
 
-export type PricingTier = 'free' | 'starter' | 'pro' | 'master';
+export type PricingTier = 'free' | 'hd_unlock' | 'keepsake' | 'starter' | 'pro' | 'master';
 export type ModalAction = 'upgrade' | 'dismiss' | 'close';
 
 interface BaseEvent {

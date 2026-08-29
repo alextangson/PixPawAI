@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:unit": "tsx --test lib/__tests__/*.test.ts lib/hd-unlock/__tests__/*.test.ts",
+    "test:payments": "node --test tests/paypal-credit-routes.test.mjs tests/creem-credit-routes.test.mjs tests/paypal-credit-transaction.test.mjs tests/monetization-surface.test.mjs",
+    "test:generation": "node --test tests/generation-identity-routes.test.mjs",
     "optimize:products": "node scripts/optimize-product-images.js"
   },
   "dependencies": {

@@ -2,7 +2,7 @@
  * Payment Modal Component
  * 
  * Real payment checkout modal (replaces fake door)
- * Integrates PayPal advanced buttons
+ * Redirects to Creem's hosted checkout
  * Beautiful design with gradient accents
  */
 
@@ -10,9 +10,9 @@
 
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { X, Shield, Zap, CheckCircle, Sparkles, Lock, Clock } from 'lucide-react';
-import { PayPalButtonsAdvanced } from './paypal-buttons-advanced';
-import { trackEvent, trackPurchase } from '@/components/analytics';
+import { X, Shield, Zap, CheckCircle, Sparkles, Clock } from 'lucide-react';
+import { CreemCheckoutButton } from './creem-checkout-button';
+import { trackEvent } from '@/components/analytics';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -25,44 +25,41 @@ interface PaymentModalProps {
 const TIER_INFO = {
   starter: {
     name: 'Starter Pack',
-    tagline: '✨ Perfect for Social Sharing',
+    tagline: '✨ A simple pack for your first portraits',
     icon: Sparkles,
     gradient: 'from-blue-500 to-cyan-500',
     badgeColor: 'bg-blue-500',
     features: [
-      '15 High-Resolution Generations',
-      'No Watermarks',
-      'All 9 Aspect Ratios',
-      '8 Style Options',
-      'Personal Use License',
+      '15 portrait generation credits',
+      'Credits never expire',
+      'Watermark-free downloads for your portraits',
+      'All currently available styles and aspect ratios',
     ],
   },
   pro: {
     name: 'Pro Bundle',
-    tagline: '🔥 Best Value - Most Popular',
+    tagline: '🔥 More room to explore different portraits',
     icon: Zap,
     gradient: 'from-coral to-orange-600',
     badgeColor: 'bg-coral',
     features: [
-      '50 Generation Credits',
-      '✨ 3-Image Selection',
-      '15 Premium Styles',
-      '10% Off Physical Products',
+      '50 portrait generation credits',
+      'Credits never expire',
+      'Watermark-free downloads for your portraits',
+      'All currently available styles and aspect ratios',
     ],
   },
   master: {
     name: 'Master Plan',
-    tagline: '👑 For Professionals',
+    tagline: '👑 Lowest cost per generation',
     icon: Shield,
     gradient: 'from-purple-600 to-pink-600',
     badgeColor: 'bg-purple-600',
     features: [
-      '200 Generation Credits',
-      '5-Image Selection (Best Quality)',
-      '30+ Premium Styles',
-      'Priority Queue (2x Speed)',
-      'Full Commercial License',
-      'Priority Support (4h)',
+      '200 portrait generation credits',
+      'Credits never expire',
+      'Watermark-free downloads for your portraits',
+      'All currently available styles and aspect ratios',
     ],
   },
 };
@@ -74,54 +71,16 @@ export function PaymentModal({
   price,
   credits,
 }: PaymentModalProps) {
-  const [paymentSuccess, setPaymentSuccess] = React.useState(false);
   const tierInfo = TIER_INFO[tier];
   const Icon = tierInfo.icon;
   const numericPrice = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
 
-  // Pre-warm PayPal token when modal opens
   React.useEffect(() => {
     if (isOpen) {
-      // Reset success state when modal opens
-      setPaymentSuccess(false);
-
       // Funnel event: reached checkout (bottom-of-funnel for paid-traffic tests)
       trackEvent('begin_checkout', { value: numericPrice, currency: 'USD', tier });
-
-      // Warmup token in background
-      fetch('/api/payments/paypal/warmup', { method: 'POST' })
-        .then(() => console.log('🔥 PayPal token pre-warmed'))
-        .catch(() => console.log('⚠️ Token warmup failed (not critical)'));
     }
-  }, [isOpen]);
-
-  // Handle payment success
-  const handlePaymentSuccess = (payment: any) => {
-    setPaymentSuccess(true);
-
-    // Conversion event: fire GA4 purchase so paid-traffic ROAS/CPA is measurable
-    const transactionId =
-      payment?.id ?? payment?.transactionId ?? payment?.orderId ?? '';
-    trackPurchase({
-      transactionId,
-      value: numericPrice,
-      currency: 'USD',
-      items: [
-        {
-          item_id: tier,
-          item_name: tierInfo.name,
-          price: numericPrice,
-          quantity: 1,
-        },
-      ],
-    });
-
-    // Auto-close after 5 seconds and reload
-    setTimeout(() => {
-      onClose();
-      window.location.reload();
-    }, 5000);
-  };
+  }, [isOpen, numericPrice, tier]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -139,72 +98,7 @@ export function PaymentModal({
           <X className="w-5 h-5 text-gray-600" />
         </button>
 
-        {/* Conditional Rendering: Success OR Payment Form */}
-        {paymentSuccess ? (
-          /* Success View - Full screen */
-          <div className="flex items-center justify-center p-12 min-h-[600px] bg-gradient-to-br from-green-50 via-white to-blue-50">
-            <div className="text-center max-w-md relative">
-              {/* Confetti decoration */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(30)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full opacity-70"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      backgroundColor: ['#FF6B6B', '#FFA500', '#FFD700', '#90EE90', '#87CEEB'][Math.floor(Math.random() * 5)],
-                      animation: `float ${2 + Math.random() * 3}s ease-in-out infinite`,
-                      animationDelay: `${Math.random() * 2}s`,
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Success Icon */}
-              <div className="flex justify-center mb-6 relative z-10">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-green-400 rounded-full blur-2xl opacity-40 animate-ping"></div>
-                  <div className="relative w-28 h-28 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl">
-                    <CheckCircle className="w-16 h-16 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Success Message */}
-              <h3 className="text-4xl font-bold text-gray-900 mb-4 relative z-10">
-                <span className="text-5xl mr-2">🎉</span>
-                <br />
-                Payment Successful!
-              </h3>
-              
-              <p className="text-xl text-gray-700 mb-8 relative z-10">
-                You're now a <span className="font-bold text-coral capitalize">{tier}</span> member
-              </p>
-              
-              {/* Credits Badge */}
-              <div className="inline-flex items-center gap-4 bg-gradient-to-r from-coral to-orange-600 text-white rounded-2xl px-10 py-5 shadow-2xl mb-8 relative z-10">
-                <span className="text-5xl font-black">+{credits}</span>
-                <div className="text-left border-l-2 border-white/40 pl-4">
-                  <div className="text-lg font-bold">Credits</div>
-                  <div className="text-sm opacity-90">Added</div>
-                </div>
-              </div>
-              
-              {/* Auto-close message */}
-              <div className="relative z-10 space-y-2">
-                <p className="text-base text-gray-700 font-medium">
-                  Updating your account...
-                </p>
-                <p className="text-sm text-gray-500">
-                  This window will close automatically in 5 seconds
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Payment Form - Two Column Layout */
-          <div className="grid md:grid-cols-2 min-h-[600px]">
+        <div className="grid md:grid-cols-2 min-h-[600px]">
           {/* Left Column - Package Info */}
           <div className="bg-gradient-to-br from-gray-50 to-white p-6 md:p-8 md:border-r border-gray-200">
             {/* Icon and Title */}
@@ -281,29 +175,20 @@ export function PaymentModal({
                 ⚡ Tip: Click button and complete payment quickly for best experience
               </p>
               
-              {/* PayPal Buttons */}
-              <PayPalButtonsAdvanced
-                tier={tier}
-                price={price}
-                credits={credits}
-                onSuccess={handlePaymentSuccess}
-                onError={(error) => {
-                  console.error('Payment error:', error);
-                }}
-              />
+              <CreemCheckoutButton tier={tier} />
 
               {/* Security & Info */}
               <div className="mt-6 space-y-3">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="text-xs text-green-800 text-center font-medium flex items-center justify-center gap-2">
                     <Shield className="w-4 h-4" />
-                    Secure payment via PayPal
+                    Secure payment via Creem
                   </p>
                 </div>
                 
                 <div className="text-center space-y-1.5">
                   <p className="text-xs text-gray-600">
-                    💳 Pay with PayPal, Card, Apple Pay, or Google Pay
+                    💳 Pay securely with available card and wallet methods
                   </p>
                   <p className="text-xs text-gray-500 flex items-center justify-center gap-1.5">
                     <Clock className="w-3 h-3" />
@@ -324,23 +209,7 @@ export function PaymentModal({
             </div>
           </div>
           </div>
-        )}
       </DialogContent>
     </Dialog>
   );
-}
-
-// Add floating animation for confetti (client-only to avoid SSR "document is not defined")
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-20px) rotate(180deg); }
-    }
-  `;
-  if (!document.head.querySelector('#paypal-confetti-style')) {
-    style.id = 'paypal-confetti-style';
-    document.head.appendChild(style);
-  }
 }
