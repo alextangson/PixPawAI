@@ -14,7 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   PAYPAL_API_BASE,
   PRICING_TIERS,
@@ -77,13 +77,6 @@ export async function POST(request: NextRequest) {
 
     const plan = PRICING_TIERS[tier];
 
-    // 3. Get user profile (for metadata)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('id', user.id)
-      .single();
-
     // 4. Create PayPal order
     const accessToken = await getPayPalAccessToken();
     
@@ -120,12 +113,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!paypalResponse.ok) {
-      const errorData = await paypalResponse.json();
-      console.error('[PayPal Create Order] Error:', errorData);
+      console.error('[PayPal Create Order] Provider request failed', { status: paypalResponse.status });
       return NextResponse.json(
         { 
           error: 'Failed to create PayPal order. Please try again.',
-          details: errorData.message || 'Unknown error',
         },
         { status: 500 }
       );
@@ -133,19 +124,13 @@ export async function POST(request: NextRequest) {
 
     const orderData = await paypalResponse.json();
 
-    console.log(`✅ [PayPal] Order created: ${orderData.id} for user ${user.email} (${tier})`);
+    if (typeof orderData.id !== 'string' || !orderData.id) {
+      return NextResponse.json({ error: 'Invalid payment provider response.' }, { status: 502 });
+    }
 
-    // 5. Return order details to frontend immediately (don't wait for DB)
-    const response = NextResponse.json({
-      success: true,
-      orderId: orderData.id,
-      tier,
-      amount: plan.amount,
-      credits: plan.credits,
-    });
-
-    // 6. Store pending payment in database asynchronously (don't block response)
-    supabase
+    // Await persistence BEFORE exposing an order that the buyer can approve.
+    // Only the server may write the trusted price and credit quantity.
+    const { error: dbError } = await createAdminClient()
       .from('payments')
       .insert({
         user_id: user.id,
@@ -157,25 +142,27 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         metadata: {
           order_created_at: new Date().toISOString(),
-          user_email: profile?.email,
-          user_name: profile?.full_name,
           paypal_order_status: orderData.status,
         },
-      })
-      .then(({ error: dbError }) => {
-        if (dbError) {
-          console.error('[PayPal Create Order] Database error:', dbError);
-        }
       });
+    if (dbError) {
+      console.error('[PayPal Create Order] Persistence failed', { code: dbError.code });
+      return NextResponse.json({ error: 'Unable to save your order. Please try again later.' }, { status: 503 });
+    }
 
-    return response;
+    return NextResponse.json({
+      success: true,
+      orderId: orderData.id,
+      tier,
+      amount: plan.amount,
+      credits: plan.credits,
+    });
 
   } catch (error: any) {
-    console.error('[PayPal Create Order] Unexpected error:', error);
+    console.error('[PayPal Create Order] Unexpected processing error');
     return NextResponse.json(
       { 
         error: 'Payment system error. Please contact support.',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       },
       { status: 500 }
     );
