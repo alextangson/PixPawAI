@@ -31,9 +31,6 @@ export function OrganizationSchema() {
     },
     sameAs: [
       // Social media profiles to be added when available
-      // 'https://twitter.com/pixpawai',
-      // 'https://facebook.com/pixpawai',
-      // 'https://instagram.com/pixpawai',
     ],
     contactPoint: {
       '@type': 'ContactPoint',
@@ -61,7 +58,7 @@ export function WebSiteSchema() {
     '@type': 'WebSite',
     name: 'PixPaw AI',
     url: 'https://pixpawai.com',
-    description: 'Turn your pet into a stunning portrait in 30 seconds with AI-powered pet portraits',
+    description: 'Turn your pet into a stunning portrait in 20–40 seconds with AI-powered pet portraits. Start from $4.99.',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -122,7 +119,7 @@ export function SoftwareApplicationSchema() {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'PixPaw AI - AI Pet Portrait Generator',
-    description: 'Transform your pet photos into stunning AI-generated portraits in a variety of artistic styles. Create magical pet art in 30 seconds.',
+    description: 'Transform your pet photos into stunning AI-generated portraits in a variety of artistic styles. Create a pet portrait in 20–40 seconds.',
     url: 'https://pixpawai.com',
     applicationCategory: 'AI Generator',
     operatingSystem: 'Web',
@@ -130,13 +127,13 @@ export function SoftwareApplicationSchema() {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'USD',
-      description: 'Free to try with premium options available',
+      description: 'Free 1–2 watermarked portraits; paid packs start at $4.99',
     },
     screenshot: 'https://pixpawai.com/hero/carousel/hero-carousel-birthday.webp',
     featureList: [
       'AI-powered pet portrait generation',
       'Artistic style portraits',
-      '4K high-resolution downloads',
+      '1024px portrait downloads',
       'Multiple art styles available',
       'Custom merchandise printing',
     ],
@@ -153,13 +150,17 @@ export function SoftwareApplicationSchema() {
 /**
  * Product Schema - For premium features
  * https://schema.org/Product
+ *
+ * Prices come from CREDIT_PACK_OFFERS (PayPal source of truth).
+ * Shop physical-product InStock is left untouched — fulfillment is live.
+ * TODO: only add Offer.availability for merch PDPs if Printful stock is confirmed out.
  */
 export function ProductSchema() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: 'PixPaw AI',
-    description: 'AI-powered pet portrait generation service with artistic rendering',
+    description: 'AI-powered pet portrait generation service with artistic rendering. Credit packs from $4.99. Credits never expire.',
     brand: {
       '@type': 'Brand',
       name: 'PixPaw AI',

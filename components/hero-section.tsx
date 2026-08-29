@@ -5,7 +5,7 @@ import { HeroCarousel } from '@/components/hero-carousel'
 import { InfiniteMarquee } from '@/components/infinite-marquee'
 import { TrustBadgeGroup } from '@/components/trust-badges'
 import { PawIcon } from '@/components/ui/paw-icon'
-import { Sparkles, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 interface HeroSectionProps {
   dict: {
@@ -79,7 +79,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
                 <span>{dict.hero.socialProof}</span>
               </div>
 
-              {/* Main Headline (H1) - Responsive Typography */}
+              {/* Main Headline (H1) - in the server HTML for crawlers */}
               <h1 className="text-3xl xs:text-4xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold tracking-tight leading-[1.1] sm:leading-tight max-w-5xl mx-auto lg:mx-0">
                 <span className="md:whitespace-nowrap">{dict.hero.title.part1}</span>{' '}
                 <br className="hidden md:block" />
@@ -107,14 +107,25 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
               <p className="text-sm sm:text-base md:text-lg lg:text-lg xl:text-xl text-darkgray/70 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {dict.hero.subtitle}
               </p>
+              <p className="text-sm sm:text-base text-darkgray/80 max-w-xl mx-auto lg:mx-0">
+                Start from{' '}
+                <Link href={`/${lang}/pricing/`} className="text-coral font-semibold underline-offset-2 hover:underline">
+                  $4.99
+                </Link>
+                {' '}for 15 portraits. Free 1–2 watermarked tries. Credits never expire.
+              </p>
 
-              {/* CTA Buttons */}
+              {/* CTA Buttons — real <a> tags so they work without JS */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 justify-center lg:justify-start max-w-full sm:max-w-md lg:max-w-none">
-                <Button size="xl" className="group w-full sm:w-auto" onClick={onOpenUpload}>
+                <Link
+                  href={`/${lang}#upload`}
+                  onClick={onOpenUpload}
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-lg font-semibold bg-coral text-white hover:bg-orange-600 shadow-lg h-12 px-8 w-full sm:w-auto group"
+                >
                   {dict.hero.cta.primary}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Link href={`/${lang}/gallery`} className="w-full sm:w-auto">
+                </Link>
+                <Link href={`/${lang}/gallery/`} className="w-full sm:w-auto">
                   <Button size="xl" variant="outline" className="group w-full">
                     <PawIcon size={20} className="group-hover:scale-110 transition-transform" />
                     {dict.hero.cta.secondary}
@@ -128,7 +139,6 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
 
             {/* Right Column - Hero Carousel with PiP */}
             <div className="relative z-10 order-1 lg:order-2">
-              {/* Auto-playing Carousel with Picture-in-Picture */}
               <HeroCarousel />
             </div>
           </div>
