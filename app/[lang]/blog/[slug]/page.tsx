@@ -33,7 +33,7 @@ const SEO_OVERRIDES: Record<string, { title: string; description: string }> = {
   'best-ai-pet-portrait-generator': {
     title: '7 Best AI Pet Portrait Generators in 2026 (Tested & Ranked)',
     description:
-      "We tested 7 AI pet portrait generators and ranked them. PixPawAI, Pawcaso, DreamPets — here's which one gives the best results for your money.",
+      "We checked 7 AI pet portrait generators' real pricing and free tiers (updated Aug 2026). PixPawAI, PetCanvas, Adobe Firefly & more — ranked honestly.",
   },
   'pet-portrait-gift-guide': {
     title: 'Best Pet Portrait Gift Ideas in 2026 — For Every Budget & Occasion',
