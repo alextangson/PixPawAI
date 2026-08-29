@@ -108,7 +108,7 @@
 
 ## 4. 风险与依赖
 
-1. **共享 WordPress 是重复内容炸弹**：furnituremadeinchina.site 正逐字转载 PixPaw 博客（2026-08-29 实查）——与当初家具文章漏入你博客同根（共享 Hostinger 实例）。处理：核实对方页面是否同源输出 → 隔离 WP 实例（独立托管）或 DMCA。**在此之前，博客是在给别人做嫁衣。**
+1. ~~共享 WordPress 是重复内容炸弹~~ **已决策（2026-08-29）：furnituremadeinchina 停运，WP 整体转 PixPaw 专用**——37 篇家具文待清理、CMS robots 待全封、家具前端待下线，执行步骤见 [2026-08-29-wp-cleanup-runbook.md](2026-08-29-wp-cleanup-runbook.md)。盘点结论：pixpawai.com 前端无泄漏（已核实），风险仅在 CMS 域名与家具站本身。
 2. **限流已死**：Upstash 实例失效后全站 fail-open，游客 2 次/天上限**未被强制执行**。SEO 起量后 = Replicate 成本裸奔。扩流量前必须补（Alex 动作 §6）。
 3. **Q4 时间窗**：圣诞内容 10 月上旬必须可收录，错过等 12 个月。
 4. **风格页现状偏薄**（每页 2 个 FAQ）：随节奏逐页加深，不批量灌水。
@@ -132,6 +132,6 @@
 2. **GSC 基线**：记录当前 覆盖率+非品牌点击 到 §5；提交更新后的 sitemap；对本次新页请求收录
 3. **GA4 考古**：Acquisition 报表查 $4.99 成交那个会话的 source/medium（可能藏在 direct 里，看 landing page 维度）
 4. **认领** thingtesting.com、alternativeto.net 品牌条目
-5. **WP 隔离决策**：确认 furnituremadeinchina.site 内容同源问题，选独立 WP 托管或 DMCA
+5. **WP 转专用清理**（决策已定）：按 [runbook](2026-08-29-wp-cleanup-runbook.md) 执行——批量 trash 37 篇家具文、CMS robots 全封、下线家具前端；可选装 Yoast
 6. **补 Upstash Redis**：新建实例 + 更新 Vercel `UPSTASH_REDIS_REST_URL/TOKEN`（恢复限流与游客上限）
 7. （7 月遗留）真实 $9.99 HD 购买+退款验证 capture 路径；GA4 DebugView 确认 `hd_unlock_view`/`purchase`
