@@ -7,6 +7,7 @@ import {
   listHubArticles,
   pickFeaturedHubArticle,
 } from '@/lib/content/blog-feed';
+import { applyArticlePresentation } from '@/lib/seo/article-overrides';
 import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb';
 import type { Metadata } from 'next';
 
@@ -51,10 +52,12 @@ export default async function BlogPage({
 }) {
   const { lang } = await params;
 
-  const [featuredArticle, allArticles] = await Promise.all([
+  const [rawFeatured, rawArticles] = await Promise.all([
     pickFeaturedHubArticle('blog'),
     listHubArticles({ perPage: 12, hub: 'blog' }),
   ]);
+  const featuredArticle = rawFeatured ? applyArticlePresentation(rawFeatured) : null;
+  const allArticles = rawArticles.map(applyArticlePresentation);
 
   const articles = featuredArticle
     ? allArticles.filter((a) => a.id !== featuredArticle.id)
