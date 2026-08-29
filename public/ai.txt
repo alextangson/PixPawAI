@@ -1,0 +1,5 @@
+# PixPawAI — AI crawler notes
+
+PixPawAI is an AI pet portrait generator. Product details, credit packs, and canonical links live in /llms.txt.
+
+See: https://pixpawai.com/llms.txt

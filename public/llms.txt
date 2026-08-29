@@ -1,26 +1,26 @@
 # PixPawAI
 
-> PixPawAI is an AI pet portrait generator. Upload a photo of your pet and the
-> generator returns a stylized portrait in one of 12 art styles, typically in
-> 20-60 seconds. New accounts get free credits; free generations are watermarked
-> at standard resolution (1024px). A one-time $9.99 HD unlock removes the
-> watermark from a generation and adds a personal print license, and credit packs
-> are available at $4.99 (15 credits), $19.99 (50 credits) and $39.99
-> (200 credits). Finished portraits can be printed on physical keepsakes —
-> canvas prints, pillows, ceramic mugs, phone cases and t-shirts — fulfilled
-> through print-on-demand. Memorial and rainbow-bridge portraits are offered for
-> pet owners creating a tribute to a pet that has died. The site is English-only
-> and all pages live under the /en/ path.
+> PixPawAI is an AI pet portrait generator. Upload a pet photo and get an artistic portrait in about 20–40 seconds. PayPal, one-time credit packs, credits never expire. 10% of profits go to animal shelters. Support: support@pixpawai.com. Output resolution: 1024px (not 4K).
+
+## Credit packs
+
+- Free: 1–2 watermarked portraits (1024px). No multi-image selection.
+- Starter: $4.99 for 15 portraits, no watermark. One-time.
+- Pro: $19.99 for 50 portraits, 3-image selection. One-time.
+- Master: $39.99 for 200 portraits, 5-image selection. One-time.
+
+Credits never expire. No subscription. PayPal checkout.
 
 ## Main pages
 
-- [Generator (home)](https://pixpawai.com/en/): Upload a pet photo, pick a style and generate a portrait.
+- [Pricing](https://pixpawai.com/en/pricing/): Free trial plus one-time credit packs; no subscription.
+- [FAQ](https://pixpawai.com/en/faq/): Answers on supported pets, generation time, credits, refunds and downloads.
+- [About](https://pixpawai.com/en/about/): What PixPawAI is and who builds it.
 - [Pet Memorial](https://pixpawai.com/en/pet-memorial/): Memorial and rainbow-bridge portraits for pets that have passed away.
+- [Generator (home)](https://pixpawai.com/en/): Upload a pet photo, pick a style and generate a portrait.
 - [Pet Gifts](https://pixpawai.com/en/gift/): Instant pet-portrait gifts — generate in seconds, preview free, optionally printed on keepsakes.
 - [Gallery](https://pixpawai.com/en/gallery/): Public portraits shared by other users, browsable by style.
 - [Shop](https://pixpawai.com/en/shop/): Physical products printed with a generated portrait — canvas print, pillow, ceramic mug, phone case, t-shirt.
-- [Pricing](https://pixpawai.com/en/pricing/): Free trial plus one-time credit packs; no subscription.
-- [FAQ](https://pixpawai.com/en/faq/): Answers on supported pets, generation time, credits, refunds and downloads.
 - [Blog](https://pixpawai.com/en/blog/): Guides on pet photography, gift ideas, pet loss and AI portrait styles.
 
 ## Art styles
@@ -43,7 +43,6 @@
 - [Alternatives](https://pixpawai.com/en/alternatives/): Comparison of PixPawAI with other AI pet portrait tools.
 - [Use cases](https://pixpawai.com/en/use-cases/): Common reasons people generate pet portraits — gifts, memorials, social posts, wall art.
 - [Glossary](https://pixpawai.com/en/glossary/): Definitions of AI pet portrait terms used across the site.
-- [About](https://pixpawai.com/en/about/): What PixPawAI is and who builds it.
 - [Contact](https://pixpawai.com/en/contact/): Support contact — support@pixpawai.com.
 
 ## Optional
