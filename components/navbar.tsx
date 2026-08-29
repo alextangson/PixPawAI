@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { LoginButton } from '@/components/auth/login-button';
 import { UserMenu } from '@/components/auth/user-menu';
+import { createClient } from '@/lib/supabase/client';
 
 interface NavbarProps {
   dict: {
@@ -28,14 +29,28 @@ interface NavbarProps {
     };
   };
   lang: string;
-  user: User | null;
+  user?: User | null;
 }
 
-export function Navbar({ dict, lang, user }: NavbarProps) {
+export function Navbar({ dict, lang, user: initialUser = null }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [user, setUser] = useState<User | null>(initialUser);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ?? null);
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const menuLinks = [
     { href: `/${lang}/gallery`, label: dict.nav.links.gallery },
@@ -46,10 +61,8 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
   const handleCreateClick = () => {
     const isHomePage = pathname === `/${lang}` || pathname === `/${lang}/`;
     if (isHomePage) {
-      // If already on homepage, trigger hash change event manually
       window.location.hash = 'upload';
     } else {
-      // Navigate to homepage with hash
       router.push(`/${lang}#upload`);
     }
   };
@@ -58,12 +71,11 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
     <nav className="sticky top-0 z-50 bg-cream/80 backdrop-blur-md border-b border-orange-100">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo - Left */}
           <Link href={`/${lang}`} className="flex items-center gap-2 group">
             <div className="relative w-36 h-12 sm:w-40 sm:h-14 md:w-44 md:h-15 lg:w-48 lg:h-16 xl:w-52 xl:h-17 group-hover:scale-105 transition-transform">
-              <Image 
-                src="/brand/logo-orange.svg" 
-                alt="PixPaw AI Logo" 
+              <Image
+                src="/brand/logo-orange.svg"
+                alt="PixPaw AI Logo"
                 fill
                 className="object-contain"
                 priority
@@ -71,7 +83,6 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
             </div>
           </Link>
 
-          {/* Desktop Menu - Center */}
           <div className="hidden md:flex items-center gap-8">
             {menuLinks.map((link) => (
               <Link
@@ -85,9 +96,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
             ))}
           </div>
 
-          {/* Actions - Right */}
           <div className="flex items-center gap-4">
-            {/* Charity Heart Icon with Tooltip */}
             <div className="relative hidden md:block">
               <button
                 onMouseEnter={() => setShowTooltip(true)}
@@ -97,8 +106,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
               >
                 <Heart className="w-5 h-5 text-coral fill-coral group-hover:scale-110 transition-transform" />
               </button>
-              
-              {/* Tooltip */}
+
               {showTooltip && (
                 <div className="absolute top-full mt-2 right-0 w-48 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl z-10">
                   <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 rotate-45" />
@@ -107,40 +115,34 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
               )}
             </div>
 
-            {/* Auth Section */}
             <div className="hidden md:flex items-center gap-3">
               {user ? (
                 <>
-                  {/* CTA Button for logged in users */}
-                  <Button 
+                  <Button
                     className="bg-coral hover:bg-orange-600 text-white font-semibold px-6"
                     onClick={handleCreateClick}
                   >
                     {dict.nav.cta}
                   </Button>
-                  {/* User Menu */}
                   <UserMenu user={user} lang={lang} />
                 </>
               ) : (
                 <>
-                  {/* Login Button */}
                   <LoginButton>
                     <Button variant="ghost" className="text-gray-700 hover:text-coral font-medium">
                       Log In
                     </Button>
                   </LoginButton>
-                  {/* CTA Button - Guest can directly create */}
-                  <Button 
+                  <Button
                     className="bg-coral hover:bg-orange-600 text-white font-semibold px-6"
                     onClick={handleCreateClick}
                   >
-                      {dict.nav.cta}
-                    </Button>
+                    {dict.nav.cta}
+                  </Button>
                 </>
               )}
             </div>
 
-            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg hover:bg-orange-100 transition-colors"
@@ -155,7 +157,6 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-orange-100 animate-in slide-in-from-top-2">
             <div className="flex flex-col gap-4">
@@ -169,8 +170,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                   {link.label}
                 </Link>
               ))}
-              
-              {/* Mobile Charity Message */}
+
               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-lg">
                 <Heart className="w-4 h-4 text-coral fill-coral" />
                 <span className="text-xs text-gray-600">
@@ -178,10 +178,8 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                 </span>
               </div>
 
-              {/* Mobile Auth Section */}
               {user ? (
                 <>
-                  {/* User Info */}
                   <div className="px-4 py-2 bg-gray-50 rounded-lg">
                     <p className="text-sm font-semibold text-gray-900">
                       {user.user_metadata?.full_name || user.email}
@@ -190,7 +188,6 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                       {user.email}
                     </p>
                   </div>
-                  {/* My Gallery Link */}
                   <Link
                     href={`/${lang}/dashboard?tab=gallery`}
                     className="text-gray-700 hover:text-coral font-medium py-2 px-4 rounded-lg hover:bg-orange-50 transition-colors flex items-center gap-2"
@@ -199,8 +196,7 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                     <ImageIcon className="w-4 h-4" />
                     My Gallery
                   </Link>
-                  {/* Mobile CTA */}
-                  <Button 
+                  <Button
                     className="w-full bg-coral hover:bg-orange-600 text-white font-semibold"
                     onClick={() => {
                       setMobileMenuOpen(false);
@@ -212,22 +208,20 @@ export function Navbar({ dict, lang, user }: NavbarProps) {
                 </>
               ) : (
                 <>
-                  {/* Mobile Login */}
                   <LoginButton>
                     <Button variant="outline" className="w-full border-2 border-coral text-coral hover:bg-coral hover:text-white font-semibold">
                       Log In
                     </Button>
                   </LoginButton>
-                  {/* Mobile CTA - Guest can directly create */}
-                  <Button 
+                  <Button
                     className="w-full bg-coral hover:bg-orange-600 text-white font-semibold"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       handleCreateClick();
                     }}
                   >
-                      {dict.nav.cta}
-                    </Button>
+                    {dict.nav.cta}
+                  </Button>
                 </>
               )}
             </div>

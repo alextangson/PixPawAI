@@ -5,7 +5,6 @@ import { i18n, type Locale } from '@/lib/i18n-config'
 import { getDictionary } from '@/lib/dictionary'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { getUser } from '@/lib/auth/actions'
 import { ReferralWelcomeToast } from '@/components/referral-welcome-toast'
 import { Analytics } from '@/components/analytics'
 import { Clarity } from '@/components/clarity'
@@ -42,23 +41,15 @@ export async function generateMetadata({
     description: dict.metadata.description,
     keywords: dict.metadata.keywords.split(', '),
     authors: [{ name: "PixPaw AI" }],
-    manifest: '/manifest.json',  // ✅ 使用绝对路径，不受 [lang] 路由影响
+    manifest: '/manifest.json',
     verification: {
       google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
-      // To get verification code:
-      // 1. Go to https://search.google.com/search-console
-      // 2. Add property -> URL prefix -> https://pixpawai.com
-      // 3. Choose "HTML tag" method
-      // 4. Copy the content value from: <meta name="google-site-verification" content="YOUR_CODE" />
-      // 5. Add to .env.local: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=YOUR_CODE
     },
     alternates: {
       canonical: `https://pixpawai.com/${lang}/`,
       languages: {
         'en': 'https://pixpawai.com/en/',
         'x-default': 'https://pixpawai.com/',
-        // Add more languages when available:
-        // 'zh': 'https://pixpawai.com/zh/',
       },
     },
     icons: {
@@ -104,16 +95,16 @@ export default async function RootLayout({
 }) {
   const { lang } = await params
   const dict = await getDictionary(lang as Locale)
-  const user = await getUser()
+  // Do not call getUser() here: cookies() dynamizes every [lang] page and
+  // forces cache-control: private, no-store on marketing URLs. Navbar fetches
+  // the session on the client instead.
 
   return (
     <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Organization Schema - appears on all pages */}
         <OrganizationSchema />
-        {/* Preload LCP image for faster first contentful paint */}
         <link
           rel="preload"
           as="image"
@@ -127,7 +118,7 @@ export default async function RootLayout({
       >
         <Analytics />
         <Clarity />
-        <Navbar dict={dict} lang={lang} user={user} />
+        <Navbar dict={dict} lang={lang} />
         {children}
         <Footer dict={dict} lang={lang} />
         <ReferralWelcomeToast />

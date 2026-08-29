@@ -16,10 +16,11 @@ interface ComparisonTableProps {
 }
 
 export function PricingComparisonTable({ dict }: ComparisonTableProps) {
-  // Safe access with fallbacks
   const comparisonDict = dict?.pricing?.comparisonTable || {};
   const featuresDict = comparisonDict.features || {};
-  
+
+  // Cards win. Free = no selection, Pro = 3-image, Master = 5-image.
+  // Resolution is 1024px across packs — do not claim 4K.
   const features: ComparisonFeature[] = [
     {
       name: featuresDict.generations || 'Generation Credits',
@@ -30,18 +31,25 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
     },
     {
       name: featuresDict.multiSelect || 'Multi-Image Selection',
-      free: false,
-      starter: false,
-      pro: '3 choices',
-      master: '5 choices',
+      free: 'No selection',
+      starter: 'No selection',
+      pro: '3-image',
+      master: '5-image',
       highlight: true,
+    },
+    {
+      name: featuresDict.resolution || 'Image Resolution',
+      free: '1024px',
+      starter: '1024px',
+      pro: '1024px',
+      master: '1024px',
     },
     {
       name: featuresDict.aspectRatios || 'Aspect Ratios',
       free: '2 basic',
       starter: 'All 9 types',
-      pro: 'All + Custom',
-      master: 'Full Custom',
+      pro: 'All 9 types',
+      master: 'All 9 types',
     },
     {
       name: featuresDict.styles || 'Available Styles',
@@ -76,8 +84,8 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
       name: featuresDict.batchDownload || 'Batch Download',
       free: false,
       starter: false,
-      pro: 'ZIP package',
-      master: 'ZIP + RAW',
+      pro: false,
+      master: 'ZIP',
     },
     {
       name: featuresDict.processingSpeed || 'Processing Speed',
@@ -118,7 +126,6 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
       }
     }
 
-    // Check if it's a "Coming Soon" feature
     if (value === 'Coming Soon' || (typeof value === 'string' && value.includes('🔒'))) {
       return (
         <div className="flex items-center justify-center gap-1 text-gray-500">
@@ -149,7 +156,6 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
         </p>
       </div>
 
-      {/* Desktop Table */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse bg-white rounded-2xl shadow-lg overflow-hidden">
           <thead>
@@ -204,7 +210,6 @@ export function PricingComparisonTable({ dict }: ComparisonTableProps) {
         </table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3 sm:space-y-4">
         {['free', 'starter', 'pro', 'master'].map((tier) => (
           <div
