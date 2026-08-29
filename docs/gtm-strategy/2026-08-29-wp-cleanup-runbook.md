@@ -90,3 +90,26 @@ pet-memorial-photo-ideas 三个变体）。前端按分类过滤所以暂无害�
 | 2695 | tariff-refunds-court-expands-scope-to-include-finally-liquidated-entries |
 
 清单生成方式：REST API 全量拉取 78 篇后按 slug 关键词分类，3 篇边界案例逐一人工核对标题（1947 Pet Portrait Cost Guide 判定保留；34 value-engineering、27 ffe-specs 判定清理）。
+
+---
+
+## ✅ 执行记录（2026-08-29，Claude 通过 ego-browser 实际操作完成）
+
+| 步骤 | 结果 |
+|------|------|
+| 批量下架家具文 | **38 篇**全部移入回收站（原清单 37 + 漏网的 2664 `new-tfl-panel-standard...`，即当年泄漏进前端被 BLOCKED_SLUGS 拦截的那篇）。REST DELETE + 会话 nonce，逐篇验证，零失败。剩余 40 篇全部为宠物内容 |
+| CMS 防收录 | 双保险落地：① Rank Math robots.txt 规则 `User-agent: * / Disallow: /` 在正式域名生效；② Rank Math 全局 Robots Meta 改为 **noindex**，两个域名的页面均已输出 `<meta name="robots" content="follow, noindex"/>`（curl 验证） |
+| 家具前端下线 | 无需操作——调查发现 furnituremadeinchina.site 就是本 WP 绑定的正式域名（同一安装），不存在独立前端。robots 全封 + noindex 后该域名对搜索引擎等效死亡 |
+| 家具残留 llms.txt | 已删除（public_html/llms.txt，368B 家具时代测试内容，此前在两个域名上供应）。现在该路径由 WP 兜底返回 HTML |
+| pixpawai.com 回归验证 | blog 200、REST API 正常、sitemap 无异动 ✓ |
+
+### 执行中的关键发现（修正原 runbook 认知）
+
+1. **beige-yak 临时域名的 Googlebot 封锁是 Hostinger 平台级注入**（对所有 `*.hostingersite.com` 子域），不是实体文件也不是 WP 配置，WP 层改不掉。影响：Google 在临时域名上被平台挡住，其它引擎靠我们设置的 noindex meta 挡——覆盖完整。
+2. **装的是 Rank Math，不是 Yoast**（原 runbook 第 4 步作废）。前端 `yoast_head_json` 优先逻辑读不到 Rank Math 的数据——后续若要让 WP 编辑控制 meta，方案是用 mu-plugin `register_meta` 暴露 `rank_math_title/description`（lingkekefu 等站已有同款模板，见 wp-publish skill），前端 transform 增加对应读取。在那之前 `SEO_OVERRIDES` 仍是唯一 meta 工具。
+3. WP 后台还有约 18 个待更新插件 + WordPress 7.1 待升级——顺手项，Alex 有空处理。
+
+### 仍待办（低优先级）
+- 宠物文去重（`-2` 后缀重复稿，见原第 5 步）
+- 家具分类（seating/tables 等 14 个空分类）删除，纯观感
+- furnituremadeinchina.site 域名到期后不续费即可，无需主动解绑
