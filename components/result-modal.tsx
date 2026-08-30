@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { HdUnlockDialog } from '@/components/hd-unlock-dialog'
+import { PaymentModal } from '@/components/payment/payment-modal'
 
 // ✨ Magical placeholder suggestions for naming PixPaw Stars
 const PIXPAW_NAME_SUGGESTIONS = [
@@ -48,6 +49,25 @@ function getStyleDisplayName(styleId: string): string {
     'Psychedelic-60s': 'Psychedelic Art'
   }
   return styleNames[styleId] || styleId
+}
+
+function StarterCtaBlock({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="w-full bg-gradient-to-br from-orange-50 to-coral/10 rounded-2xl p-5 border-2 border-coral/30 shadow-md">
+      <p className="text-base font-bold text-gray-900 mb-1">
+        Remove the watermark
+      </p>
+      <p className="text-sm text-gray-700 mb-3">
+        Starter is $4.99 for 15 watermark-free 1024px portraits. One-time purchase, credits never expire.
+      </p>
+      <Button
+        onClick={onClick}
+        className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-bold h-11"
+      >
+        Get Starter — $4.99
+      </Button>
+    </div>
+  )
 }
 
 interface ResultModalProps {
@@ -118,6 +138,7 @@ export function ResultModal({
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [hdDialogOpen, setHdDialogOpen] = useState(false)
+  const [showStarterPayment, setShowStarterPayment] = useState(false)
 
   // ✨ Random placeholder for naming (stable per render)
   const randomPlaceholder = useMemo(() => {
@@ -138,6 +159,21 @@ export function ResultModal({
   const handleShopClick = () => {
     trackEvent('merch_cta_click', { product_id: 'canvas-print' })
     window.location.href = shopUrl
+  }
+
+  const handleStarterCta = async () => {
+    trackEvent('select_content', {
+      content_type: 'cta',
+      item_id: 'starter_pack',
+      location: 'result_modal',
+    })
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.location.href = '/en/pricing'
+      return
+    }
+    setShowStarterPayment(true)
   }
 
   const handleShareClick = () => {
@@ -643,9 +679,15 @@ export function ResultModal({
                     <p className="text-sm font-semibold text-gray-800 mb-1">
                       🎉 You have <span className="text-coral">{guestRemaining}</span> free generation{guestRemaining !== 1 ? 's' : ''} left today!
                     </p>
-                    <p className="text-xs text-gray-600">
-                      Sign up to get unlimited credits and keep creating
+                    <p className="text-xs text-gray-600 mb-2">
+                      Unlock 15 watermark-free portraits with Starter — $4.99
                     </p>
+                    <Button
+                      onClick={handleStarterCta}
+                      className="w-full bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold h-9 text-sm"
+                    >
+                      Get Starter — $4.99
+                    </Button>
                   </div>
                 )}
               </div>
@@ -688,6 +730,10 @@ export function ResultModal({
                 <p className="text-xs text-gray-500 mt-6">
                   Either choice is fine - we're here to help!
                 </p>
+
+                <div className="w-full max-w-md mt-6">
+                  <StarterCtaBlock onClick={handleStarterCta} />
+                </div>
               </div>
             ) : userChoice === 'love' ? (
               /* Love it: Product Push */
@@ -712,6 +758,8 @@ export function ResultModal({
                 See your masterpiece come to life.
               </p>
             </div>
+
+                  <StarterCtaBlock onClick={handleStarterCta} />
 
                   {/* Wall Art Mockup */}
             <button
@@ -949,6 +997,14 @@ export function ResultModal({
         imageUrl={generatedImageUrl}
         onFreeDownload={downloadFreeWatermarked}
         onClose={() => setHdDialogOpen(false)}
+      />
+
+      <PaymentModal
+        isOpen={showStarterPayment}
+        onClose={() => setShowStarterPayment(false)}
+        tier="starter"
+        price="$4.99"
+        credits={15}
       />
     </>
   )

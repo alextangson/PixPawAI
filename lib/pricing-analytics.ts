@@ -6,7 +6,7 @@
 import { trackEvent } from '@/components/analytics';
 
 export type PricingTier = 'free' | 'starter' | 'pro' | 'master';
-export type ModalAction = 'upgrade' | 'dismiss' | 'close';
+export type ModalAction = 'upgrade' | 'dismiss' | 'close' | 'starter';
 
 interface BaseEvent {
   variant?: string;

@@ -1026,7 +1026,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     <div className="space-y-3">
                       <div className="bg-white rounded-lg p-4 border border-orange-200">
                         <p className="text-sm text-gray-700 mb-3">
-                          💡 <strong>Good news:</strong> You can purchase more credits to continue creating amazing portraits!
+                          Unlock 15 watermark-free 1024px portraits with Starter — $4.99. One-time purchase, credits never expire.
                         </p>
                         <div className="flex gap-2">
                           <Button
@@ -1034,7 +1034,7 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                             className="flex-1 bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white font-semibold"
                           >
                             <Sparkles className="w-4 h-4 mr-2" />
-                            View Pricing Plans
+                            Get Starter — $4.99
                           </Button>
                           <Button
                             onClick={() => {
