@@ -190,20 +190,30 @@ export function UpgradeModal({
             </div>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          {/* CTA Buttons — Starter is the converting pack */}
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={() => {
+                trackUpgradeModalClick('starter', variant);
+                window.location.href = '/en/pricing';
+              }}
+              className="w-full py-6 text-lg font-bold bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white shadow-xl hover:shadow-2xl transition-all"
+            >
+              Get Starter — $4.99
+            </Button>
             <Button
               onClick={handleUpgrade}
-              className="flex-1 py-6 text-lg font-bold bg-gradient-to-r from-coral to-orange-600 hover:from-orange-600 hover:to-coral text-white shadow-xl hover:shadow-2xl transition-all"
+              variant="outline"
+              className="w-full py-5 text-base font-semibold border-2 border-gray-300"
             >
-              升级到 Pro - $19.99 🚀
+              Upgrade to Pro — $19.99
             </Button>
             <Button
               onClick={handleDismiss}
               variant="outline"
-              className="sm:w-auto px-6 py-6 text-gray-600 hover:text-gray-800 border-2 border-gray-300"
+              className="w-full px-6 py-4 text-gray-600 hover:text-gray-800"
             >
-              继续使用免费版
+              Continue with free
             </Button>
           </div>
 

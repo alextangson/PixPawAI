@@ -281,11 +281,12 @@
           "3 Basic Styles"
         ],
         "limitations": [
-          "No image selection",
-          "Average 5+ retries needed",
-          "Single image generation"
+          "Watermarked 1024px downloads",
+          "Limited to 1–2 generations",
+          "No multi-image selection"
         ],
-        "button": "Try for Free"
+        "button": "Try for Free",
+        "nextStep": "Want watermark-free portraits? Starter is $4.99 for 15 credits that never expire."
       },
       "starter": {
         "title": "Starter Pack",
