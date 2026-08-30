@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { X, Sparkles, ShieldCheck, CheckCircle } from 'lucide-react';
 import { PayPalButtonsHdUnlock } from '@/components/payment/paypal-buttons-hd-unlock';
-import { trackPurchase } from '@/components/analytics';
+import { trackEvent, trackPurchase } from '@/components/analytics';
 
 interface HdUnlockDialogProps {
   isOpen: boolean;
@@ -37,7 +37,14 @@ export function HdUnlockDialog({
   // success state each time it opens (else a second unlock in the same session
   // reopens straight to the stale "Unlocked" screen with no purchase path).
   useEffect(() => {
-    if (isOpen) setUnlocked(false);
+    if (isOpen) {
+      setUnlocked(false);
+      trackEvent('begin_checkout', {
+        value: 9.99,
+        currency: 'USD',
+        item_id: 'hd_unlock',
+      });
+    }
   }, [isOpen, generationId]);
 
   const handleSuccess = async (downloadPath: string) => {

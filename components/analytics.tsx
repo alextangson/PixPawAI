@@ -83,9 +83,26 @@ export function trackEvent(
   eventName: string,
   eventParams?: Record<string, string | number | boolean>
 ) {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', eventName, eventParams);
-  }
+  if (typeof window === 'undefined') return;
+
+  const send = () => {
+    const gtag = (window as any).gtag;
+    if (typeof gtag === 'function') {
+      gtag('event', eventName, eventParams);
+      return true;
+    }
+    return false;
+  };
+
+  if (send()) return;
+
+  // Retry briefly so events fired before gtag.js loads (e.g. /auth/success) are not dropped.
+  const started = Date.now();
+  const interval = window.setInterval(() => {
+    if (send() || Date.now() - started > 4000) {
+      window.clearInterval(interval);
+    }
+  }, 100);
 }
 
 /**
