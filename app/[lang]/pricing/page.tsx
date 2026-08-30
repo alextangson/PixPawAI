@@ -15,7 +15,12 @@ export default async function PricingPage({
 }) {
   const { lang } = await params;
   const dict = await getDictionary((lang as Locale) || 'en');
-  const faqItems = dict.pricing?.faq?.items || [];
+  const faqItems = (dict.pricing?.faq?.items || []).map(
+    (item: { question: string; answer: string }) => ({
+      question: item.question,
+      answer: item.answer,
+    })
+  );
 
   return (
     <>
