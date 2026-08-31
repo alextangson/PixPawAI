@@ -6,9 +6,14 @@ import {
   getFeaturedArticleByHub,
   getRelatedArticles,
 } from '@/lib/wordpress/blog';
-import { getLocalArticleBySlug, getLocalArticles } from '@/lib/content/local-articles';
+import {
+  getLocalArticleBySlug,
+  getPublishedLocalArticles,
+} from '@/lib/content/local-articles';
 
 type Hub = NonNullable<GetBlogArticlesOptions['hub']>;
+
+type HubArticleEntry = { slug: string; updatedAt: string };
 
 type ListHubArticlesDeps = {
   loadWordPressArticles?: (
@@ -25,15 +30,18 @@ type FindHubArticleBySlugDeps = {
   loadLocalArticleBySlug?: (slug: string) => Promise<BlogArticle | null>;
 };
 
-function mergeWordPressAndLocal(
-  wordPressArticles: BlogArticle[],
-  localArticles: BlogArticle[]
-): BlogArticle[] {
-  const wordPressSlugs = new Set(wordPressArticles.map((article) => article.slug));
-  const extras = localArticles.filter((article) => !wordPressSlugs.has(article.slug));
-  return [...wordPressArticles, ...extras].sort((a, b) =>
-    b.publishedAt.localeCompare(a.publishedAt)
-  );
+type ListHubArticleEntriesDeps = {
+  loadWordPressEntries?: (hub: Hub) => Promise<HubArticleEntry[]>;
+  loadLocalArticles?: () => Promise<BlogArticle[]>;
+};
+
+function mergeExclusiveLocal<T extends { slug: string }>(
+  wordPressItems: T[],
+  localItems: T[]
+): T[] {
+  const wordPressSlugs = new Set(wordPressItems.map((item) => item.slug));
+  const extras = localItems.filter((item) => !wordPressSlugs.has(item.slug));
+  return [...wordPressItems, ...extras];
 }
 
 export async function listHubArticles(
@@ -41,16 +49,12 @@ export async function listHubArticles(
   deps: ListHubArticlesDeps = {}
 ): Promise<BlogArticle[]> {
   const loadWordPressArticles = deps.loadWordPressArticles ?? getBlogArticles;
-  const loadLocalArticles = deps.loadLocalArticles ?? getLocalArticles;
-  const [wordPressArticles, localArticles] = await Promise.all([
-    loadWordPressArticles(options),
-    loadLocalArticles(),
-  ]);
-  const merged = mergeWordPressAndLocal(wordPressArticles, localArticles);
-  if (options.perPage && options.perPage > 0) {
-    return merged.slice(0, options.perPage);
-  }
-  return merged;
+  const loadLocalArticles = deps.loadLocalArticles ?? getPublishedLocalArticles;
+
+  const wordPressArticles = await loadWordPressArticles(options);
+  const localArticles = await loadLocalArticles();
+
+  return mergeExclusiveLocal(wordPressArticles, localArticles);
 }
 
 export async function pickFeaturedHubArticle(hub: Hub): Promise<BlogArticle | null> {
@@ -64,7 +68,8 @@ export async function findHubArticleBySlug(
 ): Promise<BlogArticle | null> {
   const loadWordPressArticleBySlug =
     deps.loadWordPressArticleBySlug ?? getBlogArticleForHub;
-  const loadLocalArticleBySlug = deps.loadLocalArticleBySlug ?? getLocalArticleBySlug;
+  const loadLocalArticleBySlug =
+    deps.loadLocalArticleBySlug ?? getLocalArticleBySlug;
 
   try {
     const wordPressArticle = await loadWordPressArticleBySlug(slug, hub);
@@ -76,33 +81,24 @@ export async function findHubArticleBySlug(
     return null;
   }
 
-  try {
-    return await loadLocalArticleBySlug(slug);
-  } catch (error) {
-    console.error(`[BlogFeed] Local lookup failed for "${slug}":`, error);
-    return null;
-  }
+  return loadLocalArticleBySlug(slug);
 }
 
 export async function listHubArticleEntries(
   hub: Hub,
-  deps: ListHubArticlesDeps = {}
-): Promise<Array<{ slug: string; updatedAt: string }>> {
-  const loadWordPressArticles = deps.loadWordPressArticles;
-  const loadLocalArticles = deps.loadLocalArticles ?? getLocalArticles;
+  deps: ListHubArticleEntriesDeps = {}
+): Promise<HubArticleEntry[]> {
+  const loadWordPressEntries =
+    deps.loadWordPressEntries ?? ((requestedHub) => getAllArticleEntries({ hub: requestedHub }));
+  const loadLocalArticles = deps.loadLocalArticles ?? getPublishedLocalArticles;
 
-  const wordPressEntries = loadWordPressArticles
-    ? (await loadWordPressArticles({ hub, perPage: 100 })).map((article) => ({
-        slug: article.slug,
-        updatedAt: article.updatedAt,
-      }))
-    : await getAllArticleEntries({ hub });
-  const localArticles = await loadLocalArticles();
-  const wordPressSlugs = new Set(wordPressEntries.map((entry) => entry.slug));
-  const extras = localArticles
-    .filter((article) => !wordPressSlugs.has(article.slug))
-    .map((article) => ({ slug: article.slug, updatedAt: article.updatedAt }));
-  return [...wordPressEntries, ...extras];
+  const wordPressEntries = await loadWordPressEntries(hub);
+  const localEntries = (await loadLocalArticles()).map((article) => ({
+    slug: article.slug,
+    updatedAt: article.updatedAt,
+  }));
+
+  return mergeExclusiveLocal(wordPressEntries, localEntries);
 }
 
 export async function listHubArticleSlugs(hub: Hub): Promise<string[]> {

@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import type { BlogArticle } from '@/lib/wordpress/types';
 
 const CONTENT_DIR = path.join(process.cwd(), 'content', 'articles');
+const FALLBACK_DATE = new Date('2026-03-01').toISOString();
 
 interface LocalFrontmatter {
   title?: string;
@@ -12,7 +13,7 @@ interface LocalFrontmatter {
   metaDescription?: string;
   keywords?: string[];
   category?: string;
-  published?: boolean;
+  published?: boolean | string;
   date?: string | Date;
   updated?: string | Date;
 }
@@ -44,39 +45,46 @@ function stripMarkdown(markdown: string): string {
     .replace(/^---[\s\S]*?---/m, '')
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`([^`]+)`/g, '$1')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[[^\]]*\]\([^)]*\)/g, '$1')
+    .replace(/!\[[^\]]*]\([^)]*\)/g, '')
+    .replace(/\[[^\]]*]\([^)]*\)/g, '$1')
     .replace(/^#+\s+/gm, '')
     .replace(/[>*_~]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function toIso(value: unknown, fallback: string): string {
+function isPublishedFlag(value: unknown): boolean {
+  return value === true || value === 'true';
+}
+
+function toIsoDate(value: unknown, fallback: string): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value.toISOString();
   }
+
   if (typeof value === 'string' && value.trim()) {
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) {
       return date.toISOString();
     }
   }
+
   return fallback;
 }
 
 function buildArticleFromMarkdown(fileName: string, source: string): BlogArticle | null {
   const parsed = matter(source);
   const data = (parsed.data || {}) as LocalFrontmatter;
-  if (data.published !== true) {
+
+  if (!isPublishedFlag(data.published)) {
     return null;
   }
 
   const slug = toSlug(fileName);
   const plainText = stripMarkdown(parsed.content);
   const category = normalizeCategory(data.category);
-  const publishedAt = toIso(data.date, new Date('2026-03-01').toISOString());
-  const updatedAt = toIso(data.updated, publishedAt);
+  const publishedAt = toIsoDate(data.date, FALLBACK_DATE);
+  const updatedAt = toIsoDate(data.updated, publishedAt);
 
   const html = marked.parse(parsed.content, {
     gfm: true,
@@ -122,29 +130,33 @@ export async function getLocalArticles(): Promise<BlogArticle[]> {
     const files = await fs.readdir(CONTENT_DIR);
     const markdownFiles = files.filter((file) => file.endsWith('.md') && file !== 'README.md');
 
-    const articles = (
-      await Promise.all(
-        markdownFiles.map(async (fileName) => {
-          const filePath = path.join(CONTENT_DIR, fileName);
-          const source = await fs.readFile(filePath, 'utf-8');
-          return buildArticleFromMarkdown(fileName, source);
-        })
-      )
-    ).filter((article): article is BlogArticle => article !== null);
+    const articles = await Promise.all(
+      markdownFiles.map(async (fileName) => {
+        const filePath = path.join(CONTENT_DIR, fileName);
+        const source = await fs.readFile(filePath, 'utf-8');
+        return buildArticleFromMarkdown(fileName, source);
+      })
+    );
 
-    return articles.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    return articles
+      .filter((article): article is BlogArticle => article !== null)
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   } catch (error) {
     console.error('[LocalArticles] Failed to read local markdown articles:', error);
     return [];
   }
 }
 
+export async function getPublishedLocalArticles(): Promise<BlogArticle[]> {
+  return getLocalArticles();
+}
+
 export async function getLocalArticleBySlug(slug: string): Promise<BlogArticle | null> {
-  const articles = await getLocalArticles();
+  const articles = await getPublishedLocalArticles();
   return articles.find((article) => article.slug === slug) || null;
 }
 
 export async function getLocalArticleSlugs(): Promise<string[]> {
-  const articles = await getLocalArticles();
+  const articles = await getPublishedLocalArticles();
   return articles.map((article) => article.slug);
 }

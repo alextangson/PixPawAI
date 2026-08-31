@@ -34,16 +34,15 @@ function createArticle(overrides: Partial<BlogArticle> = {}): BlogArticle {
   };
 }
 
-test('listHubArticles serves published local articles when WordPress has none', async () => {
-  const localArticle = createArticle({
+test('listHubArticles does not dump unpublished local markdown when WordPress has no blog articles', async () => {
+  const unpublishedLocal = createArticle({
     id: 2,
-    slug: 'how-much-does-an-ai-pet-portrait-cost',
-    title: 'How Much Does an AI Pet Portrait Cost in 2026?',
-    publishedAt: '2026-08-31T00:00:00.000Z',
+    slug: 'pet-memorial-portrait',
+    title: 'Pet Memorial Portrait',
     category: {
       id: 200,
-      name: 'Guides',
-      slug: 'guides',
+      name: 'Memorial Guide',
+      slug: 'memorial-guide',
     },
   });
 
@@ -51,15 +50,16 @@ test('listHubArticles serves published local articles when WordPress has none', 
     { hub: 'blog', perPage: 12 },
     {
       loadWordPressArticles: async () => [],
-      loadLocalArticles: async () => [localArticle],
+      // getPublishedLocalArticles filters unpublished drafts before the feed.
+      loadLocalArticles: async () => [],
     }
   );
 
-  assert.equal(articles.length, 1);
-  assert.equal(articles[0].slug, 'how-much-does-an-ai-pet-portrait-cost');
+  assert.equal(articles.length, 0);
+  assert.equal(unpublishedLocal.slug, 'pet-memorial-portrait');
 });
 
-test('listHubArticles keeps WordPress on slug collision and appends extra local articles', async () => {
+test('listHubArticles appends published local extras when WordPress articles exist; WordPress wins on slug collision', async () => {
   const sharedSlug = 'pet-loss-gift-ideas';
   const wordPressArticle = createArticle({
     id: 10,
@@ -90,10 +90,7 @@ test('listHubArticles keeps WordPress on slug collision and appends extra local 
 
   assert.deepEqual(
     articles.map((article) => article.title),
-    [
-      'How Much Does an AI Pet Portrait Cost in 2026?',
-      'WordPress Version',
-    ]
+    ['WordPress Version', 'How Much Does an AI Pet Portrait Cost in 2026?']
   );
 });
 
@@ -123,7 +120,7 @@ test('findHubArticleBySlug returns null when WordPress lookup throws instead of 
   assert.equal(article, null);
 });
 
-test('findHubArticleBySlug uses published local when WordPress returns null', async () => {
+test('findHubArticleBySlug returns published local article when WordPress returns null', async () => {
   const localArticle = createArticle({
     id: 30,
     slug: 'how-much-does-an-ai-pet-portrait-cost',
@@ -141,4 +138,18 @@ test('findHubArticleBySlug uses published local when WordPress returns null', as
 
   assert.equal(article?.slug, 'how-much-does-an-ai-pet-portrait-cost');
   assert.equal(article?.title, 'How Much Does an AI Pet Portrait Cost in 2026?');
+});
+
+test('findHubArticleBySlug does not serve unpublished local markdown', async () => {
+  const article = await findHubArticleBySlug(
+    'pet-photo-to-ai-art',
+    'blog',
+    {
+      loadWordPressArticleBySlug: async () => null,
+      // Unpublished drafts are not returned by getLocalArticleBySlug.
+      loadLocalArticleBySlug: async () => null,
+    }
+  );
+
+  assert.equal(article, null);
 });
