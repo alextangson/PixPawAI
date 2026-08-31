@@ -12,6 +12,9 @@ interface LocalFrontmatter {
   metaDescription?: string;
   keywords?: string[];
   category?: string;
+  published?: boolean;
+  date?: string | Date;
+  updated?: string | Date;
 }
 
 function toSlug(fileName: string): string {
@@ -41,21 +44,39 @@ function stripMarkdown(markdown: string): string {
     .replace(/^---[\s\S]*?---/m, '')
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`([^`]+)`/g, '$1')
-    .replace(/!\[[^\]]*]\([^)]*\)/g, '')
-    .replace(/\[[^\]]*]\([^)]*\)/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[[^\]]*\]\([^)]*\)/g, '$1')
     .replace(/^#+\s+/gm, '')
     .replace(/[>*_~]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function buildArticleFromMarkdown(fileName: string, source: string): BlogArticle {
+function toIso(value: unknown, fallback: string): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+  return fallback;
+}
+
+function buildArticleFromMarkdown(fileName: string, source: string): BlogArticle | null {
   const parsed = matter(source);
   const data = (parsed.data || {}) as LocalFrontmatter;
+  if (data.published !== true) {
+    return null;
+  }
+
   const slug = toSlug(fileName);
   const plainText = stripMarkdown(parsed.content);
   const category = normalizeCategory(data.category);
-  const publishedAt = new Date('2026-03-01').toISOString();
+  const publishedAt = toIso(data.date, new Date('2026-03-01').toISOString());
+  const updatedAt = toIso(data.updated, publishedAt);
 
   const html = marked.parse(parsed.content, {
     gfm: true,
@@ -84,7 +105,7 @@ function buildArticleFromMarkdown(fileName: string, source: string): BlogArticle
       avatar: '',
     },
     publishedAt,
-    updatedAt: publishedAt,
+    updatedAt,
     readingTime: estimateReadingTime(plainText),
     isFeatured: false,
     seoKeywords: Array.isArray(data.keywords) ? data.keywords : [],
@@ -101,13 +122,15 @@ export async function getLocalArticles(): Promise<BlogArticle[]> {
     const files = await fs.readdir(CONTENT_DIR);
     const markdownFiles = files.filter((file) => file.endsWith('.md') && file !== 'README.md');
 
-    const articles = await Promise.all(
-      markdownFiles.map(async (fileName) => {
-        const filePath = path.join(CONTENT_DIR, fileName);
-        const source = await fs.readFile(filePath, 'utf-8');
-        return buildArticleFromMarkdown(fileName, source);
-      })
-    );
+    const articles = (
+      await Promise.all(
+        markdownFiles.map(async (fileName) => {
+          const filePath = path.join(CONTENT_DIR, fileName);
+          const source = await fs.readFile(filePath, 'utf-8');
+          return buildArticleFromMarkdown(fileName, source);
+        })
+      )
+    ).filter((article): article is BlogArticle => article !== null);
 
     return articles.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   } catch (error) {
