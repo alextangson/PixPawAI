@@ -15,7 +15,7 @@ import { BlogRelatedArticles } from '@/components/blog/blog-related-articles';
 import { BlogArticleSchema, BlogFaqSchema, BreadcrumbSchema } from '@/components/blog/blog-article-schema';
 import { BlogArticleBody } from '@/components/blog/article-body';
 import { extractFaqFromHtml } from '@/lib/seo/faq';
-import { ARTICLE_SEO_OVERRIDES, applyArticlePresentation } from '@/lib/seo/article-overrides';
+import { ARTICLE_SEO_OVERRIDES, applyArticlePresentation, rewriteArticleBodyHtml } from '@/lib/seo/article-overrides';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
 
@@ -90,7 +90,11 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
     notFound();
   }
 
-  const article = applyArticlePresentation(rawArticle);
+  const presented = applyArticlePresentation(rawArticle);
+  const article = {
+    ...presented,
+    content: rewriteArticleBodyHtml(presented.slug, presented.content),
+  };
   const relatedArticles = (await listRelatedHubArticles(rawArticle, 'blog', 3)).map(
     applyArticlePresentation
   );
@@ -227,6 +231,33 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                       prose-code:bg-stone-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-amber-800 prose-code:text-sm prose-code:font-mono
                       prose-pre:bg-stone-900 prose-pre:text-stone-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
                       prose-blockquote:border-l-4 prose-blockquote:border-amber-600 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-stone-600 prose-blockquote:my-8">
+                    {slug === 'best-ai-pet-portrait-generator' && (
+                      <div className="mb-8 not-prose rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-50 to-orange-50 p-6 md:p-8">
+                        <p className="text-sm font-semibold uppercase tracking-wide text-amber-700 mb-2">
+                          Skip the comparison
+                        </p>
+                        <h3 className="text-2xl font-bold text-stone-900 mb-2">
+                          Try it on your pet photo
+                        </h3>
+                        <p className="text-stone-600 mb-4">
+                          Free watermarked preview. Clean portraits start at{' '}
+                          <strong>Starter $4.99 / 15 credits</strong> (one-time).
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Link href={`/${lang}`}>
+                            <Button className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                              Generate free →
+                            </Button>
+                          </Link>
+                          <Link
+                            href={`/${lang}/pricing`}
+                            className="inline-flex items-center text-amber-700 font-semibold underline underline-offset-4"
+                          >
+                            See Starter $4.99
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                     <BlogArticleBody content={article.content} />
                   </div>
 
@@ -259,7 +290,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                   />
                 </div>
 
-                {/* CTA Banner — using Sparkles icon */}
+                {/* CTA Banner — free try + clear Starter $4.99 path */}
                 <div className="mt-8 bg-gradient-to-br from-stone-800 to-stone-900 rounded-2xl p-8 md:p-12 text-white text-center shadow-xl">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-6">
                     <Sparkles className="w-8 h-8 text-amber-300" />
@@ -268,16 +299,24 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                     Ready to Create Your Pet Portrait?
                   </h3>
                   <p className="text-lg text-stone-300 mb-6 max-w-2xl mx-auto">
-                    Apply what you learned and turn your pet into stunning AI art in just 30 seconds
+                    Free watermarked preview (no signup). Clean downloads start at Starter $4.99 for 15 credits — one-time, no subscription.
                   </p>
-                  <Link href={`/${lang}`}>
-                    <Button
-                      size="lg"
-                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-10 py-6 text-lg shadow-lg"
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Link href={`/${lang}`}>
+                      <Button
+                        size="lg"
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-10 py-6 text-lg shadow-lg"
+                      >
+                        Generate free
+                      </Button>
+                    </Link>
+                    <Link
+                      href={`/${lang}/pricing`}
+                      className="text-amber-300 font-semibold underline underline-offset-4 hover:text-amber-200"
                     >
-                      Try PixPaw AI Now
-                    </Button>
-                  </Link>
+                      See Starter $4.99
+                    </Link>
+                  </div>
                 </div>
               </div>
 
