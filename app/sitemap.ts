@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getAllArticleEntries } from '@/lib/wordpress/blog';
+import { listHubArticleEntries } from '@/lib/content/blog-feed';
 import { STYLES } from '@/lib/styles';
 import { SHOP_PRODUCTS } from '@/lib/seo/shop-products';
 
@@ -28,7 +28,7 @@ function newestDate(dates: Array<Date | undefined>): Date | undefined {
 }
 
 async function getArticlePages(): Promise<MetadataRoute.Sitemap> {
-  const entries = await getAllArticleEntries({ hub: 'blog' });
+  const entries = await listHubArticleEntries('blog');
 
   return entries.map((entry) => ({
     url: `${SITE_URL}/en/blog/${entry.slug}/`,
