@@ -34,8 +34,8 @@ function createArticle(overrides: Partial<BlogArticle> = {}): BlogArticle {
   };
 }
 
-test('listHubArticles does not fall back to local markdown when WordPress has no blog articles', async () => {
-  const localArticle = createArticle({
+test('listHubArticles does not dump unpublished local markdown when WordPress has no blog articles', async () => {
+  const unpublishedLocal = createArticle({
     id: 2,
     slug: 'pet-memorial-portrait',
     title: 'Pet Memorial Portrait',
@@ -50,14 +50,16 @@ test('listHubArticles does not fall back to local markdown when WordPress has no
     { hub: 'blog', perPage: 12 },
     {
       loadWordPressArticles: async () => [],
-      loadLocalArticles: async () => [localArticle],
+      // getPublishedLocalArticles filters unpublished drafts before the feed.
+      loadLocalArticles: async () => [],
     }
   );
 
   assert.equal(articles.length, 0);
+  assert.equal(unpublishedLocal.slug, 'pet-memorial-portrait');
 });
 
-test('listHubArticles ignores local markdown duplicates and extras when WordPress articles exist', async () => {
+test('listHubArticles appends published local extras when WordPress articles exist; WordPress wins on slug collision', async () => {
   const sharedSlug = 'pet-loss-gift-ideas';
   const wordPressArticle = createArticle({
     id: 10,
@@ -73,9 +75,9 @@ test('listHubArticles ignores local markdown duplicates and extras when WordPres
   });
   const localNewest = createArticle({
     id: 12,
-    slug: 'new-local-article',
-    title: 'Newest Local Article',
-    publishedAt: '2026-03-06T00:00:00.000Z',
+    slug: 'how-much-does-an-ai-pet-portrait-cost',
+    title: 'How Much Does an AI Pet Portrait Cost in 2026?',
+    publishedAt: '2026-08-31T00:00:00.000Z',
   });
 
   const articles = await listHubArticles(
@@ -88,11 +90,11 @@ test('listHubArticles ignores local markdown duplicates and extras when WordPres
 
   assert.deepEqual(
     articles.map((article) => article.title),
-    ['WordPress Version']
+    ['WordPress Version', 'How Much Does an AI Pet Portrait Cost in 2026?']
   );
 });
 
-test('findHubArticleBySlug returns null when WordPress lookup fails instead of using local markdown', async () => {
+test('findHubArticleBySlug returns null when WordPress lookup throws instead of using local markdown', async () => {
   const localArticle = createArticle({
     id: 20,
     slug: 'styled-pet-portraits',
@@ -112,6 +114,40 @@ test('findHubArticleBySlug returns null when WordPress lookup fails instead of u
         throw new Error('WordPress unavailable');
       },
       loadLocalArticleBySlug: async () => localArticle,
+    }
+  );
+
+  assert.equal(article, null);
+});
+
+test('findHubArticleBySlug returns published local article when WordPress returns null', async () => {
+  const localArticle = createArticle({
+    id: 30,
+    slug: 'how-much-does-an-ai-pet-portrait-cost',
+    title: 'How Much Does an AI Pet Portrait Cost in 2026?',
+  });
+
+  const article = await findHubArticleBySlug(
+    'how-much-does-an-ai-pet-portrait-cost',
+    'blog',
+    {
+      loadWordPressArticleBySlug: async () => null,
+      loadLocalArticleBySlug: async () => localArticle,
+    }
+  );
+
+  assert.equal(article?.slug, 'how-much-does-an-ai-pet-portrait-cost');
+  assert.equal(article?.title, 'How Much Does an AI Pet Portrait Cost in 2026?');
+});
+
+test('findHubArticleBySlug does not serve unpublished local markdown', async () => {
+  const article = await findHubArticleBySlug(
+    'pet-photo-to-ai-art',
+    'blog',
+    {
+      loadWordPressArticleBySlug: async () => null,
+      // Unpublished drafts are not returned by getLocalArticleBySlug.
+      loadLocalArticleBySlug: async () => null,
     }
   );
 
