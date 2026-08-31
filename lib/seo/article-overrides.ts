@@ -42,3 +42,23 @@ export function applyArticlePresentation<T extends { slug: string; title: string
     excerpt: override?.excerpt || stripSeoMetaLeak(article.excerpt),
   };
 }
+
+
+/**
+ * Honest body rewrites for conversion-critical posts.
+ * WP source may still be wrong; Next renders the corrected HTML.
+ * Keep replacements narrow — only known false claims.
+ */
+export function rewriteArticleBodyHtml(slug: string, html: string): string {
+  if (!html) return html;
+  if (slug !== 'best-ai-pet-portrait-generator') return html;
+
+  return html
+    .replace(/Professional-grade 4K output/gi, 'Professional-grade 1024px output (HD unlock available)')
+    .replace(/4K resolution outputs suitable for large format printing/gi, '1024px outputs suitable for sharing and small prints; unlock HD for larger formats')
+    .replace(/professional-grade 4K output resolution/gi, 'professional-grade 1024px output')
+    .replace(/4K resolution outputs suitable for any use case/gi, 'sharp digital outputs suitable for gifts and keepsakes')
+    .replace(/The platform(?:&#8217;|&#x2019;|&rsquo;|')s 4K resolution ensures that portraits maintain their quality when printed/gi, 'Paid HD downloads keep portraits sharp enough for common print sizes')
+    .replace(/platform&#8217;s 4K resolution/gi, 'platform&#8217;s paid HD downloads')
+    .replace(/platform's 4K resolution/gi, "platform's paid HD downloads");
+}
