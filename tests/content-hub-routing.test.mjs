@@ -39,3 +39,20 @@ test('pet memorial entry exists in blog page and footer', async () => {
   assert.match(footer, /pet-memorial/);
   assert.match(dict, /"petMemorial": "Pet Memorial"/);
 });
+
+test('blog article cover keeps natural aspect (no fill + aspect-video stretch)', async () => {
+  const blogArticlePage = await read('app/[lang]/blog/[slug]/page.tsx');
+  const coverStart = blogArticlePage.indexOf('{/* Cover Image */}');
+  const coverEnd = blogArticlePage.indexOf('{/* Article Content');
+  assert.notEqual(coverStart, -1);
+  assert.notEqual(coverEnd, -1);
+  const coverBlock = blogArticlePage.slice(coverStart, coverEnd);
+  assert.doesNotMatch(coverBlock, /\bfill\b/);
+  assert.doesNotMatch(coverBlock, /aspect-video/);
+  assert.match(coverBlock, /w-full h-auto/);
+  assert.match(coverBlock, /object-cover/);
+  assert.match(coverBlock, /width=\{article\.coverImage\.width\}/);
+  assert.match(coverBlock, /height=\{article\.coverImage\.height\}/);
+  assert.match(blogArticlePage, /prose-img:h-auto/);
+  assert.match(blogArticlePage, /prose-img:object-cover/);
+});
