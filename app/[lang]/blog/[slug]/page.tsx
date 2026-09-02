@@ -195,16 +195,15 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
         {article.coverImage && (
           <div className="container mx-auto px-4 mb-12">
             <div className="max-w-5xl mx-auto">
-              <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-xl">
-                <Image
-                  src={article.coverImage.url}
-                  alt={article.coverImage.alt}
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 80vw"
-                />
-              </div>
+              <Image
+                src={article.coverImage.url}
+                alt={article.coverImage.alt}
+                width={article.coverImage.width}
+                height={article.coverImage.height}
+                priority
+                className="w-full h-auto rounded-2xl shadow-xl object-cover"
+                sizes="(max-width: 768px) 100vw, 80vw"
+              />
             </div>
           </div>
         )}
@@ -227,7 +226,7 @@ export default async function BlogArticlePage({ params }: ArticlePageProps) {
                       prose-strong:text-stone-900 prose-strong:font-bold
                       prose-ul:my-6 prose-ol:my-6
                       prose-li:text-stone-700 prose-li:my-2 prose-li:text-base prose-li:md:text-lg
-                      prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8
+                      prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8 prose-img:h-auto prose-img:w-full prose-img:object-cover
                       prose-code:bg-stone-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-amber-800 prose-code:text-sm prose-code:font-mono
                       prose-pre:bg-stone-900 prose-pre:text-stone-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
                       prose-blockquote:border-l-4 prose-blockquote:border-amber-600 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-stone-600 prose-blockquote:my-8">
