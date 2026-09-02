@@ -121,6 +121,13 @@
 |---|---|---|---|---|---|---|
 | 2026-09-01 | （基线待记） | | | | | GSC 当前值 = 基线 |
 
+**2026-09-02 收录请求已提交**（Claude 代操作，GSC URL 检查逐个提交，均返回 "URL was added to a priority crawl queue"）：
+`/en/alternatives/crown-and-paw/`（此前 Crawled-not-indexed）、`/en/gift/`（Discovered-not-indexed）、
+`/en/styles/rainbow-bridge/`、`/en/styles/guardian-angel/`、`/en/styles/watercolor-keepsake/` 共 5 个。
+`/en/alternatives/west-and-willow/` 检查显示 **URL is on Google（已收录）** — 上线当天即被收录，无需请求。
+sitemap.xml 在 GSC 状态为 Success，Google 会自动重抓新增 URL。
+下次检查：约 1 周后复查这 5 个 URL 是否转为 indexed；仍未收录则按计划 §3 排查（内容质量 vs 抓取预算）。
+
 ---
 
 ## 6. Alex 行动清单（只有你能做的）
