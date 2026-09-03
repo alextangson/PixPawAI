@@ -34,3 +34,14 @@ test('shop surfaces contain no fabricated customer counts, ratings, or testimoni
   assert.doesNotMatch(read('app/[lang]/about/page.tsx'), /tested across thousands/);
   assert.doesNotMatch(read('lib/constants/fun-facts.ts'), /trained on thousands|Hollywood movie effects|over 100 facial features/);
 });
+
+test('public pricing promises only implemented products and benefits', () => {
+  const pricing = read('app/[lang]/pricing/pricing-page-client.tsx');
+  const paymentModal = read('components/payment/payment-modal.tsx');
+  const publicCopy = `${pricing}\n${paymentModal}`;
+
+  assert.doesNotMatch(publicCopy, /Multi-Image Selection|Premium Styles|Priority Queue|Priority Support|Money-Back Guarantee|Limited Time/i);
+  assert.match(publicCopy, /Credits never expire/);
+  assert.match(publicCopy, /Watermark-free/);
+  assert.match(paymentModal, /Acceptable Use Policy/);
+});

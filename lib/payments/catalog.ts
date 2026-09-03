@@ -3,19 +3,19 @@ export const PRICING_TIERS = {
     amount: '4.99',
     credits: 15,
     name: 'Starter Pack',
-    description: '15 High-Resolution Generations',
+    description: '15 portrait generation credits',
   },
   pro: {
     amount: '19.99',
     credits: 50,
     name: 'Pro Bundle',
-    description: '50 Generation Credits with Premium Features',
+    description: '50 portrait generation credits',
   },
   master: {
     amount: '39.99',
     credits: 200,
     name: 'Master Plan',
-    description: '200 Professional Generations',
+    description: '200 portrait generation credits',
   },
 } as const;
 

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('pricing leads with purchasable outcomes and keeps credits as a repeat-use option', () => {
-  const source = read('app/[lang]/pricing/page.tsx');
+  const source = read('app/[lang]/pricing/pricing-page-client.tsx');
   const hd = source.indexOf('HD Digital Portrait');
   const canvas = source.indexOf('Canvas Keepsake');
   const credits = source.indexOf('Need more generations?');
@@ -40,6 +40,7 @@ test('pricing metadata matches the value ladder shown on the page', () => {
   const source = read('app/[lang]/pricing/layout.tsx');
   assert.match(source, /HD Digital Portrait/);
   assert.match(source, /Canvas Keepsake/);
-  assert.match(source, /price: '9\.99'/);
+  assert.match(source, /HD_UNLOCK\.amount/);
   assert.match(source, /price: '64\.99'/);
+  assert.match(source, /buildCreditPackAggregateOffer\(\)\.offers/);
 });

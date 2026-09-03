@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Persist a draft order row so we can confirm after payment
-    await supabase.from('printful_orders').insert({
+    const { error: insertError } = await supabase.from('printful_orders').insert({
       user_id: user.id,
       generation_id: generationId,
       product_id: productId,
@@ -154,6 +154,13 @@ export async function POST(req: NextRequest) {
       include_hd: includeHd,
       printful_response: estimate,
     });
+    if (insertError) {
+      console.error('[Printful] Failed to persist draft order:', insertError.code);
+      return NextResponse.json(
+        { error: 'Checkout is temporarily unavailable. Please try again.' },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json({
       paypalOrderId: paypalOrder.id,
