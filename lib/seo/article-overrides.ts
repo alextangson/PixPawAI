@@ -13,12 +13,12 @@ export type ArticleSeoOverride = {
  */
 export const ARTICLE_SEO_OVERRIDES: Record<string, ArticleSeoOverride> = {
   'best-ai-pet-portrait-generator': {
-    title: '7 Best AI Pet Portrait Generators in 2026 (Tested & Ranked)',
+    title: 'Best AI Pet Portrait Generator 2026 — Free Try, From $4.99 (7 Ranked)',
     description:
-      'We tested 7 AI pet portrait tools. PixPawAI starts at $4.99 for 15 portraits (free watermarked try, ~20–40s). See who actually earned the click.',
+      'We tested 7 AI pet portrait tools. PixPawAI: free watermarked try, then Starter $4.99 / 15 credits (one-time PayPal, ~20–40s). See who earned the click.',
     h1: '7 Best AI Pet Portrait Generators in 2026 (Tested & Ranked)',
     excerpt:
-      'Most “best AI pet portrait generator” lists hide the price. We ran the same pet photo through 7 tools. PixPawAI: $4.99 for 15 portraits, PayPal, one-time credits that never expire — ranked against Pawcaso, DreamPets, and more.',
+      'Most “best AI pet portrait generator” lists hide the price. We ran the same pet photo through 7 tools. PixPawAI: free try, then $4.99 for 15 portraits — one-time credits that never expire — ranked against PetCanvas, Firefly, and more.',
   },
   'pet-portrait-gift-guide': {
     title: 'Best Pet Portrait Gift Ideas in 2026 — For Every Budget & Occasion',
