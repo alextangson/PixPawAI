@@ -27,7 +27,7 @@ const DESCRIPTION =
 const COMPARISON_ROWS: ComparisonRow[] = [
   {
     label: "How it's made",
-    pixpaw: 'AI trained on pet portraiture, built from the photo you upload',
+    pixpaw: 'Pet-focused image generation built from the photo you upload',
     competitor: 'Human illustrators — the site describes the work as handmade by real artists',
     artist: 'Painted or drawn by hand, one commission at a time',
   },

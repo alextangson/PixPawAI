@@ -44,6 +44,7 @@ interface FooterProps {
         links: {
           privacy: string;
           terms: string;
+          acceptableUse: string;
           refund: string;
         };
       };
@@ -190,6 +191,11 @@ export function Footer({ dict, lang }: FooterProps) {
               <li>
                 <Link href={`/${lang}/terms`} className="hover:text-coral transition-colors">
                   {dict.footer.legal.links.terms}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/acceptable-use`} className="hover:text-coral transition-colors">
+                  {dict.footer.legal.links.acceptableUse}
                 </Link>
               </li>
               <li>

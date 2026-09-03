@@ -4,16 +4,16 @@
  */
 
 export const FUN_FACTS = [
-  "PixPaw AI analyzes over 100 facial features to capture your pet's unique personality",
-  "Our AI was trained on thousands of pet portraits from master artists",
-  "Each generation uses advanced color matching to preserve your pet's natural tones",
-  "The AI carefully preserves unique features like heterochromia (different colored eyes)",
-  "Professional artists spend hours on pet portraits - our AI does it in 30 seconds",
-  "We use the same technology that creates Hollywood movie effects",
-  "Your pet's expression and posture are key factors in creating the perfect portrait",
-  "The AI recognizes different breeds and adapts the artistic style accordingly",
-  "Complex fur patterns are preserved through specialized texture analysis",
-  "Your pet's unique eye color is detected and enhanced in the final portrait"
+  "A clear, well-lit reference photo helps preserve your pet's identifying features",
+  "Curated style prompts shape the scene while the reference photo anchors your pet's appearance",
+  "Your optional scene description is safety-checked before image generation begins",
+  "Visible features such as coat color, ear shape, and eye color guide the portrait",
+  "Image-to-image generation uses your uploaded photo as the visual starting point",
+  "A front-facing photo usually gives the model the clearest view of your pet",
+  "You can choose a different style or scene description for another interpretation",
+  "Complex coat patterns benefit from sharp focus and even lighting",
+  "The generated result may vary, so you can review it before choosing a paid product",
+  "Public gallery sharing is optional and controlled separately from generation"
 ] as const
 
 export type FunFact = typeof FUN_FACTS[number]

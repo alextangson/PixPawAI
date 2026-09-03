@@ -314,7 +314,11 @@ export function PaymentModal({
                     <a href="/en/terms" target="_blank" className="text-coral hover:underline">
                       Terms of Service
                     </a>
-                    {' '}and{' '}
+                    {', '}
+                    <a href="/en/acceptable-use" target="_blank" className="text-coral hover:underline">
+                      Acceptable Use Policy
+                    </a>
+                    {', and '}
                     <a href="/en/refund" target="_blank" className="text-coral hover:underline">
                       Refund Policy
                     </a>

@@ -6,42 +6,11 @@ import {
   Sparkles,
   Truck,
   Shield,
-  Star,
   Palette,
   Package,
   Heart,
 } from 'lucide-react';
 import { PRINTFUL_PRODUCTS } from '@/lib/printful/config';
-
-const TRUST_STATS = [
-  { value: '10,000+', label: 'Portraits Created' },
-  { value: '4.9/5', label: 'Customer Rating' },
-  { value: '30+', label: 'Countries Shipped' },
-];
-
-const REVIEWS = [
-  {
-    name: 'Sarah M.',
-    pet: 'Golden Retriever',
-    product: 'Canvas Print',
-    text: 'The canvas looks absolutely stunning on my wall. The watercolor style captured my dog perfectly!',
-    stars: 5,
-  },
-  {
-    name: 'James K.',
-    pet: 'Tabby Cat',
-    product: 'Pillow',
-    text: 'Best gift I ever gave my wife. She literally cried when she saw our cat on the pillow.',
-    stars: 5,
-  },
-  {
-    name: 'Emily R.',
-    pet: 'French Bulldog',
-    product: 'T-Shirt',
-    text: 'I get compliments every time I wear it! The print quality is amazing.',
-    stars: 5,
-  },
-];
 
 const STEPS = [
   {
@@ -57,7 +26,7 @@ const STEPS = [
   {
     icon: Truck,
     title: 'We Ship It To You',
-    description: 'Premium printing and worldwide shipping. Your custom product arrives in 5-12 days.',
+    description: 'Review the shipping price and delivery estimate at checkout before you pay.',
   },
 ];
 
@@ -161,19 +130,6 @@ export default async function ShopPage({
           </div>
         </div>
 
-        {/* Trust Stats Bar */}
-        <div className="border-t border-white/20 bg-white/10 backdrop-blur-sm">
-          <div className="container mx-auto px-4 max-w-7xl py-5">
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-              {TRUST_STATS.map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <div className="text-2xl md:text-3xl font-bold">{stat.value}</div>
-                  <div className="text-sm text-white/80">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* How It Works */}
@@ -214,10 +170,10 @@ export default async function ShopPage({
           <div className="text-center mb-12">
             <span className="inline-flex items-center gap-1.5 text-coral font-semibold text-sm uppercase tracking-wider mb-3">
               <Sparkles className="w-4 h-4" />
-              Best Sellers
+              Made-to-order keepsakes
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-darkgray">
-              Most Popular Products
+              Featured Products
             </h2>
           </div>
 
@@ -233,11 +189,6 @@ export default async function ShopPage({
                   href={`/${lang}/shop/${product.productId}`}
                   className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500"
                 >
-                  <div className="absolute top-5 right-5 z-20 bg-coral text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
-                    <Sparkles className="w-3 h-3" />
-                    Best Seller
-                  </div>
-
                   <div className="relative h-72 md:h-80 overflow-hidden">
                     <Image
                       src={product.imageUrl}
@@ -261,13 +212,7 @@ export default async function ShopPage({
                         <div className="text-xs text-gray-400 mt-0.5">starting from</div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-5 pt-5 border-t border-gray-100">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        ))}
-                        <span className="text-sm text-gray-400 ml-1">(127)</span>
-                      </div>
+                    <div className="flex items-center justify-end mt-5 pt-5 border-t border-gray-100">
                       <span className="inline-flex items-center gap-1 text-coral font-semibold text-sm group-hover:gap-2 transition-all">
                         Customize Now
                         <ArrowRight className="w-4 h-4" />
@@ -320,49 +265,13 @@ export default async function ShopPage({
         </div>
       </section>
 
-      {/* Social Proof / Reviews */}
-      <section className="py-16 md:py-20 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-darkgray mb-3">
-              Pet Parents Love It
-            </h2>
-            <p className="text-gray-500">Join thousands of happy customers.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {REVIEWS.map((review) => (
-              <div
-                key={review.name}
-                className="bg-cream rounded-2xl p-6 border border-gray-100"
-              >
-                <div className="flex items-center gap-0.5 mb-3">
-                  {[...Array(review.stars)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-gray-700 leading-relaxed mb-4">
-                  &ldquo;{review.text}&rdquo;
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-darkgray">{review.name}</span>
-                  <span className="text-gray-400">
-                    {review.pet} &middot; {review.product}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Trust Badges + CTA */}
       <section className="py-16 md:py-20">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Trust badges */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-14">
             {[
-              { icon: Truck, title: 'Free Shipping', desc: 'On orders over $75' },
+              { icon: Truck, title: 'Shipping Up Front', desc: 'Price shown before payment' },
               { icon: Shield, title: 'Quality Guarantee', desc: 'Premium materials & print' },
               { icon: Heart, title: 'Made With Love', desc: 'By pet parents, for pet parents' },
             ].map((badge) => (

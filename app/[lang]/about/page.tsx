@@ -79,7 +79,7 @@ export default async function AboutPage({
             <p className="text-gray-700">
               Make custom pet art easy, affordable, and emotionally meaningful in under a minute.
               PixPaw AI generates portraits in 20–40 seconds using curated style prompts
-              tested across thousands of pet photos for consistent quality.
+              designed for pet photos and refined through ongoing quality checks.
             </p>
           </section>
           <section>
@@ -96,6 +96,14 @@ export default async function AboutPage({
               Upload a clear pet photo, choose from {'>'}10 curated art styles, and receive your portrait in seconds.
               No account required to preview. Portraits are generated using state-of-the-art image-to-image
               AI models optimized for animal subjects.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-2xl font-semibold text-gray-900">Independent AI Service</h2>
+            <p className="text-gray-700">
+              PixPaw AI is an independent product that provides its own pet-focused interface, style system,
+              quality controls, and safety controls on top of third-party AI infrastructure. We are not
+              affiliated with or endorsed by the creators of the underlying AI models.
             </p>
           </section>
           <section>

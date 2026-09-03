@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Truck,
   Shield,
-  Star,
   Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,8 +26,8 @@ interface Props {
 
 const TRUST_POINTS = [
   'Premium quality printing',
-  'Worldwide shipping (5-12 days)',
-  'Satisfaction guarantee',
+  'Shipping price and estimate shown before payment',
+  'Support from support@pixpawai.com',
 ];
 
 export function ProductDetailClient({ product, lang, initialGenerationId }: Props) {
@@ -132,14 +131,8 @@ export function ProductDetailClient({ product, lang, initialGenerationId }: Prop
               Back to Shop
             </Link>
 
-            {/* Title & Rating */}
+            {/* Product title */}
             <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-                <span className="text-sm text-gray-400 ml-1">(89 reviews)</span>
-              </div>
               <h1 className="text-3xl md:text-4xl font-bold text-darkgray mb-2">
                 {product.name}
               </h1>

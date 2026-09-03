@@ -51,7 +51,9 @@ export default async function PrivacyPage({
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Information We Collect</h2>
             <p className="leading-relaxed">
               We collect information you provide when you create an account, upload pet photos, 
-              and make purchases. This includes your email address, uploaded images, and payment information.
+              add an optional scene description, and make purchases. This includes your email address,
+              uploaded images, generation settings, and transaction references. Full card details are handled
+              by the payment provider shown at checkout and are not stored by PixPaw AI.
             </p>
           </section>
 
@@ -62,8 +64,9 @@ export default async function PrivacyPage({
             </p>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
               <li>Generate AI-powered pet portraits</li>
+              <li>Screen prompts and content for safety and abuse prevention</li>
               <li>Process payments and deliver digital products</li>
-              <li>Improve our AI models and services</li>
+              <li>Operate, troubleshoot, and improve product quality</li>
               <li>Send important account updates</li>
             </ul>
           </section>
@@ -71,8 +74,9 @@ export default async function PrivacyPage({
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Data Security</h2>
             <p className="leading-relaxed">
-              We use industry-standard encryption and security measures to protect your data. 
-              Your images are stored securely and are only used for generating your personalized artwork.
+              We use reasonable technical and organizational safeguards to protect your data. Images and prompts
+              are processed only as needed to provide, secure, and troubleshoot the portrait service, subject to
+              the service-provider disclosures below.
             </p>
           </section>
 
@@ -85,7 +89,18 @@ export default async function PrivacyPage({
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Your Rights</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Service Providers</h2>
+            <p className="leading-relaxed">
+              We share only the data needed to operate PixPaw AI with service providers that host data, analyze
+              uploaded pet photos, generate portraits, screen user-supplied prompts, process payments, and fulfill
+              physical orders. These providers currently include Supabase, Replicate, SiliconFlow, Creem, PayPal,
+              Vercel, and Printful, depending on the feature you use. Creem&apos;s Moderation API receives the scene
+              text you submit so it can return an allow, flag, or deny decision before image generation.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Your Rights</h2>
             <p className="leading-relaxed">
               You have the right to access, modify, or delete your personal data at any time. 
               Contact us at privacy@pixpawai.com for any privacy-related requests.
@@ -93,7 +108,7 @@ export default async function PrivacyPage({
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Cookies and Tracking Technologies</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Cookies and Tracking Technologies</h2>
             <div className="space-y-4">
               <p className="leading-relaxed">
                 We use cookies and similar technologies to enhance your experience, maintain security, 
@@ -101,7 +116,7 @@ export default async function PrivacyPage({
               </p>
               
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">6.1 Essential Cookies</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">7.1 Essential Cookies</h3>
                 <p className="leading-relaxed">
                   Required for the website to function properly:
                 </p>
@@ -113,15 +128,16 @@ export default async function PrivacyPage({
               </div>
               
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">6.2 Payment Cookies</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">7.2 Payment Cookies</h3>
                 <p className="leading-relaxed">
-                  When you make a payment through PayPal, PayPal may set cookies to process your transaction 
-                  securely. These cookies are governed by PayPal's privacy policy.
+                  When you make a payment, the provider shown at checkout, such as PayPal or Creem, may set
+                  cookies to process the transaction securely. Those cookies are governed by that provider&apos;s
+                  privacy policy.
                 </p>
               </div>
               
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">6.3 Performance Cookies (Optional)</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">7.3 Performance Cookies (Optional)</h3>
                 <p className="leading-relaxed">
                   We may use analytics cookies to understand how users interact with our service and 
                   improve our features. You can opt out of these through your browser settings.
@@ -129,7 +145,7 @@ export default async function PrivacyPage({
               </div>
               
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">6.4 Managing Cookies</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">7.4 Managing Cookies</h3>
                 <p className="leading-relaxed">
                   You can control cookies through your browser settings. However, disabling essential 
                   cookies may affect your ability to use certain features of PixPaw AI.
@@ -139,7 +155,7 @@ export default async function PrivacyPage({
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Changes to This Policy</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Changes to This Policy</h2>
             <p className="leading-relaxed">
               We may update this privacy policy from time to time. We will notify you of any significant 
               changes via email or through our website.
@@ -147,7 +163,7 @@ export default async function PrivacyPage({
           </section>
 
           <p className="text-sm text-gray-500 pt-6 border-t">
-            Last updated: January 18, 2026
+            Last updated: September 3, 2026
           </p>
         </div>
       </div>

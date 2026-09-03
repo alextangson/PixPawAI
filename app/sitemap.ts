@@ -73,6 +73,7 @@ function getStaticPages(
     { url: `${SITE_URL}/en/contact/`,      changeFrequency: 'yearly'  as const, priority: 0.4, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/privacy/`,      changeFrequency: 'yearly'  as const, priority: 0.3, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/terms/`,        changeFrequency: 'yearly'  as const, priority: 0.3, lastModified: new Date('2026-03-19') },
+    { url: `${SITE_URL}/en/acceptable-use/`, changeFrequency: 'yearly' as const, priority: 0.3, lastModified: new Date('2026-09-03') },
     { url: `${SITE_URL}/en/refund/`,       changeFrequency: 'yearly'  as const, priority: 0.3, lastModified: new Date('2026-03-19') },
   ];
 }

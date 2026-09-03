@@ -90,7 +90,7 @@ async function generateWithReplicate(
     num_outputs: 1,
     output_format: "png",
     output_quality: request.outputQuality || 80,
-    disable_safety_checker: true,
+    disable_safety_checker: false,
   }
   
   // Add image-to-image parameters if image provided
