@@ -18,7 +18,7 @@ function request(data) {
 }
 
 function harness(settings = {}) {
-  const calls = { rpc: [], models: [], inserts: [], uploads: [], analysis: 0, visionModels: [] };
+  const calls = { rpc: [], models: [], inserts: [], uploads: [], moderation: [], analysis: 0, visionModels: [] };
   let generation;
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: 'TEST-USER' } } }) },
@@ -42,6 +42,15 @@ function harness(settings = {}) {
   const quiet = { log() {}, info() {}, error() {}, warn() {} };
   const cache = new Map();
   const fetcher = async (url, init) => {
+    if (url.includes('api.creem.io/v1/moderation/prompt')) {
+      calls.moderation.push(JSON.parse(init.body));
+      if (settings.moderationFails) throw new Error('synthetic moderation failure');
+      return Response.json({
+        id: 'mod_SYNTHETIC',
+        decision: settings.moderationDecision ?? 'allow',
+        usage: { units: 1 },
+      });
+    }
     if (url.includes('siliconflow')) {
       calls.analysis++;
       calls.visionModels.push(JSON.parse(init.body).model);
@@ -80,7 +89,7 @@ function harness(settings = {}) {
     // Actual route and prompt builders; only external I/O and unrelated policy services are mocked.
     vm.runInThisContext(`(function(require,module,exports,fetch,console,process,setTimeout) { ${output}\n})`, { filename: relative })(
       imports, module, module.exports, fetcher, quiet,
-      { env: { REPLICATE_API_TOKEN: 'SYNTHETIC', SILICONFLOW_API_KEY: 'SYNTHETIC' } },
+      { env: { REPLICATE_API_TOKEN: 'SYNTHETIC', SILICONFLOW_API_KEY: 'SYNTHETIC', CREEM_MODERATION_API_KEY: 'SYNTHETIC' } },
       callback => { callback(); return 0; },
     );
     cache.set(relative, module.exports);
@@ -95,13 +104,32 @@ test('unknown detailed analysis falls back to quick dog; old 0.92 config is capp
     const response = await h.post('generate')(request({ ...body, detailedAnalysis: { ...detailed, petType: 'unknown' }, quickAnalysis: quick, strength: 0.92 }));
     assert.equal(response.status, 200);
     assert.equal(h.calls.analysis, 0);
+    assert.deepEqual(h.calls.moderation, [{ prompt: 'my pet' }]);
     assert.equal(h.calls.models.length, 1);
     assert.match(h.calls.models[0].input.prompt, /^Pet portrait of the same dog/);
     assert.match(h.calls.models[0].input.prompt, /Santa hat/i);
     assert.equal(h.calls.models[0].input.prompt_strength, 0.9);
+    assert.equal(h.calls.models[0].input.disable_safety_checker, false);
     assert.ok(h.calls.models[0].input.image);
     assert.equal(h.calls.inserts.find(x => x.table === 'generations').row.metadata.analysisDataSource, 'quick');
     assert.equal(h.calls.rpc.filter(x => x.name === 'decrement_credits').length, 1);
+  }
+});
+
+test('Creem flag, deny, and outage block before persistence, billing, or generation', async () => {
+  for (const settings of [
+    { moderationDecision: 'flag', expectedStatus: 400, expectedCode: 'PROMPT_REJECTED' },
+    { moderationDecision: 'deny', expectedStatus: 400, expectedCode: 'PROMPT_REJECTED' },
+    { moderationFails: true, expectedStatus: 503, expectedCode: 'MODERATION_UNAVAILABLE' },
+  ]) {
+    const h = harness(settings);
+    const response = await h.post('generate')(request(body));
+    assert.equal(response.status, settings.expectedStatus);
+    assert.equal((await response.json()).code, settings.expectedCode);
+    assert.equal(h.calls.moderation.length, 1);
+    assert.equal(h.calls.models.length, 0);
+    assert.equal(h.calls.rpc.length, 0);
+    assert.equal(h.calls.inserts.length, 0);
   }
 });
 

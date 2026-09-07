@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getDictionary } from '@/lib/dictionary';
 import type { Locale } from '@/lib/i18n-config';
 import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
@@ -59,7 +60,9 @@ export default async function TermsPage({
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Service Description</h2>
             <p className="leading-relaxed">
               PixPaw AI provides AI-powered pet portrait generation services. We transform your pet photos 
-              into artistic stylized artwork using advanced machine learning technology.
+              into artistic stylized artwork through our independent interface and safety controls using
+              third-party AI infrastructure. PixPaw AI is not affiliated with or endorsed by the creators
+              of the underlying AI models.
             </p>
           </section>
 
@@ -69,8 +72,11 @@ export default async function TermsPage({
             <ul className="list-disc list-inside ml-4 mt-2 space-y-2">
               <li>Provide accurate account information</li>
               <li>Only upload images you have the right to use</li>
-              <li>Not use our service for illegal or harmful purposes</li>
+              <li>Follow our <Link className="font-semibold text-coral hover:underline" href={`/${lang}/acceptable-use`}>Acceptable Use Policy</Link></li>
+              <li>Not request or share NSFW, explicit, sexually suggestive, harmful, hateful, violent, or illegal content</li>
+              <li>Not create face swaps, deepfakes, deceptive impersonations, or non-consensual imagery</li>
               <li>Not attempt to circumvent our payment systems</li>
+              <li>Not attempt to bypass or disrupt our safety and moderation systems</li>
               <li>Respect the intellectual property rights of others</li>
             </ul>
           </section>
@@ -81,9 +87,9 @@ export default async function TermsPage({
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">4.1 Payment Processing</h3>
                 <p className="leading-relaxed">
-                  All payments are securely processed through PayPal. We accept PayPal accounts, credit cards, 
-                  debit cards, and other payment methods supported by PayPal. By making a purchase, you agree to 
-                  PayPal's terms and conditions.
+                  Payments are securely processed by the third-party provider displayed at checkout, such as
+                  PayPal or Creem. PixPaw AI does not store full card details. By making a purchase, you also
+                  agree to the payment provider&apos;s applicable terms and privacy policy.
                 </p>
               </div>
               
@@ -149,7 +155,12 @@ export default async function TermsPage({
                 <h3 className="font-semibold text-gray-900 mb-2">5.4 Prohibited Use</h3>
                 <p className="leading-relaxed">
                   You may not resell, redistribute, or claim AI-generated images as your own original artwork. 
-                  You may not use generated images for illegal, harmful, or defamatory purposes.
+                  You may not use generated images for illegal, harmful, defamatory, NSFW, explicit, sexually
+                  suggestive, hateful, graphically violent, deceptive, or exploitative purposes. The complete
+                  rules and enforcement terms are in our{' '}
+                  <Link className="font-semibold text-coral hover:underline" href={`/${lang}/acceptable-use`}>
+                    Acceptable Use Policy
+                  </Link>.
                 </p>
               </div>
             </div>
@@ -159,7 +170,8 @@ export default async function TermsPage({
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. AI Generation Quality</h2>
             <p className="leading-relaxed">
               While we strive for high-quality results, AI-generated artwork may vary. We perform quality checks 
-              before processing, but results depend on input image quality and our AI models' capabilities.
+              before processing, but results depend on input image quality and our AI models&apos; capabilities.
+              User-supplied scene text is subject to automated safety screening before generation.
             </p>
           </section>
 
@@ -188,7 +200,7 @@ export default async function TermsPage({
           </section>
 
           <p className="text-sm text-gray-500 pt-6 border-t">
-            Last updated: January 18, 2026
+            Last updated: September 3, 2026
           </p>
         </div>
       </div>

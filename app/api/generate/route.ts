@@ -21,6 +21,7 @@ import { checkRateLimitSmart, getClientIp } from '@/lib/rate-limit'
 import { checkGuestFreeTier, incrementGuestUsage } from '@/lib/guest-credits'
 import { applyWatermark } from '@/lib/watermark'
 import { hasUsablePetIdentity, normalizePetType, preservePetIdentity, resolvePetPromptStrength } from '@/lib/pet-generation'
+import { CreemModerationError, moderateUserPrompt } from '@/lib/moderation/creem-prompt'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -396,7 +397,7 @@ async function generateWithReplicate(
     num_outputs: 1,
     output_format: "png",
     output_quality: outputQuality,     // Configurable quality (default 80)
-    disable_safety_checker: true,
+    disable_safety_checker: false,
     num_inference_steps: 50,
     guidance: guidance,  // Dynamic guidance based on style tier
     go_fast: goFast,                   // ⚡ Performance boost (40-60% faster)
@@ -606,6 +607,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (userPrompt != null && typeof userPrompt !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid scene description. No credits were used.' },
+        { status: 400 }
+      )
+    }
+
+    const moderationPrompt = userPrompt?.trim() || 'my pet'
+    if (moderationPrompt.length > 1000) {
+      return NextResponse.json(
+        { error: 'Scene descriptions must be 1,000 characters or fewer. No credits were used.' },
+        { status: 400 }
+      )
+    }
+
+    // Creem requires every user-controlled image prompt to be screened before
+    // billing, persistence, queueing, or model invocation. Fail closed.
+    try {
+      await moderateUserPrompt(moderationPrompt)
+    } catch (error) {
+      if (error instanceof CreemModerationError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: error.status }
+        )
+      }
+      return NextResponse.json(
+        {
+          error: 'Content safety checks are temporarily unavailable. No credits were used.',
+          code: 'MODERATION_UNAVAILABLE',
+        },
+        { status: 503 }
+      )
+    }
+
     // 2.5. MODERATION: Check user violations and filter prompt
     const { checkUserViolations, logViolation } = await import('@/lib/moderation/violation-tracker')
     const { filterPrompt } = await import('@/lib/moderation/keyword-filter')
@@ -684,7 +720,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Filter user prompt for inappropriate content
-    const filterResult = filterPrompt(userPrompt || '')
+    const filterResult = filterPrompt(moderationPrompt)
     
     if (filterResult.blocked) {
       // Log violation (logged-in users only — moderation_logs.user_id is a uuid)
@@ -692,7 +728,7 @@ export async function POST(request: NextRequest) {
         await logViolation({
           userId: user.id,
           violationType: 'sensitive_prompt',
-          prompt: userPrompt,
+          prompt: moderationPrompt,
           metadata: {
             matchedWords: filterResult.matchedBlacklist,
             style,

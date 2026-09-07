@@ -1563,7 +1563,10 @@ export function UploadModalWizard({ isOpen, onClose, selectedStyle: initialStyle
                     className="text-sm sm:text-base h-11 border-gray-300 focus:border-coral bg-white"
                   />
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-1.5 sm:mt-2">
-                    Add accessories, change background, or adjust composition. Your pet's features stay the same!
+                    Add accessories, change background, or adjust composition. Scene text is screened under our{' '}
+                    <a className="font-semibold text-coral hover:underline" href="/en/acceptable-use" target="_blank" rel="noreferrer">
+                      Acceptable Use Policy
+                    </a>.
                     </p>
                   </div>
 

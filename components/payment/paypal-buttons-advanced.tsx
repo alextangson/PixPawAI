@@ -173,8 +173,8 @@ export function PayPalButtonsAdvanced({
           const result = await response.json();
           console.log('Capture response:', result);
 
-          if (!response.ok) {
-            throw new Error(result.error || 'Payment capture failed');
+          if (!response.ok || result.success !== true) {
+            throw new Error(result.error || 'Payment could not be confirmed. Please contact support before paying again.');
           }
 
           // Success! Trigger parent callback

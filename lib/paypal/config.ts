@@ -5,6 +5,15 @@
  * Supports both Sandbox (testing) and Production
  */
 
+import {
+  HD_UNLOCK,
+  PRICING_TIERS,
+  isValidTier,
+  type PricingTier,
+} from '@/lib/payments/catalog';
+
+export { HD_UNLOCK, PRICING_TIERS, isValidTier, type PricingTier };
+
 // PayPal API Base URLs
 export const PAYPAL_API_BASE = 
   process.env.PAYPAL_ENVIRONMENT === 'production'
@@ -15,42 +24,6 @@ export const PAYPAL_API_BASE =
 export const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID!;
 export const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!;
 export const PAYPAL_WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID!;
-
-// Pricing Configuration (matches your dictionaries)
-export const PRICING_TIERS = {
-  starter: {
-    amount: '4.99',
-    credits: 15,
-    name: 'Starter Pack',
-    description: '15 High-Resolution Generations',
-  },
-  pro: {
-    amount: '19.99',
-    credits: 50,
-    name: 'Pro Bundle',
-    description: '50 Generation Credits with Premium Features',
-  },
-  master: {
-    amount: '39.99', // Sale price (was $49.99)
-    credits: 200, // 200 Ultra-HD Generations
-    name: 'Master Plan',
-    description: '200 Professional Generations',
-  },
-} as const;
-
-// One-time per-generation HD unlock (watermark-free download)
-export const HD_UNLOCK = {
-  amount: '9.99',
-  name: 'HD Portrait Unlock',
-  description: 'Watermark-free high-resolution portrait download + personal print license',
-} as const;
-
-export type PricingTier = keyof typeof PRICING_TIERS;
-
-// Validate tier
-export function isValidTier(tier: string): tier is PricingTier {
-  return tier in PRICING_TIERS;
-}
 
 // Get PayPal Access Token
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;

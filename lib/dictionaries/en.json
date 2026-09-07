@@ -158,7 +158,7 @@
       },
       {
         "question": "Is my data safe and private?",
-        "answer": "Absolutely. We take privacy seriously. Your photos are stored securely on encrypted servers. We never share your data with third parties. You can delete your creations anytime from your Dashboard."
+        "answer": "We use security safeguards and share only the data needed with service providers that host data, analyze photos, screen prompts, generate portraits, fulfill orders, and process payments. You can delete your creations from your Dashboard. See our Privacy Policy for details."
       },
       {
         "question": "Can I use portraits for commercial purposes?",
@@ -210,6 +210,7 @@
       "links": {
         "privacy": "Privacy Policy",
         "terms": "Terms of Service",
+        "acceptableUse": "Acceptable Use Policy",
         "refund": "Refund Policy"
       }
     },
