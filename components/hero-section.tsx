@@ -111,7 +111,7 @@ export function HeroSection({ dict, onOpenUpload, lang = 'en' }: HeroSectionProp
                 <Link href={`/${lang}/pricing/`} className="text-coral font-semibold underline-offset-2 hover:underline">
                   $4.99
                 </Link>
-                {' '}for 15 portraits. Free 1–2 watermarked tries. Credits never expire.
+                {' '}for 15 credits. Free 1–2 watermarked tries. Credits never expire.
               </p>
 
               {/* CTA Buttons — real <a> tags so they work without JS */}

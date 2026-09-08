@@ -170,7 +170,7 @@
       },
       {
         "question": "Can I use portraits for commercial purposes?",
-        "answer": "Yes! All generated portraits are yours to use. You can print them on merchandise, use them for business, or share on social media. For commercial printing businesses, we recommend our Pro or Master plans for higher resolution."
+        "answer": "Yes! All generated portraits are yours to use. You can print them on merchandise, use them for business, or share on social media. For more generations, use one-time credit packs on Pricing (https://pixpawai.com/en/pricing/) — Starter, Pro Bundle, and Master Pack (not a subscription). Credits never expire."
       }
     ]
   },
@@ -276,7 +276,7 @@
   "pricing": {
     "title": "Simple Pricing, No Monthly Fees",
     "subtitle": "Start for free. Upgrade for high-resolution, watermark-free results.",
-    "trustBadge": "🔒 Secure Payment via PayPal",
+    "trustBadge": "🔒 Secure checkout · one-time purchases · no subscription",
     "cards": {
       "free": {
         "title": "Free Trial",
