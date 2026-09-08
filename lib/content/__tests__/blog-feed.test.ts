@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { BlogArticle } from '@/lib/wordpress/types';
-import { findHubArticleBySlug, listHubArticles } from '../blog-feed';
+import { findHubArticleBySlug, listHubArticleEntries, listHubArticles } from '../blog-feed';
 
 function createArticle(overrides: Partial<BlogArticle> = {}): BlogArticle {
   const slug = overrides.slug ?? 'sample-article';
@@ -92,6 +92,50 @@ test('listHubArticles appends published local extras when WordPress articles exi
     articles.map((article) => article.title),
     ['WordPress Version', 'How Much Does an AI Pet Portrait Cost in 2026?']
   );
+});
+
+test('listHubArticleEntries merges published local extras and preserves WordPress entries on slug collision', async () => {
+  const wordPressEntry = {
+    slug: 'shared-article',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+  };
+  const localExtra = createArticle({
+    slug: 'how-much-does-an-ai-pet-portrait-cost',
+    updatedAt: '2026-09-08T00:00:00.000Z',
+  });
+
+  const entries = await listHubArticleEntries('blog', {
+    loadWordPressEntries: async (hub) => {
+      assert.equal(hub, 'blog');
+      return [wordPressEntry];
+    },
+    loadLocalArticles: async () => [
+      createArticle({ slug: wordPressEntry.slug }),
+      localExtra,
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    wordPressEntry,
+    { slug: localExtra.slug, updatedAt: localExtra.updatedAt },
+  ]);
+});
+
+test('listHubArticleEntries includes published local articles when WordPress has no entries', async () => {
+  const localArticle = createArticle({
+    slug: 'ai-cat-portrait',
+    updatedAt: '2026-09-08T00:00:00.000Z',
+  });
+
+  const entries = await listHubArticleEntries('blog', {
+    loadWordPressEntries: async () => [],
+    // The local loader filters unpublished drafts before the sitemap feed.
+    loadLocalArticles: async () => [localArticle],
+  });
+
+  assert.deepEqual(entries, [
+    { slug: localArticle.slug, updatedAt: localArticle.updatedAt },
+  ]);
 });
 
 test('findHubArticleBySlug returns null when WordPress lookup throws instead of using local markdown', async () => {
