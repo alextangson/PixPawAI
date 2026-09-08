@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   trailingSlash: true,
+  // Local markdown is discovered with fs.readdir, so include it in server bundles.
+  // Route globs match Next route paths (including the dynamic language segment).
+  outputFileTracingIncludes: {
+    '/sitemap.xml': ['./content/articles/**/*'],
+    '/*/blog': ['./content/articles/**/*'],
+    '/*/blog/**': ['./content/articles/**/*'],
+  },
   // Redirects for SEO
   async rewrites() {
     return [
