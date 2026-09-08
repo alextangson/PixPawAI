@@ -145,6 +145,14 @@
         "answer": "We've got you covered! If you're not happy, we'll refund your credit immediately - no questions asked. You can then try a different style or adjust your photo. We also offer free regeneration for technical issues."
       },
       {
+        "question": "Why did my AI pet portrait fail or get blocked?",
+        "answer": "Sometimes a safety check stops a generation when the upload or the result looks sensitive. That is different from a portrait that finishes but you simply don't like the look.\n\nTry again with a clear, well-lit photo of your pet's face and as little else in the frame as you can. Phone photos are fine. If the face is blurry or cut off, fix the photo first — see our guide for difficult photos: https://pixpawai.com/en/blog/blurry-pet-photo-to-stunning-ai-art-guide/\n\nYou still get 1–2 watermarked tries to start. Watermark-free packs start at Starter $4.99 for 15 credits (one-time; credits never expire; not a subscription). See Pricing: https://pixpawai.com/en/pricing/"
+      },
+      {
+        "question": "What should I do after a failed generation?",
+        "answer": "1) Upload a different face-forward pet photo. 2) Run another try from the homepage: https://pixpawai.com/en/. 3) If a credit looks missing after a failed run, check your dashboard balance or email support@pixpawai.com — we'll help you sort it out.\n\nIf the job finished but you're unhappy with the style, use the satisfaction options already described in this FAQ (credit help / try another style). A safety block is a stop before a finished portrait."
+      },
+      {
         "question": "Where can I view all my created portraits?",
         "answer": "Visit your Dashboard to see all your creations! You can download them anytime, share to our public gallery to earn a free credit, or create custom Art Cards for social media."
       },
