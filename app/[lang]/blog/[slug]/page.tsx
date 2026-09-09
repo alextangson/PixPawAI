@@ -28,12 +28,13 @@ interface ArticlePageProps {
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug, lang } = await params;
-  const article = await findHubArticleBySlug(slug, 'blog');
+  const rawArticle = await findHubArticleBySlug(slug, 'blog');
 
-  if (!article) {
+  if (!rawArticle) {
     return { title: 'Article Not Found' };
   }
 
+  const article = applyArticlePresentation(rawArticle);
   const articleUrl = `https://pixpawai.com/${lang}/blog/${slug}/`;
   const seoOverride = ARTICLE_SEO_OVERRIDES[slug];
   const metaTitle = seoOverride?.title ?? article.metaTitle;
