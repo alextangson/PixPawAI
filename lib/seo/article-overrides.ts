@@ -5,11 +5,12 @@ export type ArticleSeoOverride = {
   description: string;
   h1?: string;
   excerpt?: string;
+  coverImage?: { url: string; alt: string; width: number; height: number };
 };
 
 /**
- * Per-slug title / description / opening copy.
- * Used by the article route (meta + H1 + excerpt) and the blog listing.
+ * Per-slug title / description / opening copy / cover.
+ * Used by the article route (meta + H1 + excerpt + cover) and the blog listing.
  */
 export const ARTICLE_SEO_OVERRIDES: Record<string, ArticleSeoOverride> = {
   'best-ai-pet-portrait-generator': {
@@ -19,6 +20,12 @@ export const ARTICLE_SEO_OVERRIDES: Record<string, ArticleSeoOverride> = {
     h1: 'Best AI Pet Portrait Generator in 2026? 5 Tools Compared by How You Pay',
     excerpt:
       'Most “best AI pet portrait generator” lists crown a winner. This page compares five live tools by billing model. PixPawAI: free watermarked try, then $4.99 for 15 credits — one-time packs that never expire, no subscription.',
+    coverImage: {
+      url: 'https://pixpawai.com/blog/covers/best-ai-pet-portrait-generator-hero.png',
+      alt: 'AI pet portrait style comparison collage for best AI pet portrait generator guide',
+      width: 1536,
+      height: 1024,
+    },
   },
   'pet-portrait-gift-guide': {
     title: 'Best Pet Portrait Gift Ideas in 2026 — For Every Budget & Occasion',
@@ -32,7 +39,12 @@ export const ARTICLE_SEO_OVERRIDES: Record<string, ArticleSeoOverride> = {
   },
 };
 
-export function applyArticlePresentation<T extends { slug: string; title: string; excerpt: string }>(
+export function applyArticlePresentation<T extends {
+  slug: string;
+  title: string;
+  excerpt: string;
+  coverImage?: ArticleSeoOverride['coverImage'] | null;
+}>(
   article: T
 ): T {
   const override = ARTICLE_SEO_OVERRIDES[article.slug];
@@ -40,6 +52,7 @@ export function applyArticlePresentation<T extends { slug: string; title: string
     ...article,
     title: override?.h1 || override?.title || article.title,
     excerpt: override?.excerpt || stripSeoMetaLeak(article.excerpt),
+    ...(override?.coverImage ? { coverImage: override.coverImage } : {}),
   };
 }
 
@@ -47,13 +60,18 @@ export function applyArticlePresentation<T extends { slug: string; title: string
 /**
  * Honest body rewrites for conversion-critical posts.
  * WP source may still be wrong; Next renders the corrected HTML.
- * Keep replacements narrow — only known false claims.
+ * Keep replacements narrow — only known false claims and legacy cover URLs.
  */
 export function rewriteArticleBodyHtml(slug: string, html: string): string {
   if (!html) return html;
   if (slug !== 'best-ai-pet-portrait-generator') return html;
 
   return html
+    // Scrub legacy CDN URLs in src, srcset, lazy-load attributes, and CSS url().
+    .replace(
+      /(?:https?:)?\/\/(?:[a-z0-9-]+\.)+hostingersite\.com\/[^\s"'<>(),]*/gi,
+      ARTICLE_SEO_OVERRIDES[slug].coverImage!.url
+    )
     .replace(/Professional-grade 4K output/gi, 'Professional-grade 1024px output (HD unlock available)')
     .replace(/4K resolution outputs suitable for large format printing/gi, '1024px outputs suitable for sharing and small prints; unlock HD for larger formats')
     .replace(/professional-grade 4K output resolution/gi, 'professional-grade 1024px output')
