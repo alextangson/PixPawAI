@@ -19,7 +19,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = Object.values(PRINTFUL_PRODUCTS).map
       name: p.name,
       description: p.description,
       priceLabel: `from $${dollars}`,
-      priceValue: dollars,
+      priceValue: minPrice / 100,
       image: p.imageUrl,
       productId: p.productId,
       featured: p.featured,

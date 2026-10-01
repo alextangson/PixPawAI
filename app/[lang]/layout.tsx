@@ -100,29 +100,16 @@ export default async function RootLayout({
   // the session on the client instead.
 
   return (
-    <html lang={lang} suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <OrganizationSchema />
-        <link
-          rel="preload"
-          as="image"
-          href="/hero/carousel/hero-carousel-birthday.webp"
-          type="image/webp"
-        />
-      </head>
-      <body
-        className={`${inter.variable} ${playfair.variable} font-sans`}
-        suppressHydrationWarning
-      >
-        <Analytics />
-        <Clarity />
-        <Navbar dict={dict} lang={lang} />
-        {children}
-        <Footer dict={dict} lang={lang} />
-        <ReferralWelcomeToast />
-      </body>
-    </html>
+    <div
+      className={`${inter.variable} ${playfair.variable} font-sans`}
+    >
+      <OrganizationSchema />
+      <Analytics />
+      <Clarity />
+      <Navbar dict={dict} lang={lang} />
+      {children}
+      <Footer dict={dict} lang={lang} />
+      <ReferralWelcomeToast />
+    </div>
   )
 }
