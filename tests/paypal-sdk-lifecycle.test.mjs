@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { harness, deferred, settle } from './helpers/ui-harness.mjs';
 const payment = { orderId: 'ORDER-A', tier: 'starter', credits: 15 };
 function sdk({ loaded = true } = {}) {
-  const instances=[], requests=[], successes=[], failures=[];let confettiCount=0;
-  const window = {};
+  const instances=[], requests=[], successes=[], failures=[], balanceEvents=[];let confettiCount=0;
+  const window = { dispatchEvent: event => balanceEvents.push(event.type) };
   if (loaded) window.paypal = { Buttons: options => {
     const render=deferred();
     const instance={options,render,closed:0};
@@ -24,7 +24,7 @@ function sdk({ loaded = true } = {}) {
   const container={innerHTML:''};
   const render=(next=props)=>{h.render(PayPalButtonsAdvanced,next,container);h.flush();};
   render();if(loaded)render();
-  return {h,render,props,instances,requests,successes,failures,script,confetti:()=>confettiCount};
+  return {h,render,props,instances,requests,successes,failures,balanceEvents,script,confetti:()=>confettiCount};
 }
 const response = (receipt=payment, success=true) => Response.json({success,payment:receipt});
 
@@ -56,6 +56,7 @@ test('unmount keeps capture running but ignores UI updates; reopening has a fres
   old.h.unmount();const writes=old.h.writes.length;old.requests[0].resolve(response());await pending;
   assert.equal(old.instances[0].closed,1);assert.equal(old.h.writes.length,writes);
   assert.equal(old.successes.length,0);assert.equal(old.confetti(),0);
+  assert.deepEqual(old.balanceEvents,['credits-updated']);
   const reopened=sdk();assert.equal(reopened.instances.length,1);assert.equal(reopened.successes.length,0);reopened.h.unmount();
 });
 
@@ -77,4 +78,10 @@ test('SDK script handlers cannot update a component after unmount',()=>{
   const s=sdk({loaded:false});const onload=s.script.onload;const onerror=s.script.onerror;s.h.unmount();const writes=s.h.writes.length;
   onload();onerror(new Error('late script'));assert.equal(s.h.writes.length,writes);
   assert.equal(s.script.onload,null);assert.equal(s.script.onerror,null);assert.equal(s.script.parentNode,null);
+});
+
+test('an unconfirmed capture finishing after unmount does not broadcast credit updates',async()=>{
+  const s=sdk();const pending=s.instances[0].options.onApprove({orderID:'ORDER-A'});await settle();s.h.unmount();
+  s.requests[0].resolve(response(payment,false));await pending;
+  assert.deepEqual(s.balanceEvents,[]);assert.deepEqual(s.successes,[]);
 });

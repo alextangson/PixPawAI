@@ -182,13 +182,18 @@ export function PayPalButtonsAdvanced({
               body: JSON.stringify({ orderId: data.orderID }),
             });
             const result = await response.json();
-            if (!active) return;
             const payment = result.payment;
             if (!response.ok || result.success !== true ||
                 payment?.orderId !== data.orderID ||
                 !['starter', 'pro', 'master'].includes(payment?.tier) ||
                 !Number.isSafeInteger(payment?.credits) || payment.credits <= 0) {
               throw new Error(result.error || 'Payment could not be confirmed. Please contact support before paying again.');
+            }
+            if (!active) {
+              // Fulfillment may finish after closing checkout. Re-read the
+              // current user's balance without updating this obsolete session.
+              window.dispatchEvent(new Event('credits-updated'));
+              return;
             }
             setProcessing(false);
             confetti({
