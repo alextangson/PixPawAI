@@ -6,6 +6,7 @@
  * Server-only by design: rendered from server components so the JSON-LD lands
  * in the initial HTML for crawlers that do not execute JavaScript.
  */
+import React from 'react';
 import { buildCreditPackAggregateOffer } from '@/lib/seo/pricing';
 
 interface HomeSchemaProps {
