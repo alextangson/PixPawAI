@@ -2,7 +2,7 @@
  * Payment Modal Component
  * 
  * Real payment checkout modal (replaces fake door)
- * Redirects to Creem's hosted checkout
+ * Embedded PayPal checkout; success follows confirmed atomic credit fulfillment.
  * Beautiful design with gradient accents
  */
 
@@ -11,7 +11,8 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { X, Shield, Zap, CheckCircle, Sparkles, Clock } from 'lucide-react';
-import { CreemCheckoutButton } from './creem-checkout-button';
+import { PayPalButtonsAdvanced } from './paypal-buttons-advanced';
+import { useRouter } from 'next/navigation';
 import { trackEvent } from '@/components/analytics';
 
 interface PaymentModalProps {
@@ -71,6 +72,16 @@ export function PaymentModal({
   price,
   credits,
 }: PaymentModalProps) {
+  const router = useRouter();
+  const [paymentCompleted, setPaymentCompleted] = React.useState(false);
+  const handleSuccess = React.useCallback(() => {
+    setPaymentCompleted(true);
+    window.dispatchEvent(new Event('credits-updated'));
+    router.refresh();
+  }, [router]);
+  React.useEffect(() => {
+    if (isOpen) setPaymentCompleted(false);
+  }, [isOpen, tier]);
   const tierInfo = TIER_INFO[tier];
   const Icon = tierInfo.icon;
   const numericPrice = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
@@ -175,20 +186,29 @@ export function PaymentModal({
                 ⚡ Tip: Click button and complete payment quickly for best experience
               </p>
               
-              <CreemCheckoutButton tier={tier} />
+              {paymentCompleted ? (
+                <div role="status" className="rounded-xl border border-green-200 bg-green-50 p-6 text-center">
+                  <CheckCircle className="mx-auto mb-3 h-10 w-10 text-green-600" />
+                  <h4 className="font-bold text-green-900">Payment successful</h4>
+                  <p className="mt-2 text-sm text-green-800">{credits} credits were added to your account.</p>
+                  <button onClick={onClose} className="mt-4 font-semibold text-green-900 underline">Continue creating</button>
+                </div>
+              ) : (
+                <PayPalButtonsAdvanced tier={tier} price={price} credits={credits} onSuccess={handleSuccess} />
+              )}
 
               {/* Security & Info */}
               <div className="mt-6 space-y-3">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="text-xs text-green-800 text-center font-medium flex items-center justify-center gap-2">
                     <Shield className="w-4 h-4" />
-                    Secure payment via Creem
+                    Secure payment via PayPal
                   </p>
                 </div>
                 
                 <div className="text-center space-y-1.5">
                   <p className="text-xs text-gray-600">
-                    💳 Pay securely with available card and wallet methods
+                    💳 Pay securely with PayPal or eligible card methods
                   </p>
                   <p className="text-xs text-gray-500 flex items-center justify-center gap-1.5">
                     <Clock className="w-3 h-3" />

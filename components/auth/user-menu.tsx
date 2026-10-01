@@ -32,7 +32,10 @@ export function UserMenu({ user, lang = 'en' }: UserMenuProps) {
       }
     }
 
-    fetchCredits()
+    void fetchCredits()
+    const refreshCredits = () => { void fetchCredits() }
+    window.addEventListener('credits-updated', refreshCredits)
+    return () => window.removeEventListener('credits-updated', refreshCredits)
   }, [user.id])
 
   const handleSignOut = async () => {
