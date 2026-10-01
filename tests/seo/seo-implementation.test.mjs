@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { loader, React, schemas, NextRequest, getMiddlewareMatchers } from './runtime-harness.mjs';
 
 const root = process.cwd();
 
@@ -121,25 +122,50 @@ test('homepage JSON-LD is emitted from a server component', async () => {
 });
 
 test('credit-pack schema reads from the shared pricing source of truth', async () => {
-  const homeSchema = await read('components/home-schema.tsx');
-  const pricingLayout = await read('app/[lang]/pricing/layout.tsx');
-  const pricingSource = await read('lib/seo/pricing.ts');
-
-  assert.match(homeSchema, /buildCreditPackAggregateOffer\(\)/);
-  assert.match(pricingLayout, /buildCreditPackAggregateOffer\(\)/);
-  assert.match(pricingSource, /PRICING_TIERS/);
-  // No hardcoded prices left to drift apart.
-  assert.doesNotMatch(homeSchema, /\d+\.99/);
-  assert.doesNotMatch(pricingLayout, /\d+\.99/);
+  const original = loader()('lib/payments/catalog.ts').PRICING_TIERS;
+  // Changed prices prove components actually consume the shared config,
+  // rather than coincidentally matching today's hardcoded offers.
+  const changed = Object.fromEntries(Object.entries(original).map(([key, value], i) =>
+    [key, { ...value, amount: (7.23 + i * 10).toFixed(2) }]));
+  for (const tiers of [original, changed]) {
+    const load = loader(tiers);
+    const { ProductSchema } = load('components/home-schema.tsx');
+    const { default: PricingLayout } = load('app/[lang]/pricing/layout.tsx');
+    const expected = Object.values(tiers).map(tier => ({
+      '@type': 'Offer', name: tier.name, price: tier.amount,
+      priceCurrency: 'USD', description: `${tier.credits} credits`,
+    }));
+    const home = schemas(React.createElement(ProductSchema))[0].offers;
+    assert.deepEqual(home.offers, expected);
+    assert.equal(home.offerCount, String(expected.length));
+    assert.equal(home.lowPrice, Math.min(...expected.map(x => Number(x.price))).toFixed(2));
+    assert.equal(home.highPrice, Math.max(...expected.map(x => Number(x.price))).toFixed(2));
+    const layout = await PricingLayout({ children: null, params: Promise.resolve({lang:'en'}) });
+    const pricing = schemas(layout)[0];
+    const names = new Set(expected.map(x => x.name));
+    const offers = pricing.itemListElement.filter(x => names.has(x.name));
+    assert.deepEqual(offers.map(({ position, ...offer }) => offer), expected);
+    assert.deepEqual(offers.map(x => x.position), [4,5,6]);
+  }
 });
 
 test('llms.txt exists and bypasses the locale redirect', async () => {
   const llms = await read('public/llms.txt');
-  const middleware = await read('middleware.ts');
-
   assert.match(llms, /^# PixPawAI/);
   assert.match(llms, /https:\/\/pixpawai\.com\/en\//);
-  assert.match(middleware, /pathname === '\/llms\.txt'/);
-  // The matcher must skip .txt so public/llms.txt is never locale-redirected.
-  assert.match(middleware, /json\|txt\|woff/);
+  const { middleware, config } = loader()('middleware.ts');
+  const compiled = getMiddlewareMatchers(config.matcher, {});
+  const matches = pathname => compiled.some(x => new RegExp(x.regexp).test(pathname));
+  for (const pathname of ['/llms.txt','/ai.txt','/robots.txt','/sitemap.xml','/.well-known/security.txt']) {
+    assert.equal(matches(pathname), false, `${pathname} must bypass the locale matcher`);
+    // Also verify the handler's guard, in case it is invoked directly.
+    const result = await middleware(new NextRequest(`https://pixpawai.example${pathname}`));
+    assert.equal(result.status, 200);
+    assert.equal(result.headers.get('location'), null);
+    assert.equal(result.headers.get('x-middleware-next'), '1');
+  }
+  assert.equal(matches('/en/pricing/'), true);
+  const redirect = await middleware(new NextRequest('https://pixpawai.example/pricing/'));
+  assert.equal(redirect.status, 301);
+  assert.equal(redirect.headers.get('location'), 'https://pixpawai.example/en/pricing/');
 });
