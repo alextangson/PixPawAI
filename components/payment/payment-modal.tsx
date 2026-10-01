@@ -11,7 +11,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { X, Shield, Zap, CheckCircle, Sparkles, Clock } from 'lucide-react';
-import { PayPalButtonsAdvanced } from './paypal-buttons-advanced';
+import { PayPalButtonsAdvanced, type CreditPaymentReceipt } from './paypal-buttons-advanced';
 import { useRouter } from 'next/navigation';
 import { trackEvent } from '@/components/analytics';
 
@@ -65,23 +65,29 @@ const TIER_INFO = {
   },
 };
 
-export function PaymentModal({ 
-  isOpen, 
-  onClose, 
-  tier, 
-  price,
-  credits,
+export function PaymentModal(props: PaymentModalProps) {
+  // A new opening or tier owns a new checkout session and SDK instance.
+  return props.isOpen ? <PaymentCheckoutSession key={props.tier} {...props} /> : null;
+}
+
+function PaymentCheckoutSession({
+  isOpen, onClose, tier, price, credits,
 }: PaymentModalProps) {
   const router = useRouter();
-  const [paymentCompleted, setPaymentCompleted] = React.useState(false);
-  const handleSuccess = React.useCallback(() => {
-    setPaymentCompleted(true);
+  const [completedPayment, setCompletedPayment] = React.useState<CreditPaymentReceipt | null>(null);
+  const mounted = React.useRef(false);
+  const completedOrders = React.useRef(new Set<string>());
+  React.useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const handleSuccess = React.useCallback((payment: CreditPaymentReceipt) => {
+    if (!mounted.current || completedOrders.current.has(payment.orderId)) return;
+    completedOrders.current.add(payment.orderId);
+    setCompletedPayment(payment);
     window.dispatchEvent(new Event('credits-updated'));
     router.refresh();
   }, [router]);
-  React.useEffect(() => {
-    if (isOpen) setPaymentCompleted(false);
-  }, [isOpen, tier]);
   const tierInfo = TIER_INFO[tier];
   const Icon = tierInfo.icon;
   const numericPrice = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
@@ -186,11 +192,11 @@ export function PaymentModal({
                 ⚡ Tip: Click button and complete payment quickly for best experience
               </p>
               
-              {paymentCompleted ? (
+              {completedPayment ? (
                 <div role="status" className="rounded-xl border border-green-200 bg-green-50 p-6 text-center">
                   <CheckCircle className="mx-auto mb-3 h-10 w-10 text-green-600" />
                   <h4 className="font-bold text-green-900">Payment successful</h4>
-                  <p className="mt-2 text-sm text-green-800">{credits} credits were added to your account.</p>
+                  <p className="mt-2 text-sm text-green-800">{completedPayment.credits} credits from {TIER_INFO[completedPayment.tier].name} were added to your account.</p>
                   <button onClick={onClose} className="mt-4 font-semibold text-green-900 underline">Continue creating</button>
                 </div>
               ) : (

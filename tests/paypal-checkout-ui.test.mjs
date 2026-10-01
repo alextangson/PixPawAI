@@ -1,58 +1,53 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import vm from 'node:vm';
-import ts from 'typescript';
-const require = createRequire(import.meta.url);
-const React = require('react');
+import { harness, elements, text } from './helpers/ui-harness.mjs';
 
-function harness() {
-  let completed = false;
+function checkout() {
   const calls = [];
-  const effects = [];
   const paypal = () => null;
-  const hooks = { ...React, useState: () => [completed, v => { completed = v; }],
-    useCallback: fn => fn, useEffect: fn => effects.push(fn) };
-  const source = readFileSync(new URL('../components/payment/payment-modal.tsx', import.meta.url), 'utf8');
-  const code = ts.transpileModule(source, { compilerOptions: {
-    module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true,
-  } }).outputText;
-  const module = { exports: {} };
-  const imports = name => {
-    if (name === 'react') return hooks;
-    if (name === 'next/navigation') return { useRouter: () => ({ refresh: () => calls.push('refresh') }) };
-    if (name === './paypal-buttons-advanced') return { PayPalButtonsAdvanced: paypal };
-    if (name === '@/components/analytics') return { trackEvent: () => {} };
-    if (name === '@/components/ui/dialog') return { Dialog: 'dialog', DialogContent: 'section', DialogTitle: 'h1' };
-    if (name === 'lucide-react') return new Proxy({}, { get: () => 'svg' });
-    throw new Error(name);
-  };
-  vm.runInThisContext(`(function(require,module,exports,window,Event){${code}\n})`)(imports,module,module.exports,
-    { dispatchEvent: e => calls.push(e.type) }, Event);
-  const render = (isOpen = true) => module.exports.PaymentModal({ isOpen, onClose() {}, tier: 'starter', price: '$4.99', credits: 15 });
-  const elements = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...React.Children.toArray(tree.props?.children).flatMap(elements)];
-  return { render, elements, effects, calls, paypal };
+  const router = { refresh: () => calls.push('refresh') };
+  const h = harness({
+    'next/navigation': { useRouter: () => router },
+    './paypal-buttons-advanced': { PayPalButtonsAdvanced: paypal },
+    '@/components/analytics': { trackEvent() {} },
+    '@/components/ui/dialog': { Dialog: 'dialog', DialogContent: 'section', DialogTitle: 'h1' },
+  }, { window: { dispatchEvent: e => calls.push(e.type) }, Event });
+  const { PaymentModal } = h.load('components/payment/payment-modal.tsx');
+  const props = { isOpen: true, onClose() {}, tier: 'starter', price: '$4.99', credits: 15 };
+  const wrapper = PaymentModal(props);
+  const render = () => h.render(wrapper.type, wrapper.props);
+  const tree = render();h.flush();
+  return { h, calls, paypal, PaymentModal, props, wrapper, render,
+    success: elements(tree).find(e => e.type === paypal).props.onSuccess };
 }
+const receipt = { orderId: 'ORDER-SYNTHETIC', tier: 'pro', credits: 50 };
 
-test('credit checkout uses PayPal; confirmed success refreshes balance and replaces the buttons', () => {
-  const h = harness();
-  const checkout = h.elements(h.render()).find(e => e.type === h.paypal);
-  assert.ok(checkout);
-  assert.equal(checkout.props.tier, 'starter');
-  assert.equal(checkout.props.credits, 15);
-  assert.deepEqual(h.calls, []);
-  checkout.props.onSuccess({ orderId: 'SYNTHETIC' });
-  assert.deepEqual(h.calls, ['credits-updated', 'refresh']);
-  const result = h.elements(h.render());
-  assert.ok(result.some(e => e.props?.role === 'status'));
-  assert.ok(!result.some(e => e.type === h.paypal));
+test('confirmed checkout shows actual purchased tier/credits and refreshes only once per order', () => {
+  const c = checkout();
+  c.success(receipt);c.success(receipt);
+  assert.deepEqual(c.calls, ['credits-updated', 'refresh']);
+  const tree = c.render();
+  assert.match(text(tree), /50 credits from Pro Bundle/);
+  assert.ok(elements(tree).some(e => e.props?.role === 'status'));
+  assert.ok(!elements(tree).some(e => e.type === c.paypal));
 });
 
-test('reopening checkout clears stale success', () => {
-  const h = harness();
-  h.elements(h.render()).find(e => e.type === h.paypal).props.onSuccess({});
-  h.render();
-  h.effects.forEach(effect => effect());
-  assert.ok(h.elements(h.render()).some(e => e.type === h.paypal));
+test('tier changes have distinct sessions; old callbacks after unmount cannot refresh or report success', () => {
+  const old = checkout();
+  const nextWrapper = old.PaymentModal({ ...old.props, tier: 'master' });
+  assert.notEqual(nextWrapper.key, old.wrapper.key);
+  old.h.unmount();const writes = old.h.writes.length;
+  old.success(receipt);
+  assert.deepEqual(old.calls, []);
+  assert.equal(old.h.writes.length, writes);
+});
+
+test('closing removes checkout; reopening starts clean and late old success remains ignored', () => {
+  const old = checkout();old.success(receipt);
+  assert.equal(old.PaymentModal({ ...old.props, isOpen: false }), null);
+  old.h.unmount();old.success({ ...receipt, orderId: 'LATE' });
+  assert.deepEqual(old.calls, ['credits-updated', 'refresh']);
+  const reopened = checkout();
+  assert.ok(elements(reopened.render()).some(e => e.type === reopened.paypal));
+  assert.ok(!elements(reopened.render()).some(e => e.props?.role === 'status'));
 });

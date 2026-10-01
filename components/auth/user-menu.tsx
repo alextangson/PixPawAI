@@ -17,25 +17,35 @@ export function UserMenu({ user, lang = 'en' }: UserMenuProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [credits, setCredits] = useState<number | null>(null)
 
-  // Fetch user credits from profiles table
+  // Only the newest request for the current mounted user may update balance.
   useEffect(() => {
+    let active = true
+    let requestSequence = 0
+    setCredits(null)
     const fetchCredits = async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('credits')
-        .eq('id', user.id)
-        .single()
-
-      if (data && !error) {
-        setCredits(data.credits)
+      const sequence = ++requestSequence
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('credits')
+          .eq('id', user.id)
+          .single()
+        if (active && sequence === requestSequence && data && !error) {
+          setCredits(data.credits)
+        }
+      } catch {
+        // Keep the last confirmed balance; never estimate credits locally.
       }
     }
-
-    void fetchCredits()
     const refreshCredits = () => { void fetchCredits() }
     window.addEventListener('credits-updated', refreshCredits)
-    return () => window.removeEventListener('credits-updated', refreshCredits)
+    void fetchCredits()
+    return () => {
+      active = false
+      ++requestSequence
+      window.removeEventListener('credits-updated', refreshCredits)
+    }
   }, [user.id])
 
   const handleSignOut = async () => {
