@@ -63,7 +63,7 @@ export function CreemPaymentStatus({ locale, requestId, signatureValid }: CreemP
     if (payment?.status !== 'completed') return;
     const trackingKey = `creem_purchase_tracked:${payment.id}`;
     if (sessionStorage.getItem(trackingKey)) return;
-    trackPurchase({
+    const send = () => trackPurchase({
       transactionId: payment.provider_order_id,
       value: Number(payment.amount_usd),
       currency: 'USD',
@@ -75,7 +75,19 @@ export function CreemPaymentStatus({ locale, requestId, signatureValid }: CreemP
         item_category: 'digital',
       }],
     });
-    sessionStorage.setItem(trackingKey, '1');
+    // Only record dispatch through the existing analytics function. Never
+    // load analytics or alter consent to complete purchase tracking.
+    const recordIfSent = () => {
+      if (!send()) return false;
+      sessionStorage.setItem(trackingKey, '1');
+      return true;
+    };
+    if (recordIfSent()) return;
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      if (recordIfSent() || Date.now() - started >= 4000) window.clearInterval(timer);
+    }, 100);
+    return () => window.clearInterval(timer);
   }, [payment]);
 
   if (!signatureValid || !requestId) {

@@ -9,6 +9,7 @@ import { AuthRequiredDialog } from '@/components/auth-required-dialog';
 import { createClient } from '@/lib/supabase/client';
 import { type Locale } from '@/lib/i18n-config';
 import { trackPricingCTAClick, trackPricingPageView } from '@/lib/pricing-analytics';
+import { PRICING_FAQS } from '@/lib/seo/pricing-faq';
 import { HD_UNLOCK, PRICING_TIERS } from '@/lib/payments/catalog';
 
 type PaidTier = 'starter' | 'pro' | 'master';
@@ -26,13 +27,7 @@ const CREDIT_PACKS: Array<{
   { tier: 'master', name: PRICING_TIERS.master.name, price: `$${PRICING_TIERS.master.amount}`, credits: PRICING_TIERS.master.credits, label: 'Lowest unit price', description: 'For repeat creators who know they will use the volume.' },
 ];
 
-const FAQS = [
-  { question: 'Do I need a subscription?', answer: 'No. PixPaw uses one-time purchases. There are no monthly fees, and purchased generation credits do not expire.' },
-  { question: 'How does the $9.99 HD download work?', answer: 'Create your portrait first. When you choose to download it in HD, you can unlock that portrait as a watermark-free, original-resolution PNG with a personal print license.' },
-  { question: 'Why would I buy credits instead of one HD download?', answer: 'Credits are for people who want to create many versions. A paid credit pack also enables watermark-free downloads for portraits you own, while the single HD unlock is designed for someone who only wants one finished image.' },
-  { question: 'What if a generation has a technical problem?', answer: 'Use “Not quite” on an eligible result to report the problem and restore that generation credit. Payment refunds for credit packs are handled separately under the refund policy.' },
-  { question: 'How are physical keepsakes priced?', answer: 'Canvas prints start at $64.99. Shipping and tax are calculated from the destination before payment, so you can review the full total first.' },
-];
+
 
 export default function PricingPage() {
   const params = useParams();
@@ -118,7 +113,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-3xl">
           <h2 className="mb-10 text-center text-3xl font-black text-gray-900 sm:text-4xl">Pricing questions</h2>
           <div className="space-y-4">
-            {FAQS.map((item) => (
+            {PRICING_FAQS.map((item) => (
               <details key={item.question} className="group rounded-2xl border border-orange-100 bg-cream p-6 open:border-coral/40">
                 <summary className="cursor-pointer list-none font-bold text-gray-900"><span className="flex items-center justify-between gap-4">{item.question}<span className="text-xl text-coral transition-transform group-open:rotate-45">+</span></span></summary>
                 <p className="mt-4 leading-relaxed text-gray-600">{item.answer}</p>

@@ -46,7 +46,7 @@ function stripMarkdown(markdown: string): string {
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/!\[[^\]]*]\([^)]*\)/g, '')
-    .replace(/\[[^\]]*]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)]\([^)]*\)/g, '$1')
     .replace(/^#+\s+/gm, '')
     .replace(/[>*_~]/g, '')
     .replace(/\s+/g, ' ')
@@ -101,7 +101,8 @@ function buildArticleFromMarkdown(fileName: string, source: string): BlogArticle
     slug,
     title: data.title || slug.replace(/-/g, ' '),
     excerpt: plainText.slice(0, 220),
-    content: html,
+    // The article route already renders the frontmatter title as its H1.
+    content: html.replace(/^\s*<h1\b[^>]*>[\s\S]*?<\/h1>\s*/i, ''),
     coverImage: null,
     category: {
       id: 9000 + idSeed,

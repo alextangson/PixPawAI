@@ -18,11 +18,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, CheckCircle, XCircle, Zap, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+export interface CreditPaymentReceipt {
+  orderId: string;
+  tier: 'starter' | 'pro' | 'master';
+  credits: number;
+}
+
 interface PayPalButtonsAdvancedProps {
   tier: 'starter' | 'pro' | 'master';
   price: string;
   credits: number;
-  onSuccess?: (payment: any) => void;
+  onSuccess?: (payment: CreditPaymentReceipt) => void;
   onError?: (error: string) => void;
 }
 
@@ -45,7 +51,6 @@ export function PayPalButtonsAdvanced({
   const [processing, setProcessing] = useState(false);
   const [creatingOrder, setCreatingOrder] = useState(false);
   const buttonContainerRef = useRef<HTMLDivElement>(null);
-  const isRenderingRef = useRef(false); // Prevent duplicate renders
 
   // Load PayPal SDK
   useEffect(() => {
@@ -63,6 +68,7 @@ export function PayPalButtonsAdvanced({
       return;
     }
 
+    let active = true;
     console.log('📦 Loading PayPal SDK...');
     const script = document.createElement('script');
     // PayPal SDK with all payment methods enabled
@@ -72,10 +78,12 @@ export function PayPalButtonsAdvanced({
     script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons,funding-eligibility&enable-funding=card,venmo,paylater`;
     script.async = true;
     script.onload = () => {
+      if (!active) return;
       console.log('✅ PayPal SDK loaded successfully');
       setSdkReady(true);
     };
     script.onerror = (err) => {
+      if (!active) return;
       console.error('❌ Failed to load PayPal SDK:', err);
       setError('Failed to load PayPal. Please refresh and try again.');
     };
@@ -83,6 +91,9 @@ export function PayPalButtonsAdvanced({
     document.body.appendChild(script);
 
     return () => {
+      active = false;
+      script.onload = null;
+      script.onerror = null;
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
@@ -95,13 +106,12 @@ export function PayPalButtonsAdvanced({
       return;
     }
 
-    // Prevent duplicate rendering
-    if (isRenderingRef.current) {
-      console.log('⚠️ PayPal buttons already rendering, skipping...');
-      return;
-    }
-
-    isRenderingRef.current = true;
+    let active = true;
+    let buttons: any;
+    const captures = new Map<string, Promise<void>>();
+    setError(null);
+    setProcessing(false);
+    setCreatingOrder(false);
 
     // Clear container
     buttonContainerRef.current.innerHTML = '';
@@ -111,7 +121,7 @@ export function PayPalButtonsAdvanced({
 
     try {
       // Use smart buttons (PayPal automatically shows all available payment methods)
-      const buttons = paypal.Buttons({
+      buttons = paypal.Buttons({
       // Style configuration
       // layout: 'vertical' will stack all available payment methods
       style: {
@@ -123,6 +133,7 @@ export function PayPalButtonsAdvanced({
 
       // Create order
       createOrder: async () => {
+        if (!active) throw new Error('Checkout session closed.');
         setCreatingOrder(true);
         setError(null);
 
@@ -136,7 +147,7 @@ export function PayPalButtonsAdvanced({
           });
 
           const data = await response.json();
-          console.log('✅ Create order response:', data);
+          if (!active) throw new Error('Checkout session closed.');
 
           if (!response.ok) {
             throw new Error(data.error || 'Failed to create order');
@@ -150,58 +161,63 @@ export function PayPalButtonsAdvanced({
           setCreatingOrder(false);
           return data.orderId;
         } catch (err: any) {
-          console.error('❌ Create order error:', err);
-          setError(err.message);
-          setCreatingOrder(false);
+          if (active) {
+            setError(err.message);
+            setCreatingOrder(false);
+          }
           throw err;
         }
       },
 
-      // On approve (user completed payment)
-      onApprove: async (data: any) => {
-        console.log('💰 Payment approved! Order ID:', data.orderID);
+      // Keep capture in flight after unmount; suppress stale UI, never abort fulfillment.
+      onApprove: (data: { orderID: string }) => {
+        if (!active) return;
+        if (captures.has(data.orderID)) return captures.get(data.orderID);
         setProcessing(true);
-        
-        try {
-          console.log('🔄 Capturing payment...');
-          const response = await fetch('/api/payments/paypal/capture-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: data.orderID }),
-          });
-
-          const result = await response.json();
-          console.log('Capture response:', result);
-
-          if (!response.ok || result.success !== true) {
-            throw new Error(result.error || 'Payment could not be confirmed. Please contact support before paying again.');
+        const capture = async () => {
+          try {
+            const response = await fetch('/api/payments/paypal/capture-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: data.orderID }),
+            });
+            const result = await response.json();
+            const payment = result.payment;
+            if (!response.ok || result.success !== true ||
+                payment?.orderId !== data.orderID ||
+                !['starter', 'pro', 'master'].includes(payment?.tier) ||
+                !Number.isSafeInteger(payment?.credits) || payment.credits <= 0) {
+              throw new Error(result.error || 'Payment could not be confirmed. Please contact support before paying again.');
+            }
+            if (!active) {
+              // Fulfillment may finish after closing checkout. Re-read the
+              // current user's balance without updating this obsolete session.
+              window.dispatchEvent(new Event('credits-updated'));
+              return;
+            }
+            setProcessing(false);
+            confetti({
+              particleCount: 150, spread: 80, origin: { y: 0.6 },
+              colors: ['#FF6B6B', '#FFA500', '#FFD700', '#90EE90'],
+            });
+            onSuccess?.(payment);
+          } catch (err: any) {
+            captures.delete(data.orderID); // A confirmed failure may retry this same order.
+            if (!active) return;
+            setError(err.message);
+            setProcessing(false);
+            onError?.(err.message);
           }
-
-          // Success! Trigger parent callback
-          console.log('✅ Payment successful! Credits added.');
-          setProcessing(false);
-
-          // Trigger confetti
-          confetti({
-            particleCount: 150,
-            spread: 80,
-            origin: { y: 0.6 },
-            colors: ['#FF6B6B', '#FFA500', '#FFD700', '#90EE90'],
-          });
-
-          // Callback to parent (PaymentModal will show success overlay)
-          onSuccess?.(result.payment);
-
-        } catch (err: any) {
-          console.error('❌ Capture error:', err);
-          setError(err.message);
-          setProcessing(false);
-          onError?.(err.message);
-        }
+        };
+        // Schedule after registration so even synchronous failures cannot leave a stale entry.
+        const pending = Promise.resolve().then(capture);
+        captures.set(data.orderID, pending);
+        return pending;
       },
 
       // On cancel
       onCancel: (data: any) => {
+        if (!active) return;
         console.log('Payment cancelled by user:', data);
         setProcessing(false);
         setError('Payment cancelled. No charges were made.');
@@ -209,6 +225,7 @@ export function PayPalButtonsAdvanced({
 
       // On error
       onError: (err: any) => {
+        if (!active) return;
         console.error('❌ PayPal SDK error:', err);
         setError('Payment error. Please try again or contact support.');
         setProcessing(false);
@@ -219,12 +236,11 @@ export function PayPalButtonsAdvanced({
       // Render the smart buttons (PayPal will automatically show all available methods)
       buttons.render(buttonContainerRef.current)
         .then(() => {
-          console.log('✅ PayPal buttons rendered successfully');
-          isRenderingRef.current = false;
+          if (active) console.log('✅ PayPal buttons rendered successfully');
         })
         .catch((err: any) => {
+          if (!active) return;
           console.error('❌ PayPal buttons render error:', err);
-          isRenderingRef.current = false;
           // Don't show error if container was removed (component unmounted)
           if (buttonContainerRef.current) {
             setError('Failed to initialize payment buttons. Please refresh and try again.');
@@ -233,13 +249,15 @@ export function PayPalButtonsAdvanced({
 
     } catch (err: any) {
       console.error('❌ PayPal buttons initialization error:', err);
-      isRenderingRef.current = false;
       setError('Payment system error. Please refresh the page.');
     }
 
     // Cleanup function
     return () => {
-      isRenderingRef.current = false;
+      active = false;
+      try {
+        Promise.resolve(buttons?.close()).catch(() => {});
+      } catch { /* A failed SDK close must not re-enable this session. */ }
     };
 
   }, [sdkReady, tier, credits, onSuccess, onError]);

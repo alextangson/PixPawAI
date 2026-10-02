@@ -144,7 +144,7 @@ export function trackPurchase(params: {
   shipping?: number;
   items: PurchaseItem[];
 }) {
-  if (typeof window === 'undefined' || !(window as any).gtag) return;
+  if (typeof window === 'undefined' || typeof (window as any).gtag !== 'function') return false;
   (window as any).gtag('event', 'purchase', {
     transaction_id: params.transactionId,
     value: params.value,
@@ -153,6 +153,7 @@ export function trackPurchase(params: {
     shipping: params.shipping,
     items: params.items,
   });
+  return true;
 }
 
 /**
