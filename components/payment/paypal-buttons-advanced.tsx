@@ -75,7 +75,8 @@ export function PayPalButtonsAdvanced({
     // components: buttons (standard buttons), funding-eligibility (detect available methods)
     // enable-funding: explicitly enable card, venmo, paylater
     // intent: capture (immediate payment)
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons,funding-eligibility&enable-funding=card,venmo,paylater`;
+    // The site currently supports English only. Locale changes labels, not buyer eligibility.
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons,funding-eligibility&enable-funding=card,venmo,paylater&locale=en_US`;
     script.async = true;
     script.onload = () => {
       if (!active) return;

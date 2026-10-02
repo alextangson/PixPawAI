@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { harness, deferred, settle } from './helpers/ui-harness.mjs';
 const payment = { orderId: 'ORDER-A', tier: 'starter', credits: 15 };
-function sdk({ loaded = true } = {}) {
+function sdk({ loaded = true, component = 'advanced' } = {}) {
   const instances=[], requests=[], successes=[], failures=[], balanceEvents=[];let confettiCount=0;
   const window = { dispatchEvent: event => balanceEvents.push(event.type) };
   if (loaded) window.paypal = { Buttons: options => {
@@ -19,7 +19,8 @@ function sdk({ loaded = true } = {}) {
     fetch:(url,init)=>{const d=deferred();requests.push({url,init,...d});return d.promise;},
     console:{log(){},warn(){},error(){}},
   });
-  const {PayPalButtonsAdvanced}=h.load('components/payment/paypal-buttons-advanced.tsx');
+  const loadedComponent=h.load(`components/payment/paypal-buttons-${component}.tsx`);
+  const PayPalButtonsAdvanced=loadedComponent.PayPalButtonsAdvanced ?? loadedComponent.PayPalButtonsHdUnlock;
   const props={tier:'starter',price:'$4.99',credits:15,onSuccess:p=>successes.push(p),onError:e=>failures.push(e)};
   const container={innerHTML:''};
   const render=(next=props)=>{h.render(PayPalButtonsAdvanced,next,container);h.flush();};
@@ -85,3 +86,19 @@ test('an unconfirmed capture finishing after unmount does not broadcast credit u
   s.requests[0].resolve(response(payment,false));await pending;
   assert.deepEqual(s.balanceEvents,[]);assert.deepEqual(s.successes,[]);
 });
+
+for (const component of ['advanced', 'hd-unlock']) {
+  test(`${component} SDK uses English site labels and preserves funding configuration`, () => {
+    const s = sdk({ loaded: false, component });
+    const url = new URL(s.script.src);
+    assert.equal(url.origin, 'https://www.paypal.com');
+    assert.equal(url.searchParams.get('locale'), 'en_US');
+    assert.equal(url.searchParams.get('currency'), 'USD');
+    assert.equal(url.searchParams.get('intent'), 'capture');
+    assert.equal(url.searchParams.get('enable-funding'), 'card,venmo,paylater');
+    assert.equal(url.searchParams.get('components'), 'buttons,funding-eligibility');
+    assert.equal(url.searchParams.has('disable-funding'), false);
+    assert.equal(url.searchParams.has('buyer-country'), false);
+    s.h.unmount();
+  });
+}

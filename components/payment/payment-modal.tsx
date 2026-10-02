@@ -9,7 +9,7 @@
 'use client';
 
 import React from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { X, Shield, Zap, CheckCircle, Sparkles, Clock } from 'lucide-react';
 import { PayPalButtonsAdvanced, type CreditPaymentReceipt } from './paypal-buttons-advanced';
 import { useRouter } from 'next/navigation';
@@ -101,10 +101,14 @@ function PaymentCheckoutSession({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 bg-white overflow-hidden !z-[9999]">
+      <DialogContent className="!w-[calc(100vw-2rem)] sm:!max-w-4xl !max-h-[85dvh] !p-0 bg-white overflow-x-hidden overflow-y-auto !z-[9999]">
         <DialogTitle className="sr-only">
           Complete Purchase - {tierInfo.name}
         </DialogTitle>
+        <DialogDescription className="sr-only">
+          Purchase {credits} portrait generation credits with {tierInfo.name} for {price} USD.
+          This is a one-time payment. Choose an available payment method through PayPal.
+        </DialogDescription>
         
         {/* Close Button */}
         <button
@@ -115,9 +119,9 @@ function PaymentCheckoutSession({
           <X className="w-5 h-5 text-gray-600" />
         </button>
 
-        <div className="grid md:grid-cols-2 min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           {/* Left Column - Package Info */}
-          <div className="bg-gradient-to-br from-gray-50 to-white p-6 md:p-8 md:border-r border-gray-200">
+          <div className="bg-gradient-to-br from-gray-50 to-white min-w-0 p-4 sm:p-6 lg:p-8 lg:border-r border-gray-200">
             {/* Icon and Title */}
             <div className="mb-6">
               <div className={`inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br ${tierInfo.gradient} rounded-xl mb-4 shadow-lg`}>
@@ -182,8 +186,8 @@ function PaymentCheckoutSession({
           </div>
 
           {/* Right Column - Payment */}
-          <div className="p-6 md:p-8 flex flex-col justify-center bg-gradient-to-br from-white to-gray-50">
-            <div className="w-full">
+          <div className="min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col justify-center bg-gradient-to-br from-white to-gray-50">
+            <div className="w-full min-w-0 max-w-xl mx-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
                 💳 Complete Your Purchase
               </h3>
