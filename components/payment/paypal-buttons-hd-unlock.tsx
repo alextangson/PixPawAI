@@ -51,7 +51,8 @@ export function PayPalButtonsHdUnlock({
       return;
     }
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons,funding-eligibility&enable-funding=card,venmo,paylater`;
+    // The site currently supports English only. Locale changes labels, not buyer eligibility.
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons,funding-eligibility&enable-funding=card,venmo,paylater&locale=en_US`;
     script.async = true;
     script.onload = () => setSdkReady(true);
     script.onerror = () => setError('Failed to load PayPal. Please refresh and try again.');
