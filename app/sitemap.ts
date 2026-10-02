@@ -2,18 +2,15 @@ import { MetadataRoute } from 'next';
 import { listHubArticleEntries } from '@/lib/content/blog-feed';
 import { STYLES } from '@/lib/styles';
 import { SHOP_PRODUCTS } from '@/lib/seo/shop-products';
+import { toStyleSlug } from '@/lib/seo/styles';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pixpawai.com';
 
 // Maintained by hand: bump when the corresponding page copy actually changes.
 // A moving `now` here would make lastmod meaningless to crawlers.
-const HOME_LAST_UPDATED = new Date('2026-08-29');
-const STYLES_LAST_UPDATED = new Date('2026-01-20'); // last style added, see lib/styles.ts
+const HOME_LAST_UPDATED = new Date('2026-10-02');
+const STYLES_LAST_UPDATED = new Date('2026-10-02'); // style FAQ and download guidance updated
 const SHOP_LAST_UPDATED = new Date('2026-04-02');
-
-function toSlug(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
 
 /** Omit lastModified rather than emit an invalid/faked date. */
 function toDate(value: string | null | undefined): Date | undefined {
@@ -57,13 +54,13 @@ function getStaticPages(
 ): MetadataRoute.Sitemap {
   return [
     { url: `${SITE_URL}/en/`,              changeFrequency: 'daily'   as const, priority: 1,   lastModified: HOME_LAST_UPDATED },
-    { url: `${SITE_URL}/en/gallery/`,      changeFrequency: 'daily'   as const, priority: 0.9, lastModified: HOME_LAST_UPDATED },
+    { url: `${SITE_URL}/en/gallery/`,      changeFrequency: 'daily'   as const, priority: 0.9, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/blog/`,         changeFrequency: 'daily'   as const, priority: 0.8, lastModified: blogIndexUpdated },
     { url: `${SITE_URL}/en/pricing/`,      changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/pet-memorial/`, changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/gift/`,         changeFrequency: 'weekly'  as const, priority: 0.8, lastModified: new Date('2026-08-29') },
     { url: `${SITE_URL}/en/shop/`,         changeFrequency: 'weekly'  as const, priority: 0.7, lastModified: SHOP_LAST_UPDATED },
-    { url: `${SITE_URL}/en/faq/`,          changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },
+    { url: `${SITE_URL}/en/faq/`,          changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-10-02') },
     { url: `${SITE_URL}/en/about/`,        changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/glossary/`,     changeFrequency: 'monthly' as const, priority: 0.6, lastModified: new Date('2026-03-19') },
     { url: `${SITE_URL}/en/alternatives/`, changeFrequency: 'monthly' as const, priority: 0.7, lastModified: new Date('2026-08-29') },
@@ -85,7 +82,7 @@ function getStaticPages(
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const stylePages: MetadataRoute.Sitemap = STYLES.map((style) => ({
-    url: `${SITE_URL}/en/styles/${toSlug(style.id)}/`,
+    url: `${SITE_URL}/en/styles/${toStyleSlug(style.id)}/`,
     lastModified: STYLES_LAST_UPDATED,
     changeFrequency: 'monthly' as const,
     priority: 0.6,

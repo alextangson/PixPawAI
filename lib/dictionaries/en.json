@@ -138,7 +138,7 @@
       },
       {
         "question": "Can I choose specific art styles?",
-        "answer": "Absolutely! Choose from 8+ unique styles including Cinematic Style, Merry Christmas, Royal Portrait, Retro Pop Art, and more. Each style is optimized to preserve your pet's unique features while applying artistic magic."
+        "answer": "Yes. Choose from the styles currently available in the portrait generator and compare examples in the Gallery. AI-generated details can differ from the source photo, so review the result before downloading or ordering a print."
       },
       {
         "question": "What if I'm not satisfied with the result?",
@@ -423,7 +423,7 @@
   },
   "metadata": {
     "title": "AI Pet Portrait Generator: Make Your Pet Into a Portrait - PixPawAI",
-    "description": "Create funny, royal, and custom pet portraits online! PixPawAI is the easiest AI generator to make your pet into a masterpiece. Transform your photos in seconds. Try it now!",
-    "keywords": "AI pet portrait generator, pet portrait maker, custom pet portraits, funny pet portraits, royal pet portraits, AI pet art, pet photo generator, dog portrait, cat portrait, pet masterpiece"
+    "description": "Create AI pet portraits from a photo. Explore available styles, preview your result, and compare generation credits, watermark-free downloads, and printed keepsakes.",
+    "keywords": "AI pet portrait generator, pet portrait maker, custom pet portraits, AI pet art, pet photo generator, dog portrait, cat portrait, pet portrait styles"
   }
 }

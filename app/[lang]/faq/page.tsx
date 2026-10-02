@@ -5,6 +5,8 @@ import type { Locale } from '@/lib/i18n-config';
 import { FAQPageSchema } from '@/components/home-schema';
 import { DEFAULT_OG_IMAGE_URL, DEFAULT_TWITTER_IMAGE_URL, SEO_SITE_URL } from '@/lib/seo/metadata';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { STYLES } from '@/lib/styles';
+import { toStyleSlug } from '@/lib/seo/styles';
 
 export async function generateMetadata({
   params,
@@ -86,6 +88,26 @@ export default async function FaqPage({
             </section>
           ))}
         </div>
+
+        <section aria-labelledby="available-styles" className="mt-10 rounded-2xl bg-white p-6 shadow-sm">
+          <h2 id="available-styles" className="mb-3 text-2xl font-bold text-gray-900">Explore currently available styles</h2>
+          <p className="mb-4 text-gray-700">
+            A reference pet photo is required. Choose a style below to read what it changes,
+            how to prepare your photo, and which download options are available.
+          </p>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {STYLES.map((style) => (
+              <li key={style.id}>
+                <Link href={`/${lang}/styles/${toStyleSlug(style.id)}/`} className="font-semibold text-coral underline">
+                  {style.label} pet portrait style
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href={`/${lang}/pricing/`} className="mt-5 inline-block font-semibold text-coral underline">
+            Compare generation credits and download options
+          </Link>
+        </section>
 
         <div className="mt-10 rounded-2xl bg-gray-900 p-6 text-white">
           <h2 className="mb-2 text-2xl font-bold">Still need help?</h2>
