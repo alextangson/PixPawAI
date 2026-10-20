@@ -78,3 +78,6 @@ lerna-debug.log*
 .playwright-mcp/
 __pycache__/
 clash-sub.yaml
+
+.waffo-setup.*.json
+!.env.waffo.example
