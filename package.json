@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "waffo:setup": "tsx scripts/setup-waffo.ts",
+    "test:waffo": "tsx --test tests/waffo-payment.test.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -26,6 +28,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.1",
+    "@waffo/pancake-ts": "^0.26.0",
     "canvas": "^3.2.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.0",
@@ -48,6 +51,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@types/canvas-confetti": "^1.9.0",
     "@types/negotiator": "^0.6.3",
     "@types/node": "^20",

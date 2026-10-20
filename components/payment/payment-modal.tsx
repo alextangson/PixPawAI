@@ -9,6 +9,7 @@
 'use client';
 
 import React from 'react';
+import { WaffoCheckoutButton } from './waffo-checkout-button';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { X, Shield, Zap, CheckCircle, Sparkles, Clock } from 'lucide-react';
 import { PayPalButtonsAdvanced, type CreditPaymentReceipt } from './paypal-buttons-advanced';
@@ -107,7 +108,7 @@ function PaymentCheckoutSession({
         </DialogTitle>
         <DialogDescription className="sr-only">
           Purchase {credits} portrait generation credits with {tierInfo.name} for {price} USD.
-          This is a one-time payment. Choose an available payment method through PayPal.
+          This is a one-time payment. Choose Waffo or an available PayPal payment method.
         </DialogDescription>
         
         {/* Close Button */}
@@ -204,7 +205,11 @@ function PaymentCheckoutSession({
                   <button onClick={onClose} className="mt-4 font-semibold text-green-900 underline">Continue creating</button>
                 </div>
               ) : (
-                <PayPalButtonsAdvanced tier={tier} price={price} credits={credits} onSuccess={handleSuccess} />
+                <div className="space-y-5">
+                  <WaffoCheckoutButton sku={tier} onSuccess={(payment) => handleSuccess({ orderId: payment.id, tier, credits })} />
+                  <div className="text-center text-xs text-gray-500">or pay with PayPal</div>
+                  <PayPalButtonsAdvanced tier={tier} price={price} credits={credits} onSuccess={handleSuccess} />
+                </div>
               )}
 
               {/* Security & Info */}
@@ -212,7 +217,7 @@ function PaymentCheckoutSession({
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="text-xs text-green-800 text-center font-medium flex items-center justify-center gap-2">
                     <Shield className="w-4 h-4" />
-                    Secure payment via PayPal
+                    Secure payment via Waffo or PayPal
                   </p>
                 </div>
                 

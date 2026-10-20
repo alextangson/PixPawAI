@@ -2,10 +2,9 @@
  * HD Unlock Dialog — the download-intent gate.
  *
  * Shown when an un-entitled user clicks "Download High-Res". Offers the
- * $9.99 watermark-free HD download (PayPal) vs the free watermarked file.
- * On successful purchase it fetches the gated download URL (using the orderId
- * PayPal capture returns) and downloads the clean original directly — so guests
- * with no session still receive what they paid for.
+ * $9.99 watermark-free HD download via Waffo or the free watermarked file.
+ * Verified fulfillment unlocks a download using the buyer's receipt token,
+ * including for guests with no signed-in session.
  */
 
 'use client';
@@ -13,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { X, Sparkles, ShieldCheck, CheckCircle } from 'lucide-react';
+import { WaffoCheckoutButton } from '@/components/payment/waffo-checkout-button';
 import { PayPalButtonsHdUnlock } from '@/components/payment/paypal-buttons-hd-unlock';
 import { trackEvent, trackPurchase } from '@/components/analytics';
 
@@ -32,6 +32,8 @@ export function HdUnlockDialog({
   onClose,
 }: HdUnlockDialogProps) {
   const [unlocked, setUnlocked] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
+  const [receipt, setReceipt] = useState<{ path: string; token?: string } | null>(null);
 
   // Parent keeps this dialog mounted and only toggles isOpen, so reset the
   // success state each time it opens (else a second unlock in the same session
@@ -39,6 +41,8 @@ export function HdUnlockDialog({
   useEffect(() => {
     if (isOpen) {
       setUnlocked(false);
+      setDownloadError(false);
+      setReceipt(null);
       trackEvent('begin_checkout', {
         value: 9.99,
         currency: 'USD',
@@ -47,17 +51,25 @@ export function HdUnlockDialog({
     }
   }, [isOpen, generationId]);
 
-  const handleSuccess = async (downloadPath: string) => {
+  const handleSuccess = async (downloadPath: string, token?: string, testMode = false) => {
     // GA4 conversion — mark hd_unlock as a key event alongside credits purchase.
-    trackPurchase({
+    if (!testMode) trackPurchase({
       transactionId: generationId,
       value: 9.99,
       currency: 'USD',
       items: [{ item_id: 'hd_unlock', item_name: 'HD Portrait Unlock', price: 9.99, quantity: 1 }],
     });
     setUnlocked(true);
+    setReceipt({ path: downloadPath, token });
+    await downloadPurchased(downloadPath, token);
+  };
+
+  const downloadPurchased = async (downloadPath: string, token?: string) => {
+    setDownloadError(false);
     try {
-      const res = await fetch(downloadPath);
+      const res = await fetch(downloadPath, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (res.ok) {
         const { downloadUrl } = await res.json();
         const link = document.createElement('a');
@@ -67,9 +79,11 @@ export function HdUnlockDialog({
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-      }
+      } else throw new Error('Download is unavailable');
     } catch (err) {
       console.error('HD download after unlock failed:', err);
+      setDownloadError(true);
+      return;
     }
     // Give the browser a moment to start the download, then close.
     setTimeout(onClose, 2500);
@@ -98,7 +112,11 @@ export function HdUnlockDialog({
               <CheckCircle className="w-11 h-11 text-white" strokeWidth={2.5} />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Unlocked! 🎉</h3>
-            <p className="text-gray-600">Your watermark-free HD download is starting…</p>
+            <p className="text-gray-600">{downloadError
+              ? 'Your payment is confirmed. Please retry the download.'
+              : 'Your watermark-free HD download is starting…'}</p>
+            {downloadError && receipt && <button type="button" className="mt-4 text-coral underline"
+              onClick={() => void downloadPurchased(receipt.path, receipt.token)}>Retry download</button>}
           </div>
         ) : (
           <div className="p-6">
@@ -130,10 +148,15 @@ export function HdUnlockDialog({
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-700">
                 <ShieldCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-                Personal print license · secure PayPal checkout
+                Personal print license · secure checkout
               </li>
             </ul>
 
+            <WaffoCheckoutButton sku="hd_unlock" generationId={generationId}
+              onSuccess={(payment, path, token) => {
+                if (path) void handleSuccess(path, token, payment.mode === 'test');
+              }} />
+            <div className="my-3 text-center text-xs text-gray-500">or pay with PayPal</div>
             <PayPalButtonsHdUnlock generationId={generationId} onSuccess={handleSuccess} />
 
             <button

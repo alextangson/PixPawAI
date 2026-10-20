@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { isEntitledToHd, HdViewer } from '@/lib/hd-unlock/entitlement'
+import { createHash } from 'node:crypto'
+import { waffoStoreId } from '@/lib/waffo/config'
 
 export async function GET(
   request: NextRequest,
@@ -61,7 +63,24 @@ export async function GET(
     const { data: unlocks } = await unlockQuery.limit(1)
     const unlock = unlocks?.[0] ?? null
 
-    if (!isEntitledToHd(unlock, viewer, orderIdParam)) {
+    let waffoEntitled = false
+    const waffoOrderId = request.nextUrl.searchParams.get('waffoOrderId')
+    const token = request.headers.get('authorization')?.replace(/^Bearer /, '')
+    // A signed-in buyer can recover purchases without their original browser tab.
+    if (process.env.WAFFO_STORE_ID && ((waffoOrderId && token) || user)) {
+      let query = admin.from('waffo_orders').select('id')
+        .eq('generation_id', generationId).eq('sku', 'hd_unlock').eq('status', 'completed')
+        .eq('mode', 'prod').eq('store_id', waffoStoreId())
+      if (waffoOrderId && token) {
+        query = query.eq('id', waffoOrderId)
+          .eq('token_hash', createHash('sha256').update(token).digest('hex'))
+      } else {
+        query = query.eq('user_id', user!.id)
+      }
+      const { data } = await query.limit(1)
+      waffoEntitled = !!data?.length
+    }
+    if (!waffoEntitled && !isEntitledToHd(unlock, viewer, orderIdParam)) {
       return NextResponse.json(
         { error: 'HD download not unlocked for this portrait' },
         { status: 403 }
