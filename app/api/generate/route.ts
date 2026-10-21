@@ -22,6 +22,7 @@ import { checkGuestFreeTier, incrementGuestUsage } from '@/lib/guest-credits'
 import { applyWatermark } from '@/lib/watermark'
 import { hasUsablePetIdentity, normalizePetType, preservePetIdentity, resolvePetPromptStrength } from '@/lib/pet-generation'
 import { CreemModerationError, moderateUserPrompt } from '@/lib/moderation/creem-prompt'
+import { WaffoModerationError, moderateWaffoPrompt } from '@/lib/moderation/waffo-prompt'
 
 // Logging disabled for performance - large objects cause 100% CPU usage
 
@@ -622,11 +623,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Creem requires every user-controlled image prompt to be screened before
-    // billing, persistence, queueing, or model invocation. Fail closed.
+    // Custom Test Lab suffixes are model input too; neither test mode nor guests
+    // may bypass the Waffo gate. Existing Creem checks remain in place.
+    if (typeof promptSuffix !== 'string' || typeof negativePrompt !== 'string') {
+      return NextResponse.json({ error: 'Invalid style description. No credits were used.' }, { status: 400 })
+    }
+    const waffoPrompt = [moderationPrompt, !style ? promptSuffix : '', !style ? negativePrompt : '']
+      .filter(Boolean).join('\n')
+
+    // Both providers must allow before billing, persistence, or model invocation.
     try {
+      await moderateWaffoPrompt(waffoPrompt)
       await moderateUserPrompt(moderationPrompt)
     } catch (error) {
+      if (error instanceof WaffoModerationError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code, retryAfter: error.retryAfterSeconds },
+          { status: error.status, headers: error.retryAfterSeconds
+            ? { 'Retry-After': String(error.retryAfterSeconds) } : undefined }
+        )
+      }
       if (error instanceof CreemModerationError) {
         return NextResponse.json(
           { error: error.message, code: error.code },
