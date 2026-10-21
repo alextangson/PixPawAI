@@ -96,6 +96,11 @@ export default async function PrivacyPage({
               physical orders. These providers currently include Supabase, Replicate, SiliconFlow, Creem, PayPal, Waffo Pancake,
               Vercel, and Printful, depending on the feature you use. Creem&apos;s Moderation API receives the scene
               text you submit so it can return an allow, flag, or deny decision before image generation.
+              Waffo Pancake also receives your scene description and any custom style instructions for
+              a content-safety scan with semantic enforcement before credits are deducted or an image
+              is generated. Only an allow result permits generation; review, block, and unavailable
+              results pause the request without using credits. Waffo states that this scan is stateless
+              and does not retain the original prompt text after returning its result.
             </p>
           </section>
 

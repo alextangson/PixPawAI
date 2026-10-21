@@ -9,6 +9,7 @@ import sharp from 'sharp';
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(import.meta.dirname, '..');
+const { privateKey } = require('node:crypto').generateKeyPairSync('rsa', { modulusLength: 2048, privateKeyEncoding: { type: 'pkcs8', format: 'pem' }, publicKeyEncoding: { type: 'spki', format: 'pem' } });
 const fixture = await sharp({ create: { width: 32, height: 32, channels: 3, background: 'white' } }).png().toBuffer();
 const detailed = { petType: 'dog', hasPet: true, isSafe: true, breed: 'unknown', detectedColors: 'white fur' };
 const quick = { petType: 'dog', hasPet: true, isClear: true, quality: 'good' };
@@ -18,7 +19,7 @@ function request(data) {
 }
 
 function harness(settings = {}) {
-  const calls = { rpc: [], models: [], inserts: [], uploads: [], moderation: [], analysis: 0, visionModels: [] };
+  const calls = { rpc: [], models: [], inserts: [], uploads: [], moderation: [], waffo: [], analysis: 0, visionModels: [] };
   let generation;
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: 'TEST-USER' } } }) },
@@ -42,6 +43,16 @@ function harness(settings = {}) {
   const quiet = { log() {}, info() {}, error() {}, warn() {} };
   const cache = new Map();
   const fetcher = async (url, init) => {
+    if (String(url).includes('/verification/scan-prompt')) {
+      calls.waffo.push(JSON.parse(init.body));
+      assert.ok(init.signal, 'Waffo request must have a timeout signal');
+      if (settings.waffoFails) throw new Error('synthetic timeout');
+      if (settings.waffoHttpStatus) return Response.json({ errors: [{ message: 'synthetic failure', layer: 'verification' }] },
+        { status: settings.waffoHttpStatus, headers: { 'retry-after': '75' } });
+      return Response.json({ data: settings.waffoMalformed ? {} : {
+        action: settings.waffoAction ?? 'allow', reasonCode: settings.waffoReason ?? 'allowed', requestId: 'REQ_TEST',
+      } });
+    }
     if (url.includes('api.creem.io/v1/moderation/prompt')) {
       calls.moderation.push(JSON.parse(init.body));
       if (settings.moderationFails) throw new Error('synthetic moderation failure');
@@ -67,7 +78,11 @@ function harness(settings = {}) {
     const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } }).outputText;
     const module = { exports: {} };
     const imports = name => {
-      if (name === 'next/server' || name === 'sharp') return require(name);
+      if (name === 'next/server' || name === 'sharp' || name === '@waffo/pancake-ts') return require(name);
+      if (name === '@/lib/waffo/config') return { waffoClient: options => {
+        if (settings.waffoMissingConfig) throw new Error('missing config');
+        return new (require('@waffo/pancake-ts').WaffoPancake)({ merchantId: 'MER_0123456789012345678901', privateKey, ...options });
+      } };
       if (name === 'replicate') return class { async run(model, options) { calls.models.push({ model, ...options }); return ['https://fixture.invalid/output.png']; } };
       if (name === '@/lib/supabase/server') return { createClient: async () => client, createAdminClient: () => client };
       if (name === '@/lib/supabase/styles') return { getStyleConfigWithFallback: async () => ({
@@ -184,4 +199,51 @@ test('analysis routes return retryable errors, never fake successful pet detecti
       assert.ok(h.calls.visionModels.every(model => model === 'Qwen/Qwen3-VL-8B-Instruct'));
     }
   }
+});
+
+
+test('Waffo review, block, degradation, invalid responses and outages have no side effects', async () => {
+  for (const [settings, status, code] of [
+    [{ waffoAction: 'block', waffoReason: 'restricted_content' }, 400, 'PROMPT_REJECTED'],
+    [{ waffoAction: 'review', waffoReason: 'review_required' }, 503, 'MODERATION_REVIEW'],
+    [{ waffoAction: 'review', waffoReason: 'service_degraded' }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoMalformed: true }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoAction: 'allow', waffoReason: 'service_degraded' }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoFails: true }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoMissingConfig: true }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoHttpStatus: 401 }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoHttpStatus: 503 }, 503, 'MODERATION_UNAVAILABLE'],
+    [{ waffoHttpStatus: 429 }, 429, 'MODERATION_UNAVAILABLE'],
+  ]) {
+    const h = harness(settings);
+    const response = await h.post('generate')(request(body));
+    assert.equal(response.status, status, JSON.stringify(settings));
+    assert.equal((await response.json()).code, code);
+    if (status === 429) assert.equal(response.headers.get('retry-after'), '75');
+    assert.equal(h.calls.models.length, 0);
+    assert.equal(h.calls.rpc.length, 0);
+    assert.equal(h.calls.inserts.length, 0);
+    assert.equal(h.calls.uploads.length, 0);
+    assert.equal(h.calls.analysis, 0);
+  }
+});
+
+test('Waffo scans with semantic enforcement and permits generation only after allow', async () => {
+  const h = harness();
+  const response = await h.post('generate')(request(body));
+  assert.equal(response.status, 200);
+  assert.deepEqual(h.calls.waffo, [{ prompt: 'my pet', semantic: 'enforce' }]);
+  assert.equal(h.calls.models.length, 1);
+  assert.equal(h.calls.rpc.filter(x => x.name === 'decrement_credits').length, 1);
+});
+
+test('custom Test Lab model text cannot bypass Waffo', async () => {
+  const h = harness({ waffoAction: 'block', waffoReason: 'restricted_content' });
+  const response = await h.post('generate')(request({ ...body, style: null, testMode: true,
+    promptSuffix: 'custom scene instructions', negativePrompt: 'custom exclusions' }));
+  assert.equal(response.status, 400);
+  assert.deepEqual(h.calls.waffo, [{ prompt: 'my pet\ncustom scene instructions\ncustom exclusions', semantic: 'enforce' }]);
+  assert.equal(h.calls.models.length, 0);
+  assert.equal(h.calls.rpc.length, 0);
+  assert.equal(h.calls.inserts.length, 0);
 });

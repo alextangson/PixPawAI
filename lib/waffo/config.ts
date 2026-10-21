@@ -13,7 +13,7 @@ export function waffoStoreId() {
   return id
 }
 
-export function waffoClient() {
+export function waffoClient(options: { fetch?: typeof fetch } = {}) {
   const merchantId = process.env.WAFFO_MERCHANT_ID
   const privateKey = process.env.WAFFO_PRIVATE_KEY_BASE64
     ? Buffer.from(process.env.WAFFO_PRIVATE_KEY_BASE64, 'base64').toString('utf8')
@@ -21,5 +21,5 @@ export function waffoClient() {
   if (!merchantId || !privateKey || privateKey.includes('<paste-')) {
     throw new Error('Waffo credentials are not configured')
   }
-  return new WaffoPancake({ merchantId, privateKey, environment: waffoEnvironment() })
+  return new WaffoPancake({ merchantId, privateKey, environment: waffoEnvironment(), ...options })
 }

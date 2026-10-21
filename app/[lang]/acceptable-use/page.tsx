@@ -77,6 +77,11 @@ export default async function AcceptableUsePage({
               <strong> flag</strong> or <strong>deny</strong> is blocked. If the required moderation service is
               unavailable, generation fails closed and no generation credit is used.
             </p>
+            <p className="leading-relaxed mt-4">
+              Waffo Pancake also scans scene descriptions and custom style instructions with semantic
+              enforcement before billing or generation. Only an allow result permits generation.
+              Review, block, rate limits, and service outages pause generation without using credits.
+            </p>
           </section>
 
           <section>
