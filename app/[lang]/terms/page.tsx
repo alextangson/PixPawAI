@@ -61,8 +61,10 @@ export default async function TermsPage({
             <p className="leading-relaxed">
               PixPaw AI provides AI-powered pet portrait generation services. We transform your pet photos 
               into artistic stylized artwork through our independent interface and safety controls using
-              third-party AI infrastructure. PixPaw AI is not affiliated with or endorsed by the creators
-              of the underlying AI models.
+              Black Forest Labs’ FLUX.1 [dev] image-generation model (black-forest-labs/flux-dev),
+              hosted on Replicate. PixPaw AI provides the pet-focused workflow, style instructions,
+              and delivery interface. PixPaw AI is not affiliated with or endorsed by Black Forest Labs
+              or Replicate.
             </p>
           </section>
 
@@ -88,7 +90,7 @@ export default async function TermsPage({
                 <h3 className="font-semibold text-gray-900 mb-2">4.1 Payment Processing</h3>
                 <p className="leading-relaxed">
                   Payments are securely processed by the third-party provider displayed at checkout, such as
-                  PayPal or Creem. PixPaw AI does not store full card details. By making a purchase, you also
+                  PayPal, Creem, or Waffo Pancake. PixPaw AI does not store full card details. By making a purchase, you also
                   agree to the payment provider&apos;s applicable terms and privacy policy.
                 </p>
               </div>

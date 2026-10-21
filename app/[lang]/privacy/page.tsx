@@ -93,7 +93,7 @@ export default async function PrivacyPage({
             <p className="leading-relaxed">
               We share only the data needed to operate PixPaw AI with service providers that host data, analyze
               uploaded pet photos, generate portraits, screen user-supplied prompts, process payments, and fulfill
-              physical orders. These providers currently include Supabase, Replicate, SiliconFlow, Creem, PayPal,
+              physical orders. These providers currently include Supabase, Replicate, SiliconFlow, Creem, PayPal, Waffo Pancake,
               Vercel, and Printful, depending on the feature you use. Creem&apos;s Moderation API receives the scene
               text you submit so it can return an allow, flag, or deny decision before image generation.
             </p>
@@ -130,7 +130,7 @@ export default async function PrivacyPage({
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">7.2 Payment Cookies</h3>
                 <p className="leading-relaxed">
-                  When you make a payment, the provider shown at checkout, such as PayPal or Creem, may set
+                  When you make a payment, the provider shown at checkout, such as PayPal, Creem, or Waffo Pancake, may set
                   cookies to process the transaction securely. Those cookies are governed by that provider&apos;s
                   privacy policy.
                 </p>
